@@ -45,6 +45,7 @@
                 <div id="heat-level">COLD</div>
             </div>
             <div class="header-controls">
+                <button id="stats-btn" class="icon-btn" title="Statistics">📊</button>
                 <button id="achievements-btn" class="icon-btn" title="Achievements">🏆</button>
                 <button id="sound-toggle" class="icon-btn" title="Toggle Sound">🔊</button>
                 <button id="save-btn" class="icon-btn" title="Save Game">💾</button>
@@ -130,7 +131,7 @@
                 </div>
 
                 <!-- Inflating Balloon (10 posts = pop bonus) -->
-                <div id="balloon-container">
+                <div id="balloon-container" data-tooltip="Post more tweets to inflate the balloon!">
                     <div id="balloon-visual">🎈</div>
                     <div id="balloon-count"><span id="post-progress-count">0</span>/10</div>
                 </div>

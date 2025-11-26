@@ -5,6 +5,7 @@
 
 import * as State from '../state.js';
 import { getPostHistory, loadPostHistory, getBalloonState, loadBalloonState, getTypingState, loadTypingState } from './typing.js';
+import { getStatsHistory, loadStatsHistory } from './stats.js';
 
 const SAVE_KEY = 'idleTyper_save';
 const SAVE_VERSION = 2; // Bumped for post history support
@@ -13,6 +14,7 @@ const SAVE_VERSION = 2; // Bumped for post history support
 let pendingPostHistory = null;
 let pendingBalloonState = null;
 let pendingTypingState = null;
+let pendingStatsHistory = null;
 
 /**
  * Initialize save system and load existing save
@@ -31,6 +33,9 @@ export function initSave() {
         }
         if (saveData.typingState) {
             pendingTypingState = saveData.typingState;
+        }
+        if (saveData.statsHistory) {
+            pendingStatsHistory = saveData.statsHistory;
         }
         console.log('Game loaded from save');
     } else {
@@ -58,6 +63,12 @@ export function loadSavedPostHistory() {
     }
     pendingTypingState = null;
 
+    // Load stats history
+    if (pendingStatsHistory) {
+        loadStatsHistory(pendingStatsHistory);
+    }
+    pendingStatsHistory = null;
+
     return hadTypingState;
 }
 
@@ -70,13 +81,15 @@ export function save() {
         const postHistory = getPostHistory();
         const balloonState = getBalloonState();
         const typingState = getTypingState();
+        const statsHistory = getStatsHistory();
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
             state,
             postHistory,
             balloonState,
-            typingState
+            typingState,
+            statsHistory
         };
 
         localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));

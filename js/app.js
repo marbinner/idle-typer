@@ -13,6 +13,7 @@ import { initSave, autoSave, loadSavedPostHistory } from './modules/save.js';
 import { tick } from './modules/idle.js';
 import { initAchievements } from './modules/achievements.js';
 import { initEvents } from './modules/events.js';
+import { initStats } from './modules/stats.js';
 
 // Game configuration
 const CONFIG = {
@@ -134,6 +135,10 @@ async function init() {
         // Initialize events system
         initEvents();
         console.log('Events system ready');
+
+        // Initialize stats system
+        initStats();
+        console.log('Stats system ready');
 
         // Set up auto-save interval
         setInterval(() => {

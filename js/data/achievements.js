@@ -820,6 +820,270 @@ export const ACHIEVEMENTS = {
         icon: '🚀',
         category: 'typing',
         check: (state) => state.wpmRecordStreak >= 10
+    },
+
+    // === Balloon Pop Achievements ===
+    firstPop: {
+        id: 'firstPop',
+        name: 'Pop!',
+        description: 'Pop your first balloon',
+        icon: '🎈',
+        category: 'milestones',
+        check: (state) => state.balloonPops >= 1
+    },
+    balloonPops10: {
+        id: 'balloonPops10',
+        name: 'Pop Star',
+        description: 'Pop 10 balloons',
+        icon: '🎊',
+        category: 'milestones',
+        check: (state) => state.balloonPops >= 10
+    },
+    balloonPops50: {
+        id: 'balloonPops50',
+        name: 'Balloon Buster',
+        description: 'Pop 50 balloons',
+        icon: '🎉',
+        category: 'milestones',
+        check: (state) => state.balloonPops >= 50
+    },
+    balloonPops100: {
+        id: 'balloonPops100',
+        name: 'Party Animal',
+        description: 'Pop 100 balloons',
+        icon: '🥳',
+        category: 'milestones',
+        check: (state) => state.balloonPops >= 100
+    },
+
+    // === Play Time Achievements ===
+    playTime10m: {
+        id: 'playTime10m',
+        name: 'Quick Session',
+        description: 'Play for 10 minutes',
+        icon: '⏱️',
+        category: 'secret',
+        check: (state) => state.totalPlayTime >= 10 * 60 * 1000
+    },
+    playTime1h: {
+        id: 'playTime1h',
+        name: 'Hour Down',
+        description: 'Play for 1 hour',
+        icon: '⏰',
+        category: 'secret',
+        check: (state) => state.totalPlayTime >= 60 * 60 * 1000
+    },
+    playTime5h: {
+        id: 'playTime5h',
+        name: 'Dedicated Player',
+        description: 'Play for 5 hours',
+        icon: '🕐',
+        category: 'secret',
+        check: (state) => state.totalPlayTime >= 5 * 60 * 60 * 1000
+    },
+    playTime24h: {
+        id: 'playTime24h',
+        name: 'No Life',
+        description: 'Play for 24 hours total',
+        icon: '🌙',
+        category: 'secret',
+        check: (state) => state.totalPlayTime >= 24 * 60 * 60 * 1000
+    },
+    playTime100h: {
+        id: 'playTime100h',
+        name: 'Touch Grass?',
+        description: 'Play for 100 hours total',
+        icon: '🌿',
+        category: 'secret',
+        check: (state) => state.totalPlayTime >= 100 * 60 * 60 * 1000
+    },
+
+    // === Rank Achievements ===
+    rankNewbie: {
+        id: 'rankNewbie',
+        name: 'Baby Steps',
+        description: 'Reach Newbie rank',
+        icon: '🐣',
+        category: 'milestones',
+        check: (state) => state.xp >= 100
+    },
+    rankPoster: {
+        id: 'rankPoster',
+        name: 'Making Waves',
+        description: 'Reach Poster rank',
+        icon: '📮',
+        category: 'milestones',
+        check: (state) => state.xp >= 500
+    },
+    rankTweeter: {
+        id: 'rankTweeter',
+        name: 'Getting Social',
+        description: 'Reach Tweeter rank',
+        icon: '🐦',
+        category: 'milestones',
+        check: (state) => state.xp >= 1500
+    },
+    rankInfluencer: {
+        id: 'rankInfluencer',
+        name: 'Influence Rising',
+        description: 'Reach Influencer rank',
+        icon: '📢',
+        category: 'milestones',
+        check: (state) => state.xp >= 5000
+    },
+    rankCeleb: {
+        id: 'rankCeleb',
+        name: 'A-List',
+        description: 'Reach Celebrity rank',
+        icon: '⭐',
+        category: 'milestones',
+        check: (state) => state.xp >= 15000
+    },
+    rankLegend: {
+        id: 'rankLegend',
+        name: 'Legendary Status',
+        description: 'Reach Legend rank',
+        icon: '🏆',
+        category: 'milestones',
+        check: (state) => state.xp >= 50000
+    },
+
+    // === Heat/Streak Related ===
+    heatHot: {
+        id: 'heatHot',
+        name: 'Heating Up',
+        description: 'Reach HOT heat level',
+        icon: '🔥',
+        category: 'streaks',
+        check: (state) => state.heat >= 50
+    },
+    heatOnFire: {
+        id: 'heatOnFire',
+        name: 'On Fire!',
+        description: 'Reach ON FIRE heat level',
+        icon: '🌶️',
+        category: 'streaks',
+        check: (state) => state.heat >= 75
+    },
+    heatMax: {
+        id: 'heatMax',
+        name: 'Maximum Heat',
+        description: 'Reach maximum heat level',
+        icon: '☀️',
+        category: 'streaks',
+        check: (state) => state.heat >= 100
+    },
+
+    // === Golden Character Achievements ===
+    goldenChar1: {
+        id: 'goldenChar1',
+        name: 'Golden Touch',
+        description: 'Hit your first golden character',
+        icon: '✨',
+        category: 'secret',
+        check: (state) => state.goldenCharsHit >= 1
+    },
+    goldenChar25: {
+        id: 'goldenChar25',
+        name: 'Gold Digger',
+        description: 'Hit 25 golden characters',
+        icon: '💛',
+        category: 'secret',
+        check: (state) => state.goldenCharsHit >= 25
+    },
+    goldenChar100: {
+        id: 'goldenChar100',
+        name: 'Golden Fingers',
+        description: 'Hit 100 golden characters',
+        icon: '🏅',
+        category: 'secret',
+        check: (state) => state.goldenCharsHit >= 100
+    },
+    goldenChar500: {
+        id: 'goldenChar500',
+        name: 'Midas Touch',
+        description: 'Hit 500 golden characters',
+        icon: '👑',
+        category: 'secret',
+        check: (state) => state.goldenCharsHit >= 500
+    },
+
+    // === Speed Achievements ===
+    speedrun10: {
+        id: 'speedrun10',
+        name: 'Speedrunner',
+        description: 'Complete 10 posts in 5 minutes',
+        icon: '⚡',
+        category: 'secret',
+        check: (state) => state.speedrunPosts >= 10
+    },
+    doubleDigitCPS: {
+        id: 'doubleDigitCPS',
+        name: 'Double Digits',
+        description: 'Reach 10+ characters per second typing speed',
+        icon: '🔢',
+        category: 'typing',
+        check: (state) => state.bestCPS >= 10
+    },
+
+    // === Fun/Meme Achievements ===
+    posting420: {
+        id: 'posting420',
+        name: 'Blaze It',
+        description: 'Have exactly 420 of any resource',
+        icon: '🌿',
+        category: 'secret',
+        check: (state) => Math.floor(state.coins) === 420 || Math.floor(state.followers) === 420 || state.totalPosts === 420
+    },
+    elonMoment: {
+        id: 'elonMoment',
+        name: 'Elon Moment',
+        description: 'Reach 44 billion coins (jk, 44,000 will do)',
+        icon: '🚀',
+        category: 'secret',
+        check: (state) => state.lifetimeCoins >= 44000
+    },
+    ratioKing: {
+        id: 'ratioKing',
+        name: 'Ratio King',
+        description: 'Have 10x more followers than lifetime posts',
+        icon: '📊',
+        category: 'secret',
+        check: (state) => state.followers > 0 && state.totalPosts > 0 && state.followers >= state.totalPosts * 10
+    },
+    touchTyper: {
+        id: 'touchTyper',
+        name: 'Touch Typer',
+        description: 'Complete 5 posts with 95%+ accuracy and 80+ WPM',
+        icon: '🎹',
+        category: 'typing',
+        check: (state) => state.proTyperPosts >= 5
+    },
+
+    // === XP Achievements ===
+    xp10K: {
+        id: 'xp10K',
+        name: 'Experience Points',
+        description: 'Earn 10,000 total XP',
+        icon: '📈',
+        category: 'milestones',
+        check: (state) => state.xp >= 10000
+    },
+    xp100K: {
+        id: 'xp100K',
+        name: 'XP Master',
+        description: 'Earn 100,000 total XP',
+        icon: '🎮',
+        category: 'milestones',
+        check: (state) => state.xp >= 100000
+    },
+    xp1M: {
+        id: 'xp1M',
+        name: 'Million XP',
+        description: 'Earn 1,000,000 total XP',
+        icon: '🌟',
+        category: 'milestones',
+        check: (state) => state.xp >= 1000000
     }
 };
 
