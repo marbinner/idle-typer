@@ -7,6 +7,7 @@
 // Bot definitions (cps = coins per second)
 // Bots use 1.20 cost multiplier (steeper than Cookie Clicker for longer progression)
 // Each bot of the same type gives +1% more CPS (cumulative bonus)
+// Unlock thresholds spaced ~10x apart for meaningful progression milestones
 export const BOTS = {
     // ===== TIER 1: EARLY GAME =====
     replyGuy: {
@@ -27,7 +28,7 @@ export const BOTS = {
         baseCost: 100,
         costMult: 1.20,
         cps: 1,
-        unlockAt: 50
+        unlockAt: 1000        // ~100 posts to unlock
     },
     burnerAccount: {
         id: 'burnerAccount',
@@ -37,7 +38,7 @@ export const BOTS = {
         baseCost: 1100,
         costMult: 1.20,
         cps: 8,
-        unlockAt: 500
+        unlockAt: 10000       // Need some lurkers working
     },
     shitposter: {
         id: 'shitposter',
@@ -47,7 +48,7 @@ export const BOTS = {
         baseCost: 12000,
         costMult: 1.20,
         cps: 47,
-        unlockAt: 5000
+        unlockAt: 100000      // Significant early milestone
     },
 
     // ===== TIER 2: MID GAME =====
@@ -59,7 +60,7 @@ export const BOTS = {
         baseCost: 130000,
         costMult: 1.20,
         cps: 260,
-        unlockAt: 50000
+        unlockAt: 1000000     // 1M lifetime coins
     },
     contentCreator: {
         id: 'contentCreator',
@@ -69,7 +70,7 @@ export const BOTS = {
         baseCost: 1400000,
         costMult: 1.20,
         cps: 1400,
-        unlockAt: 500000
+        unlockAt: 10000000    // 10M lifetime coins
     },
     blueCheck: {
         id: 'blueCheck',
@@ -79,7 +80,7 @@ export const BOTS = {
         baseCost: 20000000,
         costMult: 1.20,
         cps: 7800,
-        unlockAt: 5000000
+        unlockAt: 100000000   // 100M lifetime coins
     },
 
     // ===== TIER 3: LATE GAME =====
@@ -91,7 +92,7 @@ export const BOTS = {
         baseCost: 330000000,
         costMult: 1.20,
         cps: 44000,
-        unlockAt: 100000000
+        unlockAt: 1000000000  // 1B lifetime coins
     },
     cryptoBro: {
         id: 'cryptoBro',
@@ -101,7 +102,7 @@ export const BOTS = {
         baseCost: 5100000000,
         costMult: 1.20,
         cps: 260000,
-        unlockAt: 1000000000
+        unlockAt: 10000000000 // 10B lifetime coins
     },
     grokAI: {
         id: 'grokAI',
@@ -111,7 +112,7 @@ export const BOTS = {
         baseCost: 75000000000,
         costMult: 1.20,
         cps: 1600000,
-        unlockAt: 10000000000
+        unlockAt: 100000000000 // 100B lifetime coins
     },
 
     // ===== TIER 4: END GAME =====
@@ -123,7 +124,7 @@ export const BOTS = {
         baseCost: 1000000000000,
         costMult: 1.20,
         cps: 10000000,
-        unlockAt: 100000000000
+        unlockAt: 1000000000000 // 1T lifetime coins
     },
     elonsAlt: {
         id: 'elonsAlt',
@@ -133,7 +134,7 @@ export const BOTS = {
         baseCost: 14000000000000,
         costMult: 1.20,
         cps: 65000000,
-        unlockAt: 1000000000000
+        unlockAt: 10000000000000 // 10T lifetime coins
     },
     mediaEmpire: {
         id: 'mediaEmpire',
@@ -143,7 +144,7 @@ export const BOTS = {
         baseCost: 170000000000000,
         costMult: 1.20,
         cps: 430000000,
-        unlockAt: 10000000000000
+        unlockAt: 100000000000000 // 100T lifetime coins
     },
 
     // ===== TIER 5: INFINITE GAME =====
@@ -155,7 +156,7 @@ export const BOTS = {
         baseCost: 2100000000000000,
         costMult: 1.20,
         cps: 2900000000,
-        unlockAt: 100000000000000
+        unlockAt: 1000000000000000 // 1 Quadrillion
     },
     realityWarper: {
         id: 'realityWarper',
@@ -165,7 +166,7 @@ export const BOTS = {
         baseCost: 26000000000000000,
         costMult: 1.20,
         cps: 21000000000,
-        unlockAt: 1000000000000000
+        unlockAt: 10000000000000000 // 10 Quadrillion
     }
 };
 
