@@ -15,7 +15,7 @@ export const BOTS = {
         name: 'Reply Guy',
         icon: '💬',
         description: '"Great post!" on everything',
-        baseCost: 15,
+        baseCost: 200,
         costMult: 1.20,
         cps: 0.1,
         unlockAt: 0
@@ -25,7 +25,7 @@ export const BOTS = {
         name: 'Lurker',
         icon: '👀',
         description: 'Silent but deadly engagement',
-        baseCost: 100,
+        baseCost: 2000,
         costMult: 1.20,
         cps: 1,
         unlockAt: 1000        // ~100 posts to unlock
@@ -35,7 +35,7 @@ export const BOTS = {
         name: 'Burner Account',
         icon: '🔥',
         description: 'Anonymous chaos generator',
-        baseCost: 1100,
+        baseCost: 200000,
         costMult: 1.20,
         cps: 8,
         unlockAt: 10000       // Need some lurkers working
@@ -182,7 +182,7 @@ export const UPGRADES = {
         name: 'Typing Mastery',
         icon: '⌨️',
         description: '+5% coins per typed post',
-        baseCost: 100,
+        baseCost: 5000,
         costMult: 1.15,
         maxLevel: 50,
         unlockAt: 0,
