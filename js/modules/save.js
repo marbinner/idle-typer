@@ -42,10 +42,9 @@ export function loadSavedPostHistory() {
         loadPostHistory(pendingPostHistory);
         pendingPostHistory = null;
     }
-    if (pendingBalloonState) {
-        loadBalloonState(pendingBalloonState);
-        pendingBalloonState = null;
-    }
+    // Always call loadBalloonState - it handles null/missing state
+    loadBalloonState(pendingBalloonState);
+    pendingBalloonState = null;
 }
 
 /**

@@ -341,6 +341,15 @@
     font-weight: 700;
 }
 
+.accuracy-badge {
+    font-size: 14px;
+    padding: 2px 6px;
+    background: rgba(255, 215, 0, 0.2);
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+}
+
 /* Tweet content */
 .tweet-content {
     font-size: 15px;
@@ -1224,11 +1233,11 @@
 
 #wpm-display .stat-number {
     font-family: var(--font-mono);
-    font-size: 64px;
+    font-size: 48px;
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1;
-    letter-spacing: -2px;
+    letter-spacing: -1px;
 }
 
 #wpm-display .stat-name {

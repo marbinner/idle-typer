@@ -88,16 +88,24 @@ export function getBalloonState() {
 
 /**
  * Load balloon state from save
+ * If no state saved, initialize balloon to start fresh (empty)
  */
 export function loadBalloonState(state) {
-    if (state) {
-        if (typeof state.cycleStart === 'number') {
-            balloonCycleStart = state.cycleStart;
-        }
-        if (typeof state.popThreshold === 'number') {
-            balloonPopThreshold = state.popThreshold;
-        }
+    const gameState = State.getState();
+
+    if (state && typeof state.cycleStart === 'number') {
+        balloonCycleStart = state.cycleStart;
+    } else {
+        // No saved balloon state - start fresh from current posts
+        balloonCycleStart = gameState.lifetimePosts;
     }
+
+    if (state && typeof state.popThreshold === 'number') {
+        balloonPopThreshold = state.popThreshold;
+    }
+
+    // Update balloon display after loading state
+    updatePostProgress();
 }
 
 /**
@@ -123,8 +131,7 @@ export function initTyping() {
         balloonContainer.addEventListener('click', handleBalloonClick);
     }
 
-    // Initialize post progress display
-    updatePostProgress();
+    // Note: updatePostProgress() is called after balloon state is loaded in app.js
 
     // Initialize rank display
     updateRankDisplay();
@@ -1111,11 +1118,13 @@ function renderHistory() {
         const timeAgo = getTimeAgo(entry.timestamp);
 
         // Badges
+        const has100Accuracy = entry.accuracy === 100;
         let badges = '';
-        if (entry.isViral || entry.isPerfect) {
+        if (entry.isViral || entry.isPerfect || has100Accuracy) {
             badges = '<div class="tweet-badges">';
             if (entry.isViral) badges += '<span class="viral-badge">🔥 VIRAL</span>';
-            if (entry.isPerfect) badges += '<span class="perfect-badge">✓ PERFECT</span>';
+            if (has100Accuracy) badges += '<span class="accuracy-badge">💯</span>';
+            if (entry.isPerfect && !has100Accuracy) badges += '<span class="perfect-badge">✓ PERFECT</span>';
             badges += '</div>';
         }
 
