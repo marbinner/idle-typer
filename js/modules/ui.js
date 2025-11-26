@@ -4,6 +4,7 @@
  */
 
 import * as State from '../state.js';
+import { formatNumber, formatFull } from '../utils.js';
 
 // DOM Elements cache
 let followersCountEl;
@@ -39,26 +40,6 @@ export function initUI() {
  * Set up UI event listeners
  */
 function setupEventListeners() {
-    // Sound toggle
-    const soundToggle = document.getElementById('sound-toggle');
-    if (soundToggle) {
-        soundToggle.addEventListener('click', () => {
-            const state = State.getState();
-            State.updateState({ soundEnabled: !state.soundEnabled });
-            soundToggle.textContent = state.soundEnabled ? '🔇' : '🔊';
-        });
-    }
-
-    // Save button
-    const saveBtn = document.getElementById('save-btn');
-    if (saveBtn) {
-        saveBtn.addEventListener('click', () => {
-            import('./save.js').then(module => {
-                module.manualSave();
-            });
-        });
-    }
-
     // Settings button
     const settingsBtn = document.getElementById('settings-btn');
     if (settingsBtn) {
@@ -180,17 +161,25 @@ function showSettingsModal() {
         <h2 class="modal-title">Settings</h2>
         <div class="modal-body">
             <div class="setting-item">
+                <label>Sound</label>
+                <div class="toggle-group">
+                    <button id="sound-toggle-btn" class="btn btn-secondary ${state.soundEnabled ? 'active' : ''}">
+                        ${state.soundEnabled ? '🔊 On' : '🔇 Off'}
+                    </button>
+                </div>
+            </div>
+            <div class="setting-item">
                 <label>Sound Volume</label>
                 <input type="range" id="volume-slider" min="0" max="100" value="${state.volume * 100}">
             </div>
             <div class="setting-item">
                 <label>Export Save</label>
-                <button id="export-btn" class="btn btn-secondary">Copy Save Code</button>
+                <button id="export-btn" class="btn btn-secondary">💾 Download Save File</button>
             </div>
             <div class="setting-item">
                 <label>Import Save</label>
-                <input type="text" id="import-input" placeholder="Paste save code here">
-                <button id="import-btn" class="btn btn-secondary">Import</button>
+                <input type="file" id="import-file" accept=".json" style="display: none">
+                <button id="import-btn" class="btn btn-secondary">📂 Load Save File</button>
             </div>
             <div class="setting-item danger">
                 <label>Reset Game</label>
@@ -209,30 +198,83 @@ function showSettingsModal() {
         overlay.classList.add('hidden');
     });
 
+    // Sound toggle
+    document.getElementById('sound-toggle-btn')?.addEventListener('click', (e) => {
+        const currentState = State.getState();
+        const newSoundEnabled = !currentState.soundEnabled;
+        State.updateState({ soundEnabled: newSoundEnabled });
+        e.target.textContent = newSoundEnabled ? '🔊 On' : '🔇 Off';
+        e.target.classList.toggle('active', newSoundEnabled);
+    });
+
     document.getElementById('volume-slider')?.addEventListener('input', (e) => {
         State.updateState({ volume: e.target.value / 100 });
     });
 
+    // Export - download JSON file
     document.getElementById('export-btn')?.addEventListener('click', async () => {
-        const { exportSave } = await import('./save.js');
-        const code = exportSave();
-        navigator.clipboard.writeText(code);
-        showToast('Save code copied!');
-    });
-
-    document.getElementById('import-btn')?.addEventListener('click', async () => {
-        const input = document.getElementById('import-input');
-        if (input && input.value) {
-            const { importSave } = await import('./save.js');
-            if (importSave(input.value)) {
-                showToast('Save imported!');
-                overlay.classList.add('hidden');
-                location.reload();
-            } else {
-                showToast('Invalid save code!');
+        try {
+            console.log('Export button clicked');
+            const saveModule = await import('./save.js');
+            console.log('Save module loaded');
+            const result = saveModule.exportToFile();
+            console.log('Export result:', result);
+            if (!result) {
+                showToast('Export failed!');
             }
+        } catch (err) {
+            console.error('Export error:', err);
+            showToast('Export failed: ' + err.message);
         }
     });
+
+    // Import - file picker
+    const importFileInput = document.getElementById('import-file');
+    const importBtn = document.getElementById('import-btn');
+
+    if (importBtn && importFileInput) {
+        importBtn.addEventListener('click', () => {
+            console.log('Import button clicked, triggering file picker');
+            importFileInput.click();
+        });
+
+        importFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) {
+                console.log('No file selected');
+                return;
+            }
+
+            console.log('Loading save file:', file.name, 'size:', file.size);
+            try {
+                const text = await file.text();
+                console.log('File content read, length:', text.length);
+                console.log('First 100 chars:', text.substring(0, 100));
+
+                const saveModule = await import('./save.js');
+                console.log('Save module loaded for import');
+
+                const result = saveModule.importSave(text);
+                console.log('Import result:', result);
+
+                if (result) {
+                    showToast('Save imported! Reloading...');
+                    overlay.classList.add('hidden');
+                    // importSave already triggers reload
+                } else {
+                    showToast('Invalid save file!');
+                }
+            } catch (err) {
+                console.error('File read/import error:', err);
+                showToast('Failed to import: ' + err.message);
+            }
+
+            // Reset the input so the same file can be selected again
+            e.target.value = '';
+        });
+    } else {
+        console.error('Import elements not found:', { importBtn, importFileInput });
+    }
 
     document.getElementById('reset-btn')?.addEventListener('click', async () => {
         if (confirm('Are you sure? This will delete ALL progress!')) {
@@ -281,22 +323,6 @@ function showToast(message) {
 }
 
 /**
- * Format large numbers with abbreviations (for shop, stats, etc.)
- */
-export function formatNumber(num, decimals = 1) {
-    // Handle small decimals (like 0.2 cps) - show 1 decimal place
-    if (num < 1) {
-        return num > 0 ? num.toFixed(1) : '0';
-    }
-    if (num < 1000) return Math.floor(num).toString();
-    if (num < 1000000) return (num / 1000).toFixed(decimals) + 'K';
-    if (num < 1000000000) return (num / 1000000).toFixed(decimals) + 'M';
-    if (num < 1000000000000) return (num / 1000000000).toFixed(decimals) + 'B';
-    if (num < 1000000000000000) return (num / 1000000000000).toFixed(decimals) + 'T';
-    return (num / 1000000000000000).toFixed(decimals) + 'Qa';
-}
-
-/**
  * Format coins with full number display (commas) - only abbreviate at very high values
  * This lets players see the "number go up" experience
  * No decimals for cleaner display
@@ -307,11 +333,8 @@ export function formatCoins(num) {
     if (n < 10000000) {
         return n.toLocaleString('en-US');
     }
-    // After 10M, start abbreviating (1 decimal for readability)
-    if (n < 1000000000) return (n / 1000000).toFixed(1) + 'M';
-    if (n < 1000000000000) return (n / 1000000000).toFixed(1) + 'B';
-    if (n < 1000000000000000) return (n / 1000000000000).toFixed(1) + 'T';
-    return (n / 1000000000000000).toFixed(1) + 'Qa';
+    // After 10M, use consistent formatting from utils
+    return formatNumber(n, 1);
 }
 
 /**
@@ -332,4 +355,4 @@ export function showEventMessage(message, type = 'normal') {
     }
 }
 
-export { showToast };
+export { showToast, formatNumber };

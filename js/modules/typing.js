@@ -7,6 +7,7 @@ import * as State from '../state.js';
 import { POSTS } from '../data/posts.js';
 import { playSound, playAnticipationKeystroke, playCompletionClimax, playKachingSound } from './sound.js';
 import { spawnParticles, spawnFloatingNumber } from './particles.js';
+import { formatNumber } from '../utils.js';
 
 // DOM Elements
 let postTextEl;
@@ -70,9 +71,13 @@ export function getPostHistory() {
  * Load post history from save
  */
 export function loadPostHistory(history) {
+    console.log('loadPostHistory called with:', history?.length || 0, 'posts');
     if (Array.isArray(history)) {
         postHistory = history;
+        console.log('Post history set, rendering...');
         renderHistory();
+    } else {
+        console.log('History is not an array, skipping');
     }
 }
 
@@ -136,17 +141,27 @@ export function loadTypingState(state) {
  */
 export function loadBalloonState(state) {
     const gameState = State.getState();
+    const currentPosts = gameState.lifetimePosts || 0;
 
     if (state && typeof state.cycleStart === 'number') {
         balloonCycleStart = state.cycleStart;
     } else {
         // No saved balloon state - start fresh from current posts
-        balloonCycleStart = gameState.lifetimePosts;
+        balloonCycleStart = currentPosts;
+    }
+
+    // IMPORTANT: Ensure balloonCycleStart is never greater than lifetimePosts
+    // This can happen if loading a save from a different session
+    if (balloonCycleStart > currentPosts) {
+        console.log(`Balloon cycle reset: cycleStart (${balloonCycleStart}) > lifetimePosts (${currentPosts})`);
+        balloonCycleStart = currentPosts;
     }
 
     if (state && typeof state.popThreshold === 'number') {
         balloonPopThreshold = state.popThreshold;
     }
+
+    console.log(`Balloon loaded: cycleStart=${balloonCycleStart}, threshold=${balloonPopThreshold}, currentPosts=${currentPosts}`);
 
     // Update balloon display after loading state
     updatePostProgress();
@@ -547,26 +562,57 @@ function completePost() {
     // Track WPM records
     const wpmResult = trackWPMRecord(finalWPM, state);
 
-    // Calculate coin rewards (based on post length)
-    let coinReward = state.coinsPerPost * (postLength / 50); // Normalize by ~50 char average
-    let followerReward = Math.floor(postLength / 20); // Small follower gain per post
+    // ===== NEW BALANCED REWARD SYSTEM =====
+    // Typing rewards now SCALE with progression to always be worthwhile
+
+    // Base typing reward (scales with coinsPerPost which includes multipliers)
+    let baseTypingReward = state.coinsPerPost * (postLength / 50);
+
+    // CPS BONUS: Typing gives you bonus equal to X seconds of idle income
+    // This ensures typing is ALWAYS worth doing, even late game
+    // Base: 5 seconds of CPS, scales up with WPM
+    let cpsSecondsBonus = 5;
+    if (finalWPM >= 100) {
+        cpsSecondsBonus = 15; // 15 seconds of CPS for pro typing
+    } else if (finalWPM >= 80) {
+        cpsSecondsBonus = 12;
+    } else if (finalWPM >= 60) {
+        cpsSecondsBonus = 9;
+    } else if (finalWPM >= 40) {
+        cpsSecondsBonus = 7;
+    }
+
+    // Calculate CPS bonus (minimum of 10 coins to be meaningful early game)
+    const cpsBonus = Math.max(10, Math.floor(state.coinsPerSecond * cpsSecondsBonus));
+
+    // Total coin reward = base + CPS bonus
+    let coinReward = baseTypingReward + cpsBonus;
+    let followerReward = Math.floor(postLength / 20) + 1; // +1 ensures at least 1
     let impressionReward = state.impressionsPerPost;
 
-    // Perfect bonus
+    // Perfect bonus (no errors in post)
+    const perfectBonus = isPerfect ? 1.5 : 1;
+    coinReward *= perfectBonus;
     if (isPerfect) {
-        coinReward *= 1.5;
         followerReward *= 2;
         impressionReward *= 1.5;
     }
 
     // WPM bonus - reward fast typing!
     let wpmBonus = 1;
-    if (finalWPM >= 100) {
-        wpmBonus = 2.0; // 2x for 100+ WPM
+    let wpmBonusName = '';
+    if (finalWPM >= 120) {
+        wpmBonus = 3.0;
+        wpmBonusName = 'BLAZING SPEED';
+    } else if (finalWPM >= 100) {
+        wpmBonus = 2.5;
+        wpmBonusName = 'SPEED DEMON';
     } else if (finalWPM >= 80) {
-        wpmBonus = 1.5; // 1.5x for 80+ WPM
+        wpmBonus = 2.0;
+        wpmBonusName = 'FAST FINGERS';
     } else if (finalWPM >= 60) {
-        wpmBonus = 1.25; // 1.25x for 60+ WPM
+        wpmBonus = 1.5;
+        wpmBonusName = 'QUICK';
     }
     coinReward *= wpmBonus;
 
@@ -580,12 +626,12 @@ function completePost() {
         followerReward *= 2;
     }
 
-    // Combo bonus (capped at 2x)
-    const comboBonus = Math.min(1 + state.combo * 0.01, 2);
+    // Combo bonus (capped at 3x for higher ceiling)
+    const comboBonus = Math.min(1 + state.combo * 0.01, 3);
     coinReward *= comboBonus;
 
-    // Streak bonus
-    const streakBonus = 1 + Math.floor(state.streak / 5) * 0.1;
+    // Streak bonus (more impactful)
+    const streakBonus = 1 + Math.floor(state.streak / 3) * 0.15;
     coinReward *= streakBonus;
 
     // Category bonus
@@ -596,8 +642,13 @@ function completePost() {
 
     // Final rounding
     coinReward = Math.floor(coinReward);
-    followerReward = Math.max(1, Math.floor(followerReward)); // At least 1 follower
+    followerReward = Math.max(1, Math.floor(followerReward));
     impressionReward = Math.floor(impressionReward);
+
+    // Calculate how many seconds of idle income this represents
+    const idleEquivalentSeconds = state.coinsPerSecond > 0
+        ? Math.round(coinReward / state.coinsPerSecond)
+        : 0;
 
     // Check for viral
     const viralResult = checkViral();
@@ -648,34 +699,46 @@ function completePost() {
     const accuracy = Math.round(((postLength - errorCount) / postLength) * 100);
     const isViralPost = !!viralResult;
 
-    // Show notifications
+    // Show BIG REWARD display - this is the key to satisfying completion
+    showBigReward(coinReward, followerReward, idleEquivalentSeconds, {
+        wpm: finalWPM,
+        wpmBonus: wpmBonusName,
+        isPerfect,
+        isPersonalBest: wpmResult.isPersonalBest,
+        isViral: !!viralResult,
+        viralName: viralResult ? viralResult.name : null
+    });
+
+    // Show notifications and particles
     if (wpmResult.isPersonalBest) {
         // Huge celebration for new record!
-        spawnParticles('viral', centerX, centerY, 80);
-        spawnFloatingNumber(`NEW RECORD! ${finalWPM} WPM`, centerX, centerY - 80, 'viral');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 40, 'coins');
+        spawnParticles('viral', centerX, centerY, 100);
+        spawnFloatingNumber(`🏆 NEW RECORD! ${finalWPM} WPM 🏆`, centerX, centerY - 100, 'viral');
+        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 50, 'coins');
         showNotification(`NEW PERSONAL BEST! ${finalWPM} WPM`, 'record');
-        showNotification(`+${formatNumber(coinReward)} coins (2x bonus!)`, 'coins');
     } else if (viralResult) {
         spawnParticles('confetti', centerX, centerY, viralResult.particles);
-        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿ VIRAL!`, centerX, centerY - 50, 'viral');
-        showNotification(`${viralResult.name}!`, 'viral');
-        showNotification(`+${formatNumber(coinReward)} coins`, 'coins');
-    } else if (wpmResult.isAboveAvg) {
-        spawnParticles('confetti', centerX, centerY, 25);
-        spawnFloatingNumber(`${finalWPM} WPM`, centerX, centerY - 70, 'default');
+        spawnFloatingNumber(`🔥 ${viralResult.name}! 🔥`, centerX, centerY - 80, 'viral');
         spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 40, 'coins');
-        showNotification(`${finalWPM} WPM (+25% bonus)`, 'wpm');
-        showNotification(`+${formatNumber(coinReward)} coins`, 'coins');
+        showNotification(`${viralResult.name}!`, 'viral');
+    } else if (wpmBonusName) {
+        spawnParticles('confetti', centerX, centerY, 35);
+        spawnFloatingNumber(`⚡ ${wpmBonusName} ⚡`, centerX, centerY - 80, 'default');
+        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 40, 'coins');
+        showNotification(`${finalWPM} WPM - ${wpmBonusName}!`, 'wpm');
     } else if (isPerfect) {
-        spawnParticles('confetti', centerX, centerY, 20);
-        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 50, 'coins');
-        showNotification('Perfect! +50% bonus', 'perfect');
-        showNotification(`+${formatNumber(coinReward)} coins`, 'coins');
+        spawnParticles('confetti', centerX, centerY, 25);
+        spawnFloatingNumber(`✨ PERFECT! ✨`, centerX, centerY - 80, 'perfect');
+        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 40, 'coins');
+        showNotification('Perfect typing! +50% bonus', 'perfect');
     } else {
-        spawnParticles('confetti', centerX, centerY, 10);
+        spawnParticles('confetti', centerX, centerY, 15);
         spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 50, 'coins');
-        showNotification(`+${formatNumber(coinReward)} coins`, 'coins');
+    }
+
+    // Show idle equivalent for meaningful feedback
+    if (idleEquivalentSeconds > 0) {
+        showNotification(`= ${idleEquivalentSeconds}s of idle income`, 'coins');
     }
 
     // Add to history
@@ -947,15 +1010,6 @@ function showEvent(message) {
     }
 }
 
-/**
- * Format number for display
- */
-function formatNumber(num) {
-    if (num < 1000) return num.toString();
-    if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
-    if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
-    return (num / 1000000000).toFixed(1) + 'B';
-}
 
 /**
  * Escape HTML entities
@@ -1021,8 +1075,8 @@ function addToHistory(postText, wpm, accuracy, coins, isPerfect, isViral) {
     // Add to front of history
     postHistory.unshift(entry);
 
-    // Keep only last 20
-    if (postHistory.length > 20) {
+    // Keep only last 8 posts in the panel
+    if (postHistory.length > 8) {
         postHistory.pop();
     }
 
@@ -1141,9 +1195,14 @@ setInterval(() => {
  * Render history panel
  */
 function renderHistory() {
-    if (!historyListEl) return;
+    console.log('renderHistory called, historyListEl:', !!historyListEl, 'postHistory length:', postHistory.length);
+    if (!historyListEl) {
+        console.log('historyListEl not found, skipping render');
+        return;
+    }
 
     if (postHistory.length === 0) {
+        console.log('Empty post history, showing empty state');
         historyListEl.innerHTML = '<div class="history-empty">Type your first post!</div>';
         return;
     }
@@ -1250,8 +1309,14 @@ let balloonCycleStart = 0;
 function updatePostProgress() {
     const state = State.getState();
 
+    // Safety check: reset balloon cycle if it's invalid (negative posts)
+    if (balloonCycleStart > state.lifetimePosts) {
+        console.log(`Balloon safety reset: cycleStart (${balloonCycleStart}) > lifetimePosts (${state.lifetimePosts})`);
+        balloonCycleStart = state.lifetimePosts;
+    }
+
     // Track posts since the current balloon cycle started
-    const postsInCycle = state.lifetimePosts - balloonCycleStart;
+    const postsInCycle = Math.max(0, state.lifetimePosts - balloonCycleStart);
     const balloonContainer = document.getElementById('balloon-container');
     const balloonVisual = document.getElementById('balloon-visual');
 
@@ -1262,15 +1327,22 @@ function updatePostProgress() {
 
     if (!balloonContainer || !balloonVisual) return;
 
-    // Calculate balloon size - grows exponentially for more dramatic effect
+    // Calculate balloon size - visible growth from the start
     const baseSize = 35;
     const maxSize = 150;
     // Progress from 0 to 1 based on current threshold
     const progress = Math.min(postsInCycle / balloonPopThreshold, 1);
-    // Use cubic easing for dramatic growth at the end
-    const easedProgress = progress * progress * progress;
-    const currentSize = baseSize + easedProgress * (maxSize - baseSize);
+    // Use ease-out quadratic for visible early growth that accelerates
+    // First half grows linearly, second half accelerates
+    const easedProgress = progress < 0.5
+        ? progress * 1.2  // Visible early growth
+        : 0.6 + (progress - 0.5) * (progress - 0.5) * 1.6;  // Accelerate at end
+    const clampedProgress = Math.min(easedProgress, 1);
+    const currentSize = baseSize + clampedProgress * (maxSize - baseSize);
     balloonVisual.style.fontSize = currentSize + 'px';
+
+    // Debug log
+    console.log(`Balloon: ${postsInCycle}/${balloonPopThreshold} posts, size: ${currentSize.toFixed(0)}px`);
 
     // Calculate how close we are to popping (last 3 posts = intense)
     const postsUntilPop = balloonPopThreshold - postsInCycle;
@@ -1289,10 +1361,13 @@ function updatePostProgress() {
         setTimeout(() => {
             popBalloon();
             balloonPopping = false;
+            // Get fresh state to ensure we have the latest lifetimePosts
+            const freshState = State.getState();
             // Reset cycle start to current post count
-            balloonCycleStart = state.lifetimePosts;
+            balloonCycleStart = freshState.lifetimePosts;
             // New random threshold for next balloon (8-12)
             balloonPopThreshold = Math.floor(Math.random() * 5) + 8;
+            console.log(`Balloon reset: new cycle starts at ${balloonCycleStart} posts, next pop at ${balloonPopThreshold} more`);
         }, 400);
     } else if (postsUntilPop === 1) {
         // CRITICAL - about to burst! (last post before pop)
@@ -1430,6 +1505,80 @@ function popBalloon() {
             balloonVisual.style.filter = '';
         }
     }, 500);
+}
+
+/**
+ * Show big reward display - dramatic celebration for post completion
+ */
+function showBigReward(coins, followers, idleSeconds, bonuses) {
+    // Remove any existing reward display
+    const existing = document.getElementById('big-reward-display');
+    if (existing) existing.remove();
+
+    // Create the reward display element
+    const display = document.createElement('div');
+    display.id = 'big-reward-display';
+    display.className = 'big-reward';
+
+    // Determine styling class based on bonuses
+    if (bonuses.isPersonalBest) {
+        display.classList.add('personal-best');
+    } else if (bonuses.isViral) {
+        display.classList.add('viral');
+    } else if (bonuses.wpmBonus) {
+        display.classList.add('speed-bonus');
+    } else if (bonuses.isPerfect) {
+        display.classList.add('perfect');
+    }
+
+    // Build content
+    let html = '<div class="reward-content">';
+
+    // Main coin display
+    html += `<div class="reward-coins">
+        <span class="coin-icon">₿</span>
+        <span class="coin-amount">${formatNumber(coins)}</span>
+    </div>`;
+
+    // Bonus tags
+    html += '<div class="reward-bonuses">';
+    if (bonuses.isPersonalBest) {
+        html += '<span class="bonus-tag record">🏆 NEW RECORD!</span>';
+    }
+    if (bonuses.isViral) {
+        html += `<span class="bonus-tag viral">🔥 ${bonuses.viralName}</span>`;
+    }
+    if (bonuses.wpmBonus) {
+        html += `<span class="bonus-tag wpm">⚡ ${bonuses.wpmBonus}</span>`;
+    }
+    if (bonuses.isPerfect) {
+        html += '<span class="bonus-tag perfect">✨ PERFECT</span>';
+    }
+    html += '</div>';
+
+    // Stats row
+    html += `<div class="reward-stats">
+        <span class="stat"><span class="label">WPM</span> <span class="value">${bonuses.wpm}</span></span>
+        <span class="stat"><span class="label">Followers</span> <span class="value">+${followers}</span></span>
+        ${idleSeconds > 0 ? `<span class="stat idle"><span class="label">=</span> <span class="value">${idleSeconds}s idle</span></span>` : ''}
+    </div>`;
+
+    html += '</div>';
+    display.innerHTML = html;
+
+    // Add to DOM
+    document.body.appendChild(display);
+
+    // Trigger animation
+    requestAnimationFrame(() => {
+        display.classList.add('show');
+    });
+
+    // Remove after animation
+    setTimeout(() => {
+        display.classList.add('hide');
+        setTimeout(() => display.remove(), 300);
+    }, bonuses.isPersonalBest ? 2000 : 1200);
 }
 
 /**

@@ -26,13 +26,58 @@
 
 #game-title {
     font-family: var(--font-display);
-    font-size: 1.3rem;
-    font-weight: 800;
-    color: var(--text-primary);
-    letter-spacing: -0.02em;
+    font-size: 1.6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #00d4ff 0%, #1d9bf0 25%, #a855f7 60%, #ff6b9d 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.02em;
     white-space: nowrap;
-    text-shadow: 0 0 20px rgba(29, 155, 240, 0.3);
     justify-self: start;
+    position: relative;
+    text-transform: uppercase;
+    animation: title-gradient 4s ease infinite;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#game-logo {
+    font-size: 1.8rem;
+    -webkit-text-fill-color: initial;
+    background: none;
+    filter: drop-shadow(0 0 8px rgba(139, 69, 19, 0.6));
+    animation: logo-bounce 2s ease-in-out infinite;
+}
+
+@keyframes logo-bounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-3px) rotate(-5deg); }
+    75% { transform: translateY(-3px) rotate(5deg); }
+}
+
+#game-title::after {
+    content: '';
+    position: absolute;
+    left: 32px;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #00d4ff 0%, #1d9bf0 25%, #a855f7 60%, #ff6b9d 100%);
+    background-size: 200% 200%;
+    filter: blur(10px);
+    opacity: 0.5;
+    animation: title-gradient 4s ease infinite;
+    z-index: -1;
+    border-radius: 4px;
+}
+
+@keyframes title-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .stat-group {
@@ -164,25 +209,62 @@
 }
 
 .icon-btn {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: var(--radius-full);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    transition: all var(--transition-fast);
-    font-size: var(--font-size-sm);
+    background: transparent;
+    border: none;
+    transition: all 0.2s ease;
+    font-size: 1.1rem;
     cursor: pointer;
     flex-shrink: 0;
+    color: var(--text-secondary);
+    position: relative;
+}
+
+.icon-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius-full);
+    background: var(--x-blue);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease;
 }
 
 .icon-btn:hover {
-    background: var(--bg-hover);
-    border-color: var(--x-blue);
-    transform: scale(1.05);
+    color: var(--x-blue);
 }
+
+.icon-btn:hover::before {
+    opacity: 0.1;
+    transform: scale(1);
+}
+
+.icon-btn:active::before {
+    opacity: 0.2;
+    transform: scale(0.95);
+}
+
+/* Individual icon colors on hover */
+#stats-btn:hover { color: #1d9bf0; }
+#stats-btn:hover::before { background: #1d9bf0; }
+
+#achievements-btn:hover { color: #ffd700; }
+#achievements-btn:hover::before { background: #ffd700; }
+
+#sound-toggle:hover { color: #00ba7c; }
+#sound-toggle:hover::before { background: #00ba7c; }
+
+#save-btn:hover { color: #a855f7; }
+#save-btn:hover::before { background: #a855f7; }
+
+#settings-btn:hover { color: #6b7280; }
+#settings-btn:hover::before { background: #6b7280; }
 
 /* ==================== Main Game Area ==================== */
 #game-area {
@@ -568,14 +650,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: var(--spacing-md);
     position: relative;
     overflow-y: auto;
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-lg);
 }
 
 /* ==================== Player Rank Display ==================== */
@@ -1155,15 +1237,14 @@
 }
 
 #balloon-visual {
-    font-size: 40px;
-    transition: transform 0.3s ease, filter 0.3s ease;
+    font-size: 35px;
+    transition: font-size 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.3s ease, filter 0.3s ease;
     filter: drop-shadow(0 0 5px rgba(255, 100, 100, 0.3));
     /* Size will be controlled by JS based on progress */
 }
 
 #balloon-container.inflating #balloon-visual {
     animation: balloon-wobble 1s ease-in-out infinite;
-    transition: font-size 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 #balloon-container.inflating.stage-2 #balloon-visual {
@@ -2181,6 +2262,16 @@
     margin-top: var(--spacing-xs);
 }
 
+.setting-item .btn.active {
+    background: var(--x-blue);
+    color: white;
+}
+
+.setting-item .toggle-group {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
 /* ==================== Tooltips ==================== */
 /* Simple tooltips for header stats - appear below */
 .stat[data-tooltip] {
@@ -2872,4 +2963,239 @@ body.bonus-mode-active #big-coin-value {
 #modal-content:has(.stats-panel) {
     max-width: 750px;
     padding: var(--spacing-xl);
+}
+
+/* ==================== Big Reward Display ==================== */
+/* Dramatic reward popup positioned to the right of typing panel */
+.big-reward {
+    position: fixed;
+    top: 50%;
+    right: 40px;
+    transform: translateY(-50%) translateX(30px) scale(0.5);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.big-reward.show {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0) scale(1);
+}
+
+.big-reward.hide {
+    opacity: 0;
+    transform: translateY(-50%) translateX(30px) scale(0.8);
+}
+
+/* On smaller screens, position above the typing area */
+@media (max-width: 1400px) {
+    .big-reward {
+        top: 120px;
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px) scale(0.5);
+    }
+
+    .big-reward.show {
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+
+    .big-reward.hide {
+        transform: translateX(-50%) translateY(-20px) scale(0.8);
+    }
+}
+
+.reward-content {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 30, 0.95));
+    border: 3px solid var(--success-green);
+    border-radius: var(--radius-xl);
+    padding: 32px 48px;
+    box-shadow:
+        0 0 60px rgba(0, 186, 124, 0.4),
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        inset 0 0 30px rgba(0, 186, 124, 0.1);
+    text-align: center;
+    min-width: 320px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* Variants */
+.big-reward.personal-best .reward-content {
+    border-color: var(--x-premium-gold);
+    box-shadow:
+        0 0 80px rgba(255, 215, 0, 0.5),
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        inset 0 0 40px rgba(255, 215, 0, 0.15);
+    animation: reward-glow-gold 0.5s ease-out;
+}
+
+.big-reward.viral .reward-content {
+    border-color: var(--accent-coral);
+    box-shadow:
+        0 0 80px rgba(255, 107, 107, 0.5),
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        inset 0 0 40px rgba(255, 107, 107, 0.15);
+}
+
+.big-reward.speed-bonus .reward-content {
+    border-color: var(--x-blue);
+    box-shadow:
+        0 0 60px rgba(29, 155, 240, 0.4),
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        inset 0 0 30px rgba(29, 155, 240, 0.1);
+}
+
+.big-reward.perfect .reward-content {
+    border-color: var(--highlight-yellow);
+    box-shadow:
+        0 0 60px rgba(255, 230, 109, 0.4),
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        inset 0 0 30px rgba(255, 230, 109, 0.1);
+}
+
+@keyframes reward-glow-gold {
+    0% { box-shadow: 0 0 100px rgba(255, 215, 0, 0.8), 0 20px 60px rgba(0, 0, 0, 0.6); }
+    100% { box-shadow: 0 0 80px rgba(255, 215, 0, 0.5), 0 20px 60px rgba(0, 0, 0, 0.6); }
+}
+
+/* Main coin display */
+.reward-coins {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.reward-coins .coin-icon {
+    font-size: 48px;
+    color: var(--x-premium-gold);
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.6));
+    animation: coin-bounce 0.4s ease-out;
+}
+
+.reward-coins .coin-amount {
+    font-family: var(--font-mono);
+    font-size: 56px;
+    font-weight: 900;
+    color: var(--success-green);
+    text-shadow: 0 0 30px rgba(0, 186, 124, 0.5);
+    animation: number-pop 0.4s ease-out;
+}
+
+.big-reward.personal-best .coin-amount {
+    color: var(--x-premium-gold);
+    text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+.big-reward.viral .coin-amount {
+    color: var(--accent-coral);
+    text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+}
+
+@keyframes coin-bounce {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+@keyframes number-pop {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Bonus tags */
+.reward-bonuses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.bonus-tag {
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: tag-slide-in 0.3s ease-out backwards;
+}
+
+.bonus-tag:nth-child(1) { animation-delay: 0.1s; }
+.bonus-tag:nth-child(2) { animation-delay: 0.15s; }
+.bonus-tag:nth-child(3) { animation-delay: 0.2s; }
+.bonus-tag:nth-child(4) { animation-delay: 0.25s; }
+
+@keyframes tag-slide-in {
+    0% { transform: translateY(-10px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+.bonus-tag.record {
+    background: rgba(255, 215, 0, 0.2);
+    color: var(--x-premium-gold);
+    border: 1px solid var(--x-premium-gold);
+}
+
+.bonus-tag.viral {
+    background: rgba(255, 107, 107, 0.2);
+    color: var(--accent-coral);
+    border: 1px solid var(--accent-coral);
+}
+
+.bonus-tag.wpm {
+    background: rgba(29, 155, 240, 0.2);
+    color: var(--x-blue);
+    border: 1px solid var(--x-blue);
+}
+
+.bonus-tag.perfect {
+    background: rgba(255, 230, 109, 0.2);
+    color: var(--highlight-yellow);
+    border: 1px solid var(--highlight-yellow);
+}
+
+/* Stats row */
+.reward-stats {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    padding-top: 16px;
+    margin-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reward-stats .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.reward-stats .label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.reward-stats .value {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.reward-stats .stat.idle {
+    padding-left: 24px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reward-stats .stat.idle .value {
+    color: var(--x-blue);
 }

@@ -38,17 +38,26 @@ const initialState = {
 
     // Bots owned (keyed by bot ID)
     bots: {
+        // Tier 1: Early game
         replyGuy: 0,
+        lurker: 0,
         burnerAccount: 0,
         shitposter: 0,
+        // Tier 2: Mid game
+        memeLord: 0,
         contentCreator: 0,
         blueCheck: 0,
+        // Tier 3: Late game
         influencer: 0,
-        newsAccount: 0,
+        cryptoBro: 0,
         grokAI: 0,
+        // Tier 4: End game
         botFarm: 0,
         elonsAlt: 0,
-        mediaEmpire: 0
+        mediaEmpire: 0,
+        // Tier 5: Infinite game
+        digitalGod: 0,
+        realityWarper: 0
     },
 
     // Upgrades purchased (keyed by upgrade ID)
@@ -281,20 +290,30 @@ export function recalculateDerived() {
 /**
  * Get bot data definitions (coins per second)
  * These values must match the BOTS in data/upgrades.js
+ * Cookie Clicker style scaling: consistent 1.15x cost mult, ~10x cost/8x CPS per tier
  */
 function getBotData() {
     return {
-        replyGuy: { cps: 0.2 },
-        burnerAccount: { cps: 1 },
-        shitposter: { cps: 6 },
-        contentCreator: { cps: 25 },
-        blueCheck: { cps: 100 },
-        influencer: { cps: 400 },
-        newsAccount: { cps: 1500 },
-        grokAI: { cps: 6000 },
-        botFarm: { cps: 30000 },
-        elonsAlt: { cps: 150000 },
-        mediaEmpire: { cps: 1500000 }
+        // Tier 1: Early game
+        replyGuy: { cps: 0.1 },
+        lurker: { cps: 1 },
+        burnerAccount: { cps: 8 },
+        shitposter: { cps: 47 },
+        // Tier 2: Mid game
+        memeLord: { cps: 260 },
+        contentCreator: { cps: 1400 },
+        blueCheck: { cps: 7800 },
+        // Tier 3: Late game
+        influencer: { cps: 44000 },
+        cryptoBro: { cps: 260000 },
+        grokAI: { cps: 1600000 },
+        // Tier 4: End game
+        botFarm: { cps: 10000000 },
+        elonsAlt: { cps: 65000000 },
+        mediaEmpire: { cps: 430000000 },
+        // Tier 5: Infinite game
+        digitalGod: { cps: 2900000000 },
+        realityWarper: { cps: 21000000000 }
     };
 }
 
@@ -435,7 +454,18 @@ export function resetState(keepPermanent = false) {
  * Load state from saved data
  */
 export function loadState(savedState) {
-    state = { ...initialState, ...savedState };
+    // Deep merge bots to ensure new bots are initialized
+    const mergedBots = { ...initialState.bots, ...(savedState.bots || {}) };
+
+    // Deep merge upgrades to ensure new upgrades don't break
+    const mergedUpgrades = { ...(savedState.upgrades || {}) };
+
+    state = {
+        ...initialState,
+        ...savedState,
+        bots: mergedBots,
+        upgrades: mergedUpgrades
+    };
     recalculateDerived();
     notifySubscribers(state, state);
 }

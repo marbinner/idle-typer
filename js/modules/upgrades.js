@@ -111,8 +111,8 @@ function renderBots() {
             `;
         }
 
-        const totalCPS = Math.round(bot.cps * owned * 10) / 10; // Round to 1 decimal
-        const cpsDisplay = bot.cps >= 1 ? Math.round(bot.cps) : bot.cps.toFixed(1);
+        const totalCPS = bot.cps * owned;
+        const cpsDisplay = formatNumber(bot.cps, 1);
 
         return `
             <div class="upgrade-item ${canAfford ? 'affordable' : ''}"
@@ -121,7 +121,7 @@ function renderBots() {
                 <div class="upgrade-info">
                     <div class="upgrade-name">${bot.name} ${owned > 0 ? `<span class="owned-badge">×${owned}</span>` : ''}</div>
                     <div class="upgrade-desc">${bot.description}</div>
-                    ${owned > 0 ? `<div class="current-gen">Generating: <span class="gen-value">+${formatNumber(totalCPS)}/s</span></div>` : ''}
+                    ${owned > 0 ? `<div class="current-gen">Generating: <span class="gen-value">+${formatNumber(totalCPS, 1)}/s</span></div>` : ''}
                 </div>
                 <div class="upgrade-right">
                     <div class="buy-gain">
@@ -551,16 +551,42 @@ function showMessage(message) {
 /**
  * Format number for display - handles floating point precision
  */
-function formatNumber(num) {
-    // Round to avoid floating point issues
-    const n = Math.round(num * 100) / 100;
-    if (n < 1000) {
-        // For small numbers, show as integer or with max 1 decimal
-        return Number.isInteger(n) ? n.toString() : n.toFixed(1).replace(/\.0$/, '');
+function formatNumber(num, decimals = 1) {
+    if (num === null || num === undefined || isNaN(num)) return '0';
+
+    const sign = num < 0 ? '-' : '';
+    num = Math.abs(num);
+
+    // Units for each power of 1000
+    const units = [
+        { value: 1e15, suffix: 'Q' },   // Quadrillion
+        { value: 1e12, suffix: 'T' },   // Trillion
+        { value: 1e9, suffix: 'B' },    // Billion
+        { value: 1e6, suffix: 'M' },    // Million
+        { value: 1e3, suffix: 'K' },    // Thousand
+    ];
+
+    // Find the appropriate unit
+    for (const unit of units) {
+        if (num >= unit.value) {
+            const formatted = (num / unit.value).toFixed(decimals);
+            // Remove trailing zeros after decimal point
+            const cleaned = formatted.replace(/\.?0+$/, '');
+            return sign + cleaned + unit.suffix;
+        }
     }
-    if (n < 1000000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
-    if (n < 1000000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-    return (n / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+
+    // For numbers less than 1000
+    if (Number.isInteger(num)) {
+        return sign + num.toString();
+    }
+
+    // For decimal numbers < 1000
+    if (num < 10) {
+        return sign + num.toFixed(decimals).replace(/\.?0+$/, '');
+    }
+
+    return sign + Math.floor(num).toString();
 }
 
 export { renderBots, renderUpgradesList, renderPremium, calculateBotCost };

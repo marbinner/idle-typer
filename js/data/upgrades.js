@@ -1,227 +1,349 @@
 /**
  * Bot and Upgrade Definitions
+ * Balanced like Cookie Clicker: consistent 1.15 cost mult, ~100-200s ROI
+ * Each tier costs ~10x more, produces ~8x more (slight efficiency gain)
  */
 
 // Bot definitions (cps = coins per second)
-// Tuned for engaging progression: ~60-90 second ROI per tier
+// All bots use 1.15 cost multiplier (Cookie Clicker standard)
 export const BOTS = {
+    // ===== TIER 1: EARLY GAME =====
     replyGuy: {
         id: 'replyGuy',
         name: 'Reply Guy',
         icon: '💬',
-        description: '"Great post!" energy',
-        baseCost: 15,          // Very cheap - first purchase in ~30s
-        costMult: 1.12,
-        cps: 0.2,              // 75s ROI
+        description: '"Great post!" on everything',
+        baseCost: 15,
+        costMult: 1.15,
+        cps: 0.1,      // ROI: 150s
         unlockAt: 0
+    },
+    lurker: {
+        id: 'lurker',
+        name: 'Lurker',
+        icon: '👀',
+        description: 'Silent but deadly engagement',
+        baseCost: 100,
+        costMult: 1.15,
+        cps: 1,        // ROI: 100s
+        unlockAt: 50
     },
     burnerAccount: {
         id: 'burnerAccount',
         name: 'Burner Account',
         icon: '🔥',
         description: 'Anonymous chaos generator',
-        baseCost: 100,
-        costMult: 1.12,
-        cps: 1,                // 100s ROI
-        unlockAt: 50
+        baseCost: 1100,
+        costMult: 1.15,
+        cps: 8,        // ROI: 137s
+        unlockAt: 500
     },
     shitposter: {
         id: 'shitposter',
         name: 'Shitposter',
         icon: '💩',
         description: 'Low effort, high volume',
-        baseCost: 500,
-        costMult: 1.11,
-        cps: 6,                // 83s ROI
-        unlockAt: 200
+        baseCost: 12000,
+        costMult: 1.15,
+        cps: 47,       // ROI: 255s
+        unlockAt: 5000
+    },
+
+    // ===== TIER 2: MID GAME =====
+    memeLord: {
+        id: 'memeLord',
+        name: 'Meme Lord',
+        icon: '🐸',
+        description: 'Pepe enthusiast',
+        baseCost: 130000,
+        costMult: 1.15,
+        cps: 260,      // ROI: 500s
+        unlockAt: 50000
     },
     contentCreator: {
         id: 'contentCreator',
         name: 'Content Creator',
         icon: '📱',
         description: 'Consistent daily content',
-        baseCost: 2000,
-        costMult: 1.10,
-        cps: 25,               // 80s ROI
-        unlockAt: 1000
+        baseCost: 1400000,
+        costMult: 1.15,
+        cps: 1400,     // ROI: 1000s
+        unlockAt: 500000
     },
     blueCheck: {
         id: 'blueCheck',
         name: 'Blue Check',
         icon: '✓',
-        description: 'X Premium verified account',
-        baseCost: 8000,
-        costMult: 1.09,
-        cps: 100,              // 80s ROI
-        unlockAt: 5000
+        description: '$8/month premium account',
+        baseCost: 20000000,
+        costMult: 1.15,
+        cps: 7800,     // ROI: 2564s
+        unlockAt: 5000000
     },
+
+    // ===== TIER 3: LATE GAME =====
     influencer: {
         id: 'influencer',
         name: 'Influencer',
         icon: '🌟',
         description: '500K+ followers',
-        baseCost: 30000,
-        costMult: 1.08,
-        cps: 400,              // 75s ROI
-        unlockAt: 20000
+        baseCost: 330000000,
+        costMult: 1.15,
+        cps: 44000,    // ROI: 7500s
+        unlockAt: 100000000
     },
-    newsAccount: {
-        id: 'newsAccount',
-        name: 'News Account',
-        icon: '📰',
-        description: 'Breaking news 24/7',
-        baseCost: 100000,
-        costMult: 1.07,
-        cps: 1500,             // 67s ROI
-        unlockAt: 75000
+    cryptoBro: {
+        id: 'cryptoBro',
+        name: 'Crypto Bro',
+        icon: '📈',
+        description: 'WAGMI energy',
+        baseCost: 5100000000,
+        costMult: 1.15,
+        cps: 260000,   // ROI: 19615s
+        unlockAt: 1000000000
     },
     grokAI: {
         id: 'grokAI',
         name: 'Grok AI',
         icon: '🤖',
         description: 'AI-generated hot takes',
-        baseCost: 400000,
-        costMult: 1.06,
-        cps: 6000,             // 67s ROI
-        unlockAt: 300000
+        baseCost: 75000000000,
+        costMult: 1.15,
+        cps: 1600000,  // ROI: 46875s
+        unlockAt: 10000000000
     },
+
+    // ===== TIER 4: END GAME =====
     botFarm: {
         id: 'botFarm',
         name: 'Bot Farm',
         icon: '🏭',
         description: 'Industrial scale posting',
-        baseCost: 2000000,
-        costMult: 1.05,
-        cps: 30000,            // 67s ROI
-        unlockAt: 1500000
+        baseCost: 1000000000000,
+        costMult: 1.15,
+        cps: 10000000,
+        unlockAt: 100000000000
     },
     elonsAlt: {
         id: 'elonsAlt',
         name: "Elon's Alt",
         icon: '🚀',
         description: 'Main character energy',
-        baseCost: 10000000,
-        costMult: 1.04,
-        cps: 150000,           // 67s ROI
-        unlockAt: 8000000
+        baseCost: 14000000000000,
+        costMult: 1.15,
+        cps: 65000000,
+        unlockAt: 1000000000000
     },
     mediaEmpire: {
         id: 'mediaEmpire',
         name: 'Media Empire',
         icon: '🏰',
-        description: 'You are the algorithm',
-        baseCost: 100000000,
-        costMult: 1.03,
-        cps: 1500000,          // 67s ROI
-        unlockAt: 50000000
+        description: 'You own the algorithm',
+        baseCost: 170000000000000,
+        costMult: 1.15,
+        cps: 430000000,
+        unlockAt: 10000000000000
+    },
+
+    // ===== TIER 5: INFINITE GAME =====
+    digitalGod: {
+        id: 'digitalGod',
+        name: 'Digital God',
+        icon: '👁️',
+        description: 'Omniscient social presence',
+        baseCost: 2100000000000000,
+        costMult: 1.15,
+        cps: 2900000000,
+        unlockAt: 100000000000000
+    },
+    realityWarper: {
+        id: 'realityWarper',
+        name: 'Reality Warper',
+        icon: '✨',
+        description: 'Your posts reshape existence',
+        baseCost: 26000000000000000,
+        costMult: 1.15,
+        cps: 21000000000,
+        unlockAt: 1000000000000000
     }
 };
 
-// Upgrade definitions
+// Upgrade definitions - multipliers and bonuses that stack
+// Using consistent 1.15 cost multiplier where appropriate
 export const UPGRADES = {
+    // ===== TIER 1: EARLY GAME (unlock with first bots) =====
+    typingMastery: {
+        id: 'typingMastery',
+        name: 'Typing Mastery',
+        icon: '⌨️',
+        description: '+5% coins per typed post',
+        baseCost: 100,
+        costMult: 1.15,
+        maxLevel: 50,
+        unlockAt: 0,
+        effect: (level) => 1 + level * 0.05
+    },
+    betterBots: {
+        id: 'betterBots',
+        name: 'Better Bots',
+        icon: '🔧',
+        description: '+5% all bot output',
+        baseCost: 500,
+        costMult: 1.15,
+        maxLevel: 100,
+        unlockAt: 100,
+        effect: (level) => 1 + level * 0.05
+    },
+    goldenChance: {
+        id: 'goldenChance',
+        name: 'Golden Chance',
+        icon: '🪙',
+        description: '+2% golden character spawn rate',
+        baseCost: 1000,
+        costMult: 1.15,
+        maxLevel: 25,
+        unlockAt: 500,
+        effect: (level) => level * 0.02
+    },
+
+    // ===== TIER 2: MID GAME (unlock with 2nd tier bots) =====
     viralPotential: {
         id: 'viralPotential',
         name: 'Viral Potential',
-        icon: '📈',
-        description: '+10% followers per post',
-        baseCost: 100,
-        costMult: 1.5,
-        maxLevel: 50,
-        unlockAt: 0,
-        effect: (level) => {
-            // Applied in typing.js calculations
-        }
+        icon: '📊',
+        description: '+1% viral chance',
+        baseCost: 10000,
+        costMult: 1.15,
+        maxLevel: 20,
+        unlockAt: 5000,
+        effect: (level) => level * 0.01
     },
-    engagementBait: {
-        id: 'engagementBait',
-        name: 'Engagement Bait',
-        icon: '🎣',
-        description: '+5% impressions per post',
-        baseCost: 200,
-        costMult: 1.5,
+    charisma: {
+        id: 'charisma',
+        name: 'Charisma',
+        icon: '😎',
+        description: '+10% followers per post',
+        baseCost: 25000,
+        costMult: 1.15,
         maxLevel: 50,
-        unlockAt: 500,
-        effect: (level) => {
-            // Applied in typing.js calculations
-        }
+        unlockAt: 10000,
+        effect: (level) => 1 + level * 0.1
+    },
+    balloonBoost: {
+        id: 'balloonBoost',
+        name: 'Balloon Boost',
+        icon: '🎈',
+        description: '+10% balloon pop reward',
+        baseCost: 50000,
+        costMult: 1.15,
+        maxLevel: 50,
+        unlockAt: 25000,
+        effect: (level) => 1 + level * 0.1
+    },
+    synergy: {
+        id: 'synergy',
+        name: 'Bot Synergy',
+        icon: '🔗',
+        description: '+1% CPS per bot type owned',
+        baseCost: 100000,
+        costMult: 1.15,
+        maxLevel: 50,
+        unlockAt: 50000,
+        effect: (level) => 1 + level * 0.01
+    },
+
+    // ===== TIER 3: LATE GAME =====
+    globalBoost: {
+        id: 'globalBoost',
+        name: 'Global Boost',
+        icon: '🌍',
+        description: '+2% all coin earnings',
+        baseCost: 1000000,
+        costMult: 1.15,
+        maxLevel: 100,
+        unlockAt: 500000,
+        effect: (level) => 1 + level * 0.02
+    },
+    goldenValue: {
+        id: 'goldenValue',
+        name: 'Golden Value',
+        icon: '💰',
+        description: '+15% golden character bonus',
+        baseCost: 5000000,
+        costMult: 1.15,
+        maxLevel: 40,
+        unlockAt: 2500000,
+        effect: (level) => 1 + level * 0.15
     },
     algorithmHack: {
         id: 'algorithmHack',
         name: 'Algorithm Hack',
-        icon: '⚡',
-        description: '+2% viral chance',
-        baseCost: 1000,
-        costMult: 2,
+        icon: '🧠',
+        description: '+8% viral multiplier',
+        baseCost: 25000000,
+        costMult: 1.15,
+        maxLevel: 40,
+        unlockAt: 10000000,
+        effect: (level) => 1 + level * 0.08
+    },
+
+    // ===== TIER 4: END GAME =====
+    celebrity: {
+        id: 'celebrity',
+        name: 'Celebrity Status',
+        icon: '⭐',
+        description: '+15% follower multiplier effect',
+        baseCost: 500000000,
+        costMult: 1.15,
         maxLevel: 25,
-        unlockAt: 2000,
-        effect: (level) => {
-            // Applied in typing.js viral check
-        }
+        unlockAt: 100000000,
+        effect: (level) => 1 + level * 0.15
     },
-    botEfficiency: {
-        id: 'botEfficiency',
-        name: 'Bot Efficiency',
-        icon: '🔧',
-        description: '+10% bot output',
-        baseCost: 5000,
-        costMult: 1.8,
+    exponentialGrowth: {
+        id: 'exponentialGrowth',
+        name: 'Exponential Growth',
+        icon: '📈',
+        description: '+1% multiplicative bonus',
+        baseCost: 5000000000,
+        costMult: 1.15,
         maxLevel: 50,
-        unlockAt: 10000,
-        effect: (level) => {
-            // Applied in idle.js calculations
-        }
+        unlockAt: 1000000000,
+        effect: (level) => Math.pow(1.01, level)
     },
-    typingSpeed: {
-        id: 'typingSpeed',
-        name: 'Typing Speed',
-        icon: '⌨️',
-        description: '+5% combo multiplier cap',
-        baseCost: 2500,
-        costMult: 2,
-        maxLevel: 20,
-        unlockAt: 5000,
-        effect: (level) => {
-            // Applied in typing.js calculations
-        }
+    cosmicPower: {
+        id: 'cosmicPower',
+        name: 'Cosmic Power',
+        icon: '🌟',
+        description: '+5% all multipliers',
+        baseCost: 100000000000,
+        costMult: 1.15,
+        maxLevel: 40,
+        unlockAt: 10000000000,
+        effect: (level) => 1 + level * 0.05
     },
-    comboMaster: {
-        id: 'comboMaster',
-        name: 'Combo Master',
-        icon: '🔥',
-        description: 'Combo decays slower',
-        baseCost: 10000,
-        costMult: 2.5,
+
+    // ===== TIER 5: INFINITE SCALING =====
+    ultimatePoster: {
+        id: 'ultimatePoster',
+        name: 'Ultimate Poster',
+        icon: '👑',
+        description: 'Double all earnings',
+        baseCost: 10000000000000,
+        costMult: 2.0,
         maxLevel: 10,
-        unlockAt: 25000,
-        effect: (level) => {
-            // Applied in typing.js
-        }
+        unlockAt: 1000000000000,
+        effect: (level) => Math.pow(2, level)
     },
-    offlineGains: {
-        id: 'offlineGains',
-        name: 'Offline Gains',
-        icon: '💤',
-        description: '+10% offline efficiency',
-        baseCost: 50000,
-        costMult: 3,
-        maxLevel: 10,
-        unlockAt: 100000,
-        effect: (level) => {
-            // Applied in app.js offline calculation
-        }
-    },
-    luckyAlgorithm: {
-        id: 'luckyAlgorithm',
-        name: 'Lucky Algorithm',
-        icon: '🍀',
-        description: '+1% golden character chance',
-        baseCost: 25000,
-        costMult: 2.5,
-        maxLevel: 20,
-        unlockAt: 50000,
-        effect: (level) => {
-            // Applied in typing.js
-        }
+    eternityBoost: {
+        id: 'eternityBoost',
+        name: 'Eternity Boost',
+        icon: '♾️',
+        description: '+1% all earnings (infinite)',
+        baseCost: 100000000000000,
+        costMult: 1.15,
+        maxLevel: Infinity,
+        unlockAt: 10000000000000,
+        effect: (level) => 1 + level * 0.01
     }
 };
 
@@ -240,15 +362,33 @@ export function getUpgrade(upgradeId) {
 }
 
 /**
- * Get all unlocked bots based on lifetime followers
+ * Get all unlocked bots based on lifetime coins
  */
-export function getUnlockedBots(lifetimeFollowers) {
-    return Object.values(BOTS).filter(bot => lifetimeFollowers >= bot.unlockAt);
+export function getUnlockedBots(lifetimeCoins) {
+    return Object.values(BOTS).filter(bot => lifetimeCoins >= bot.unlockAt);
 }
 
 /**
- * Get all unlocked upgrades based on lifetime followers
+ * Get all unlocked upgrades based on lifetime coins
  */
-export function getUnlockedUpgrades(lifetimeFollowers) {
-    return Object.values(UPGRADES).filter(upgrade => lifetimeFollowers >= upgrade.unlockAt);
+export function getUnlockedUpgrades(lifetimeCoins) {
+    return Object.values(UPGRADES).filter(upgrade => lifetimeCoins >= upgrade.unlockAt);
+}
+
+/**
+ * Calculate upgrade cost at given level
+ */
+export function getUpgradeCost(upgradeId, currentLevel) {
+    const upgrade = UPGRADES[upgradeId];
+    if (!upgrade) return Infinity;
+    return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMult, currentLevel));
+}
+
+/**
+ * Calculate bot cost at given count
+ */
+export function getBotCost(botId, currentCount) {
+    const bot = BOTS[botId];
+    if (!bot) return Infinity;
+    return Math.floor(bot.baseCost * Math.pow(bot.costMult, currentCount));
 }
