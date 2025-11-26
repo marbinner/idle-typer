@@ -4,6 +4,7 @@
  */
 
 import * as State from './state.js';
+import { getResetting } from './state.js';
 import { initTyping, loadNewPost } from './modules/typing.js';
 import { initUpgrades, renderUpgrades } from './modules/upgrades.js';
 import { initUI, updateUI } from './modules/ui.js';
@@ -186,6 +187,11 @@ function handleVisibilityChange() {
  * Handle page unload - save game before leaving
  */
 function handleBeforeUnload() {
+    // Don't save if we're resetting the game
+    if (getResetting()) {
+        console.log('Resetting - skipping autosave on unload');
+        return;
+    }
     // Save game state before unloading
     autoSave();
 }

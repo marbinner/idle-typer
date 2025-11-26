@@ -5,6 +5,8 @@
 
 import * as State from '../state.js';
 import { formatNumber, formatFull } from '../utils.js';
+import { setResetting } from '../state.js';
+import { getPostHistory } from './typing.js';
 
 // DOM Elements cache
 let followersCountEl;
@@ -29,6 +31,9 @@ export function initUI() {
 
     // Set up event listeners
     setupEventListeners();
+
+    // Initialize PFP selector
+    initPFPSelector();
 
     // Initial render
     updateUI();
@@ -87,6 +92,12 @@ function setupEventListeners() {
         }
     };
     window.addEventListener('coins-gained', coinsGainedHandler);
+
+    // View All Posts button
+    const viewAllPostsBtn = document.getElementById('view-all-posts-btn');
+    if (viewAllPostsBtn) {
+        viewAllPostsBtn.addEventListener('click', showAllPostsModal);
+    }
 
     // Listen for follower gain events
     followersGainedHandler = (e) => {
@@ -301,23 +312,120 @@ function showSettingsModal() {
         console.error('Import elements not found:', { importBtn, importFileInput });
     }
 
-    document.getElementById('reset-btn')?.addEventListener('click', async () => {
+    document.getElementById('reset-btn')?.addEventListener('click', () => {
         if (confirm('Are you sure? This will delete ALL progress!')) {
-            // Use save module's reset function
-            const { resetSave } = await import('./save.js');
-            const { clearPostHistory } = await import('./typing.js');
-            const { resetAccumulators } = await import('./idle.js');
-            const { resetStatsHistory } = await import('./stats.js');
-            resetSave();
-            clearPostHistory();
-            resetAccumulators();
-            resetStatsHistory();
+            // Set flag to prevent autosave on unload
+            setResetting(true);
+            // Clear all storage and force hard reload
+            localStorage.clear();
+            sessionStorage.clear();
             // Force reload bypassing cache
-            window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
+            window.location.href = window.location.pathname + '?reset=' + Date.now();
         }
     });
 
     // Close on overlay click
+    overlay.addEventListener('click', handleOverlayClick);
+}
+
+/**
+ * Show all posts modal
+ */
+function showAllPostsModal() {
+    const overlay = document.getElementById('modal-overlay');
+    const content = document.getElementById('modal-content');
+
+    if (!overlay || !content) return;
+
+    const postHistory = getPostHistory();
+    const savedPFP = localStorage.getItem('playerPFP') || '🤡';
+
+    // Format time ago helper
+    const getTimeAgo = (timestamp) => {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        if (seconds < 60) return 'now';
+        if (seconds < 3600) return Math.floor(seconds / 60) + 'm';
+        if (seconds < 86400) return Math.floor(seconds / 3600) + 'h';
+        return Math.floor(seconds / 86400) + 'd';
+    };
+
+    // Format engagement number
+    const formatEngagement = (num) => {
+        if (num < 1000) return num.toString();
+        if (num < 10000) return (num / 1000).toFixed(1) + 'K';
+        return Math.floor(num / 1000) + 'K';
+    };
+
+    let postsHtml = '';
+    if (postHistory.length === 0) {
+        postsHtml = '<div class="history-empty" style="padding: 40px; text-align: center;">No posts yet! Start typing to create posts.</div>';
+    } else {
+        postsHtml = postHistory.map((entry, index) => {
+            const e = entry.engagement || { views: 0, likes: 0, retweets: 0, comments: 0 };
+            const timeAgo = getTimeAgo(entry.timestamp);
+
+            let badges = '';
+            if (entry.isViral) badges += '<span class="viral-badge" style="background: rgba(255, 215, 0, 0.2); color: #ffd700; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px;">🔥 VIRAL</span>';
+            if (entry.accuracy === 100) badges += '<span class="accuracy-badge" style="font-size: 14px;">💯</span>';
+
+            return `
+                <div class="all-posts-item" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+                    <div style="display: flex; gap: 12px;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, var(--x-blue), var(--premium-purple)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">${savedPFP}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
+                                <span style="font-weight: 700;">You</span>
+                                <span style="color: var(--text-secondary);">@player · ${timeAgo}</span>
+                            </div>
+                            ${badges ? `<div style="margin-bottom: 4px;">${badges}</div>` : ''}
+                            <div style="margin-bottom: 8px; word-wrap: break-word;">${entry.text}</div>
+                            <div style="display: flex; gap: 24px; color: var(--text-secondary); font-size: 13px;">
+                                <span>💬 ${formatEngagement(e.comments)}</span>
+                                <span style="color: #00ba7c;">🔄 ${formatEngagement(e.retweets)}</span>
+                                <span style="color: #f91880;">❤️ ${formatEngagement(e.likes)}</span>
+                                <span>👁️ ${formatEngagement(e.views)}</span>
+                            </div>
+                            <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+                                <span>WPM: ${entry.wpm}</span>
+                                <span>ACC: ${entry.accuracy}%</span>
+                                <span style="color: var(--x-premium-gold);">+μ₿${formatNumber(entry.coins)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    content.innerHTML = `
+        <h2 class="modal-title">📋 Your Posts</h2>
+        <div class="modal-body" style="max-height: 60vh; overflow-y: auto; padding: 0;">
+            ${postsHtml}
+        </div>
+        <div class="modal-footer" style="padding: 16px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px; text-align: center;">
+            Showing ${postHistory.length} most recent posts
+        </div>
+        <div class="modal-actions">
+            <button id="close-modal" class="btn btn-primary">Close</button>
+        </div>
+    `;
+
+    overlay.classList.remove('hidden');
+
+    // Helper to close and cleanup
+    const closeModal = () => {
+        overlay.classList.add('hidden');
+        overlay.removeEventListener('click', handleOverlayClick);
+    };
+
+    // Handler for overlay click (close on background click)
+    const handleOverlayClick = (e) => {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    };
+
+    document.getElementById('close-modal')?.addEventListener('click', closeModal);
     overlay.addEventListener('click', handleOverlayClick);
 }
 
@@ -380,6 +488,84 @@ export function showEventMessage(message, type = 'normal') {
         eventText.textContent = message;
         eventText.className = type;
     }
+}
+
+// Available profile pictures
+const PFP_OPTIONS = [
+    '🤡', '😎', '🤓', '😈', '👻',
+    '🦊', '🐸', '🐵', '🦁', '🐺',
+    '🤖', '👽', '💀', '🎭', '🥷',
+    '🧙', '🧛', '🧟', '🦸', '🦹'
+];
+
+/**
+ * Initialize PFP selector
+ */
+export function initPFPSelector() {
+    const avatar = document.getElementById('player-avatar');
+    if (!avatar) return;
+
+    // Load saved PFP
+    const savedPFP = localStorage.getItem('playerPFP') || '🤡';
+    avatar.textContent = savedPFP;
+
+    let pfpModal = null;
+
+    avatar.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        // Toggle modal
+        if (pfpModal) {
+            pfpModal.remove();
+            pfpModal = null;
+            return;
+        }
+
+        // Create modal
+        pfpModal = document.createElement('div');
+        pfpModal.className = 'pfp-modal';
+
+        // Position modal based on avatar location
+        const rect = avatar.getBoundingClientRect();
+        pfpModal.style.position = 'fixed';
+        pfpModal.style.top = (rect.bottom + 8) + 'px';
+        pfpModal.style.left = rect.left + 'px';
+
+        PFP_OPTIONS.forEach(emoji => {
+            const option = document.createElement('div');
+            option.className = 'pfp-option';
+            if (emoji === avatar.textContent) {
+                option.classList.add('selected');
+            }
+            option.textContent = emoji;
+            option.addEventListener('click', (e) => {
+                e.stopPropagation();
+                avatar.textContent = emoji;
+                localStorage.setItem('playerPFP', emoji);
+
+                // Update all tweet avatars in history
+                document.querySelectorAll('.tweet-avatar').forEach(el => {
+                    el.textContent = emoji;
+                });
+
+                pfpModal.remove();
+                pfpModal = null;
+            });
+            pfpModal.appendChild(option);
+        });
+
+        document.body.appendChild(pfpModal);
+
+        // Close on outside click
+        const closeHandler = (e) => {
+            if (pfpModal && !pfpModal.contains(e.target) && e.target !== avatar) {
+                pfpModal.remove();
+                pfpModal = null;
+                document.removeEventListener('click', closeHandler);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeHandler), 0);
+    });
 }
 
 export { showToast, formatNumber };

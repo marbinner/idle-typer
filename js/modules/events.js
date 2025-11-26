@@ -109,6 +109,7 @@ export function initEvents() {
 
 /**
  * Check if a random event should trigger
+ * Events unlock at 75 posts to avoid overwhelming new players
  */
 function checkForRandomEvent() {
     const now = Date.now();
@@ -117,8 +118,8 @@ function checkForRandomEvent() {
     // Don't trigger events too frequently
     if (now - lastEventTime < MIN_EVENT_INTERVAL) return;
 
-    // Only trigger events after some gameplay (at least 10 posts)
-    if (state.totalPosts < 10) return;
+    // Events unlock at 75 posts
+    if (state.totalPosts < 75) return;
 
     // Base 5% chance per check, increases with activity
     const baseChance = 0.05;
@@ -302,6 +303,7 @@ export function triggerEvent(eventId) {
 
 /**
  * Check if floating bonus should spawn
+ * Unlocks at 100 posts (after all other mechanics)
  */
 function checkForFloatingBonus() {
     // Don't spawn if one is already visible or bonus mode is active
@@ -309,8 +311,8 @@ function checkForFloatingBonus() {
 
     const state = State.getState();
 
-    // Need at least 5 posts to start seeing floating bonuses
-    if (state.totalPosts < 5) return;
+    // Floating bonus unlocks at 100 posts
+    if (state.totalPosts < 100) return;
 
     // 30% chance to spawn when checked
     if (Math.random() < 0.30) {

@@ -5,168 +5,181 @@
  */
 
 // Bot definitions (cps = coins per second)
-// Bots use 1.20 cost multiplier (steeper than Cookie Clicker for longer progression)
-// Each bot of the same type gives +1% more CPS (cumulative bonus)
-// Unlock thresholds spaced ~10x apart for meaningful progression milestones
+//
+// SCALING PHILOSOPHY FOR 20-HOUR PROGRESSION:
+// - Tier 1: Fast start, 1.12x cost mult (hours 0-2)
+// - Tier 2: Building momentum, 1.15x cost mult (hours 2-6)
+// - Tier 3: Mid-game grind, 1.17x cost mult (hours 6-11)
+// - Tier 4: Late game, 1.18x cost mult (hours 11-16)
+// - Tier 5: Infinite scaling, 1.20x cost mult (hours 16+)
+//
+// Each tier: ~10x cost increase, ~6-7x CPS increase (slight efficiency gain)
+// Unlock thresholds set to natural progression points
+//
 export const BOTS = {
-    // ===== TIER 1: EARLY GAME =====
+    // ===== TIER 1: EARLY GAME (Hours 0-2) =====
+    // Goal: Get player hooked fast, show the loop works
     replyGuy: {
         id: 'replyGuy',
         name: 'Reply Guy',
-        icon: '💬',
-        description: '"Great post!" on everything',
-        baseCost: 100,
-        costMult: 1.20,
+        icon: '🤓',
+        description: '"Actually..." on every post',
+        baseCost: 25,              // Requires 2 posts (~10 coins each)
+        costMult: 1.12,            // Gentle early scaling
         cps: 0.1,
         unlockAt: 0
     },
     lurker: {
         id: 'lurker',
         name: 'Lurker',
-        icon: '👀',
-        description: 'Silent but deadly engagement',
-        baseCost: 2000,
-        costMult: 1.20,
-        cps: 1,
-        unlockAt: 1000        // ~100 posts to unlock
-    },
-    burnerAccount: {
-        id: 'burnerAccount',
-        name: 'Burner Account',
-        icon: '🔥',
-        description: 'Anonymous chaos generator',
-        baseCost: 200000,
-        costMult: 1.20,
-        cps: 8,
-        unlockAt: 10000       // Need some lurkers working
+        icon: '🫣',
+        description: 'Watches but never posts',
+        baseCost: 100,             // ~1 minute of play
+        costMult: 1.12,
+        cps: 0.8,
+        unlockAt: 50
     },
     shitposter: {
         id: 'shitposter',
         name: 'Shitposter',
-        icon: '💩',
-        description: 'Low effort, high volume',
-        baseCost: 12000,
-        costMult: 1.20,
-        cps: 47,
-        unlockAt: 100000      // Significant early milestone
+        icon: '🤪',
+        description: 'Chaos goblin energy',
+        baseCost: 1100,            // ~5-10 minutes
+        costMult: 1.12,
+        cps: 6,
+        unlockAt: 500
+    },
+    burnerAccount: {
+        id: 'burnerAccount',
+        name: 'Burner Account',
+        icon: '🥸',
+        description: 'Definitely not my main',
+        baseCost: 12000,           // ~20-30 minutes
+        costMult: 1.12,
+        cps: 45,
+        unlockAt: 5000
     },
 
-    // ===== TIER 2: MID GAME =====
+    // ===== TIER 2: MID GAME (Hours 2-6) =====
+    // Goal: Establish idle loop, meaningful choices
     memeLord: {
         id: 'memeLord',
         name: 'Meme Lord',
         icon: '🐸',
-        description: 'Pepe enthusiast',
-        baseCost: 130000,
-        costMult: 1.20,
-        cps: 260,
-        unlockAt: 1000000     // 1M lifetime coins
+        description: 'Based and frog-pilled',
+        baseCost: 130000,          // ~1-1.5 hours
+        costMult: 1.15,
+        cps: 300,
+        unlockAt: 50000
     },
     contentCreator: {
         id: 'contentCreator',
         name: 'Content Creator',
-        icon: '📱',
-        description: 'Consistent daily content',
-        baseCost: 1400000,
-        costMult: 1.20,
-        cps: 1400,
-        unlockAt: 10000000    // 10M lifetime coins
+        icon: '🎬',
+        description: 'Like and subscribe!',
+        baseCost: 1400000,         // ~2-3 hours
+        costMult: 1.15,
+        cps: 2000,
+        unlockAt: 500000
     },
     blueCheck: {
         id: 'blueCheck',
         name: 'Blue Check',
-        icon: '✓',
-        description: '$8/month premium account',
-        baseCost: 20000000,
-        costMult: 1.20,
-        cps: 7800,
-        unlockAt: 100000000   // 100M lifetime coins
+        icon: '💸',
+        description: 'Paid $8 for clout',
+        baseCost: 15000000,        // ~4-5 hours
+        costMult: 1.15,
+        cps: 13000,
+        unlockAt: 5000000
     },
 
-    // ===== TIER 3: LATE GAME =====
+    // ===== TIER 3: LATE GAME (Hours 6-11) =====
+    // Goal: Reward patience, set up for prestige
     influencer: {
         id: 'influencer',
         name: 'Influencer',
-        icon: '🌟',
-        description: '500K+ followers',
-        baseCost: 330000000,
-        costMult: 1.20,
-        cps: 44000,
-        unlockAt: 1000000000  // 1B lifetime coins
+        icon: '🪞',
+        description: 'Ring light enthusiast',
+        baseCost: 160000000,       // ~6-7 hours
+        costMult: 1.17,
+        cps: 85000,
+        unlockAt: 50000000
     },
     cryptoBro: {
         id: 'cryptoBro',
         name: 'Crypto Bro',
-        icon: '📈',
-        description: 'WAGMI energy',
-        baseCost: 5100000000,
-        costMult: 1.20,
-        cps: 260000,
-        unlockAt: 10000000000 // 10B lifetime coins
+        icon: '🦧',
+        description: 'HODL and cope',
+        baseCost: 1700000000,      // ~8-9 hours
+        costMult: 1.17,
+        cps: 550000,
+        unlockAt: 500000000
     },
     grokAI: {
         id: 'grokAI',
         name: 'Grok AI',
-        icon: '🤖',
-        description: 'AI-generated hot takes',
-        baseCost: 75000000000,
-        costMult: 1.20,
-        cps: 1600000,
-        unlockAt: 100000000000 // 100B lifetime coins
+        icon: '🧠',
+        description: 'Hallucinating hot takes',
+        baseCost: 18000000000,     // ~10-11 hours
+        costMult: 1.17,
+        cps: 3500000,
+        unlockAt: 5000000000
     },
 
-    // ===== TIER 4: END GAME =====
+    // ===== TIER 4: END GAME (Hours 11-16) =====
+    // Goal: Big numbers, prestige consideration
     botFarm: {
         id: 'botFarm',
         name: 'Bot Farm',
-        icon: '🏭',
-        description: 'Industrial scale posting',
-        baseCost: 1000000000000,
-        costMult: 1.20,
-        cps: 10000000,
-        unlockAt: 1000000000000 // 1T lifetime coins
+        icon: '🤖',
+        description: 'Beep boop I am human',
+        baseCost: 200000000000,    // ~12-13 hours
+        costMult: 1.18,
+        cps: 22000000,
+        unlockAt: 50000000000
     },
     elonsAlt: {
         id: 'elonsAlt',
         name: "Elon's Alt",
-        icon: '🚀',
-        description: 'Main character energy',
-        baseCost: 14000000000000,
-        costMult: 1.20,
-        cps: 65000000,
-        unlockAt: 10000000000000 // 10T lifetime coins
+        icon: '🤡',
+        description: 'Posts at 3am',
+        baseCost: 2200000000000,   // ~14-15 hours
+        costMult: 1.18,
+        cps: 140000000,
+        unlockAt: 500000000000
     },
     mediaEmpire: {
         id: 'mediaEmpire',
         name: 'Media Empire',
-        icon: '🏰',
-        description: 'You own the algorithm',
-        baseCost: 170000000000000,
-        costMult: 1.20,
-        cps: 430000000,
-        unlockAt: 100000000000000 // 100T lifetime coins
+        icon: '👑',
+        description: 'The algorithm fears you',
+        baseCost: 24000000000000,  // ~16-17 hours
+        costMult: 1.18,
+        cps: 900000000,
+        unlockAt: 5000000000000
     },
 
-    // ===== TIER 5: INFINITE GAME =====
+    // ===== TIER 5: INFINITE GAME (Hours 16+) =====
+    // Goal: Endless scaling for dedicated players
     digitalGod: {
         id: 'digitalGod',
         name: 'Digital God',
-        icon: '👁️',
-        description: 'Omniscient social presence',
-        baseCost: 2100000000000000,
+        icon: '👁️‍🗨️',
+        description: 'I see all your posts',
+        baseCost: 260000000000000,   // ~18-19 hours
         costMult: 1.20,
-        cps: 2900000000,
-        unlockAt: 1000000000000000 // 1 Quadrillion
+        cps: 5500000000,
+        unlockAt: 50000000000000
     },
     realityWarper: {
         id: 'realityWarper',
         name: 'Reality Warper',
-        icon: '✨',
-        description: 'Your posts reshape existence',
-        baseCost: 26000000000000000,
+        icon: '🌀',
+        description: 'Your posts break spacetime',
+        baseCost: 2800000000000000,  // ~20+ hours
         costMult: 1.20,
-        cps: 21000000000,
-        unlockAt: 10000000000000000 // 10 Quadrillion
+        cps: 35000000000,
+        unlockAt: 500000000000000
     }
 };
 
@@ -174,9 +187,8 @@ export const BOTS = {
 // Total CPS = baseCPS * n*(n+1)/2 where n = number of bots owned
 
 // Upgrade definitions - multipliers and bonuses that stack
-// Using consistent 1.15 cost multiplier where appropriate
+// Simplified to core upgrades only for cleaner progression
 export const UPGRADES = {
-    // ===== TIER 1: EARLY GAME (unlock with first bots) =====
     typingMastery: {
         id: 'typingMastery',
         name: 'Typing Mastery',
@@ -184,7 +196,7 @@ export const UPGRADES = {
         description: '+5% coins per typed post',
         baseCost: 500,
         costMult: 1.15,
-        maxLevel: 50,
+        maxLevel: 100,
         unlockAt: 0,
         effect: (level) => 1 + level * 0.05
     },
@@ -195,160 +207,9 @@ export const UPGRADES = {
         description: '+5% all bot output',
         baseCost: 2000,
         costMult: 1.15,
-        maxLevel: 100,
+        maxLevel: 200,
         unlockAt: 1000,
         effect: (level) => 1 + level * 0.05
-    },
-    goldenChance: {
-        id: 'goldenChance',
-        name: 'Golden Chance',
-        icon: '🪙',
-        description: '+2% golden character spawn rate',
-        baseCost: 5000,
-        costMult: 1.15,
-        maxLevel: 25,
-        unlockAt: 2500,
-        effect: (level) => level * 0.02
-    },
-
-    // ===== TIER 2: MID GAME (unlock with 2nd tier bots) =====
-    viralPotential: {
-        id: 'viralPotential',
-        name: 'Viral Potential',
-        icon: '📊',
-        description: '+1% viral chance',
-        baseCost: 15000,
-        costMult: 1.15,
-        maxLevel: 20,
-        unlockAt: 10000,
-        effect: (level) => level * 0.01
-    },
-    charisma: {
-        id: 'charisma',
-        name: 'Charisma',
-        icon: '😎',
-        description: '+10% followers per post',
-        baseCost: 40000,
-        costMult: 1.15,
-        maxLevel: 50,
-        unlockAt: 25000,
-        effect: (level) => 1 + level * 0.1
-    },
-    balloonBoost: {
-        id: 'balloonBoost',
-        name: 'Balloon Boost',
-        icon: '🎈',
-        description: '+10% balloon pop reward',
-        baseCost: 100000,
-        costMult: 1.15,
-        maxLevel: 50,
-        unlockAt: 50000,
-        effect: (level) => 1 + level * 0.1
-    },
-    synergy: {
-        id: 'synergy',
-        name: 'Bot Synergy',
-        icon: '🔗',
-        description: '+1% CPS per bot type owned',
-        baseCost: 250000,
-        costMult: 1.15,
-        maxLevel: 50,
-        unlockAt: 100000,
-        effect: (level) => 1 + level * 0.01
-    },
-
-    // ===== TIER 3: LATE GAME =====
-    globalBoost: {
-        id: 'globalBoost',
-        name: 'Global Boost',
-        icon: '🌍',
-        description: '+2% all coin earnings',
-        baseCost: 1000000,
-        costMult: 1.15,
-        maxLevel: 100,
-        unlockAt: 500000,
-        effect: (level) => 1 + level * 0.02
-    },
-    goldenValue: {
-        id: 'goldenValue',
-        name: 'Golden Value',
-        icon: '💰',
-        description: '+15% golden character bonus',
-        baseCost: 5000000,
-        costMult: 1.15,
-        maxLevel: 40,
-        unlockAt: 2500000,
-        effect: (level) => 1 + level * 0.15
-    },
-    algorithmHack: {
-        id: 'algorithmHack',
-        name: 'Algorithm Hack',
-        icon: '🧠',
-        description: '+8% viral multiplier',
-        baseCost: 25000000,
-        costMult: 1.15,
-        maxLevel: 40,
-        unlockAt: 10000000,
-        effect: (level) => 1 + level * 0.08
-    },
-
-    // ===== TIER 4: END GAME =====
-    celebrity: {
-        id: 'celebrity',
-        name: 'Celebrity Status',
-        icon: '⭐',
-        description: '+15% follower multiplier effect',
-        baseCost: 500000000,
-        costMult: 1.15,
-        maxLevel: 25,
-        unlockAt: 100000000,
-        effect: (level) => 1 + level * 0.15
-    },
-    exponentialGrowth: {
-        id: 'exponentialGrowth',
-        name: 'Exponential Growth',
-        icon: '📈',
-        description: '+1% multiplicative bonus',
-        baseCost: 5000000000,
-        costMult: 1.15,
-        maxLevel: 50,
-        unlockAt: 1000000000,
-        effect: (level) => Math.pow(1.01, level)
-    },
-    cosmicPower: {
-        id: 'cosmicPower',
-        name: 'Cosmic Power',
-        icon: '🌟',
-        description: '+5% all multipliers',
-        baseCost: 100000000000,
-        costMult: 1.15,
-        maxLevel: 40,
-        unlockAt: 10000000000,
-        effect: (level) => 1 + level * 0.05
-    },
-
-    // ===== TIER 5: INFINITE SCALING =====
-    ultimatePoster: {
-        id: 'ultimatePoster',
-        name: 'Ultimate Poster',
-        icon: '👑',
-        description: 'Double all earnings',
-        baseCost: 10000000000000,
-        costMult: 2.0,
-        maxLevel: 10,
-        unlockAt: 1000000000000,
-        effect: (level) => Math.pow(2, level)
-    },
-    eternityBoost: {
-        id: 'eternityBoost',
-        name: 'Eternity Boost',
-        icon: '♾️',
-        description: '+1% all earnings (infinite)',
-        baseCost: 100000000000000,
-        costMult: 1.15,
-        maxLevel: Infinity,
-        unlockAt: 10000000000000,
-        effect: (level) => 1 + level * 0.01
     }
 };
 

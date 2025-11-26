@@ -151,14 +151,30 @@ function renderBots() {
         const nextBotCPS = bot.cps * (owned + 1);
         const cpsDisplay = formatNumber(nextBotCPS, 1);
 
+        // Calculate quantity tier for visual effects
+        let quantityTier = 0;
+        if (owned >= 100) quantityTier = 6;
+        else if (owned >= 50) quantityTier = 5;
+        else if (owned >= 25) quantityTier = 4;
+        else if (owned >= 10) quantityTier = 3;
+        else if (owned >= 5) quantityTier = 2;
+        else if (owned >= 1) quantityTier = 1;
+
+        // Progress to next tier (for the quantity bar)
+        const tierThresholds = [1, 5, 10, 25, 50, 100];
+        const currentThreshold = quantityTier > 0 ? tierThresholds[quantityTier - 1] : 0;
+        const nextThreshold = tierThresholds[quantityTier] || 100;
+        const tierProgress = quantityTier >= 6 ? 100 : ((owned - currentThreshold) / (nextThreshold - currentThreshold)) * 100;
+
         return `
-            <div class="upgrade-item ${canAfford ? 'affordable' : ''}"
-                 data-type="bot" data-id="${id}">
-                <div class="upgrade-icon">${bot.icon}</div>
+            <div class="upgrade-item ${canAfford ? 'affordable' : ''} quantity-tier-${quantityTier}"
+                 data-type="bot" data-id="${id}" data-owned="${owned}">
+                <div class="upgrade-icon">${bot.icon}${owned > 0 ? `<span class="icon-quantity">${owned}</span>` : ''}</div>
                 <div class="upgrade-info">
-                    <div class="upgrade-name">${bot.name} ${owned > 0 ? `<span class="owned-badge">×${owned}</span>` : ''}</div>
+                    <div class="upgrade-name">${bot.name} ${owned > 0 ? `<span class="owned-badge tier-${quantityTier}">×${owned}</span>` : ''}</div>
                     <div class="upgrade-desc">${bot.description}</div>
                     ${owned > 0 ? `<div class="current-gen">Generating: <span class="gen-value">+${formatNumber(totalCPS, 1)}/s</span></div>` : ''}
+                    ${owned > 0 ? `<div class="quantity-bar"><div class="quantity-fill" style="width: ${tierProgress}%"></div></div>` : ''}
                 </div>
                 <div class="upgrade-right">
                     <div class="buy-gain">
@@ -575,6 +591,13 @@ function updateAffordability() {
 
         item.classList.toggle('affordable', canAfford);
         if (canAfford) hasAffordableBot = true;
+
+        // Update cost text color
+        const costEl = item.querySelector('.upgrade-cost');
+        if (costEl && isUnlocked) {
+            costEl.classList.toggle('can-afford', canAfford);
+            costEl.classList.toggle('cant-afford', !canAfford);
+        }
     });
 
     // Update upgrades
@@ -592,6 +615,13 @@ function updateAffordability() {
 
         item.classList.toggle('affordable', canAfford);
         if (canAfford) hasAffordableUpgrade = true;
+
+        // Update cost text color
+        const costEl = item.querySelector('.upgrade-cost');
+        if (costEl && isUnlocked && !isMaxed) {
+            costEl.classList.toggle('can-afford', canAfford);
+            costEl.classList.toggle('cant-afford', !canAfford);
+        }
     });
 
     // Check premium affordability
@@ -602,8 +632,20 @@ function updateAffordability() {
     ];
 
     premiumItems.forEach(item => {
-        if (!item.owned && item.requires && state.coins >= item.cost) {
+        const canAfford = !item.owned && item.requires && state.coins >= item.cost;
+        if (canAfford) {
             hasAffordablePremium = true;
+        }
+
+        // Update premium item affordability in DOM
+        const itemEl = document.querySelector(`[data-type="premium"][data-id="${item.id}"]`);
+        if (itemEl) {
+            itemEl.classList.toggle('affordable', canAfford);
+            const costEl = itemEl.querySelector('.upgrade-cost');
+            if (costEl && !item.owned) {
+                costEl.classList.toggle('can-afford', canAfford);
+                costEl.classList.toggle('cant-afford', !canAfford);
+            }
         }
     });
 

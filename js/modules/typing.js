@@ -38,6 +38,9 @@ let heatDecayInterval = null;
 let keystrokeTimes = []; // Track recent keystroke timestamps
 let engagementGrowthInterval = null; // For periodic engagement growth
 
+// Adaptive heat calibration
+let baselineWpm = 40; // Starting baseline, will adapt to user
+
 // Constants
 const MAX_HISTORY_POSTS = 6;
 
@@ -273,24 +276,26 @@ export function loadNewPost() {
     postStartTime = 0; // Will be set on first keystroke
     lastCharTime = 0;
 
-    // Generate golden character (20% chance, random position)
-    // OR all characters are golden during Golden Hour event
+    // Golden characters - unlock at 30 posts
+    // 20% chance, random position, OR all golden during Golden Hour event
     const initState = State.getState();
     goldenCharIndex = -1;
 
-    if (initState.eventAllGolden) {
-        // All characters are golden during Golden Hour!
-        goldenCharIndex = -2; // Special value meaning "all golden"
-    } else if (Math.random() < 0.20 && currentPost.text.length > 10) {
-        // Pick a random character that isn't a space (in the middle 60% of the post)
-        const start = Math.floor(currentPost.text.length * 0.2);
-        const end = Math.floor(currentPost.text.length * 0.8);
-        const attempts = 10;
-        for (let i = 0; i < attempts; i++) {
-            const idx = start + Math.floor(Math.random() * (end - start));
-            if (currentPost.text[idx] !== ' ') {
-                goldenCharIndex = idx;
-                break;
+    if (initState.totalPosts >= 30) {
+        if (initState.eventAllGolden) {
+            // All characters are golden during Golden Hour!
+            goldenCharIndex = -2; // Special value meaning "all golden"
+        } else if (Math.random() < 0.20 && currentPost.text.length > 10) {
+            // Pick a random character that isn't a space (in the middle 60% of the post)
+            const start = Math.floor(currentPost.text.length * 0.2);
+            const end = Math.floor(currentPost.text.length * 0.8);
+            const attempts = 10;
+            for (let i = 0; i < attempts; i++) {
+                const idx = start + Math.floor(Math.random() * (end - start));
+                if (currentPost.text[idx] !== ' ') {
+                    goldenCharIndex = idx;
+                    break;
+                }
             }
         }
     }
@@ -438,10 +443,31 @@ function handleCorrectChar() {
     }
     lastCharTime = Date.now();
 
-    // Update heat meter
+    // Update heat meter - calibrated to user's average WPM
     keystrokeTimes.push(Date.now());
-    keystrokeTimes = keystrokeTimes.filter(t => Date.now() - t < 1000); // Keep last 1 second
-    heatValue = Math.min(100, heatValue + 5 + keystrokeTimes.length);
+    keystrokeTimes = keystrokeTimes.filter(t => Date.now() - t < 2000); // Keep last 2 seconds for smoother calculation
+
+    // Calculate current WPM from recent keystrokes (chars per minute / 5 = WPM)
+    const recentChars = keystrokeTimes.length;
+    const timeSpanMs = keystrokeTimes.length > 1 ? (keystrokeTimes[keystrokeTimes.length - 1] - keystrokeTimes[0]) : 1000;
+    const currentWpm = recentChars > 1 ? (recentChars / (timeSpanMs / 60000)) / 5 : 0;
+
+    // Get user's average WPM, use baseline if not established
+    const state = State.getState();
+    const userAvgWpm = state.avgWPM > 0 ? state.avgWPM : baselineWpm;
+
+    // Update baseline to slowly adapt to user (weighted average)
+    if (state.avgWPM > 0) {
+        baselineWpm = baselineWpm * 0.99 + state.avgWPM * 0.01;
+    }
+
+    // Calculate heat based on ratio to average
+    // At average speed = 50 heat, 1.5x average = 100, 0.5x average = 0
+    const speedRatio = currentWpm / Math.max(userAvgWpm, 20);
+    const targetHeat = Math.min(100, Math.max(0, (speedRatio - 0.5) * 100));
+
+    // Smooth transition to target heat
+    heatValue = heatValue * 0.85 + targetHeat * 0.15;
     updateHeatMeter();
 
     const charEl = postTextEl.querySelector(`[data-index="${typedIndex}"]`);
@@ -462,14 +488,14 @@ function handleCorrectChar() {
     hasError = false;
 
     // Play sound with pitch based on combo
-    const state = State.getState();
     const pitchBonus = Math.min(state.combo * 0.01, 0.5);
 
     // Golden character bonus!
     if (isGoldenChar) {
-        // Smaller bonus during "all golden" event (5 coins vs 50)
+        // Scales with coinsPerPost to stay relevant throughout progression
+        // Single golden = 3x a post's value, all-golden event = 0.3x each (but many chars)
         const isAllGolden = goldenCharIndex === -2;
-        const bonusCoins = Math.floor((isAllGolden ? 5 : 50) * state.globalMultiplier);
+        const bonusCoins = Math.floor(state.coinsPerPost * (isAllGolden ? 0.3 : 3));
         State.addCoins(bonusCoins, 'golden');
 
         // Track golden chars hit for achievements
@@ -537,20 +563,22 @@ function handleCorrectChar() {
 
 /**
  * Celebrate reaching a combo milestone
+ * Scales with coinsPerPost to stay relevant throughout progression
  */
 function celebrateComboMilestone(combo) {
-    const bonusCoins = combo * 2;
     const state = State.getState();
-    State.addCoins(Math.floor(bonusCoins * state.globalMultiplier), 'combo');
+    // Combo 25 = 2.5 posts worth, combo 100 = 10 posts worth, combo 500 = 50 posts worth
+    const bonusCoins = Math.floor(combo * state.coinsPerPost * 0.1);
+    State.addCoins(bonusCoins, 'combo');
 
     playSound('achievement');
 
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
     spawnParticles('confetti', centerX, centerY, combo >= 100 ? 40 : 20);
-    spawnFloatingNumber(combo + ' COMBO!', centerX, centerY - 100, 'viral');
+    spawnFloatingNumber(combo + ' COMBO!', centerX, centerY + 100, 'viral');
 
-    showNotification(combo + ' Combo! +' + bonusCoins + ' coins', 'perfect');
+    showNotification(combo + ' Combo! +' + formatNumber(bonusCoins) + ' coins', 'perfect');
 }
 
 /**
@@ -612,79 +640,91 @@ function completePost() {
     // Track WPM records
     const wpmResult = trackWPMRecord(finalWPM, state);
 
-    // ===== NEW BALANCED REWARD SYSTEM =====
-    // Typing rewards now SCALE with progression to always be worthwhile
+    // ===== PROGRESSIVE REWARD SYSTEM =====
+    // Bonuses unlock gradually to avoid overwhelming new players
+    // Posts 1-10: Base rewards only
+    // Posts 10-25: Perfect bonus unlocks
+    // Posts 25-50: WPM bonuses unlock
+    // Posts 50-75: Streak bonus unlocks
+    // Posts 75-100: Personal best bonus unlocks
+    // Posts 100+: All bonuses active
 
-    // Base typing reward (scales with coinsPerPost which includes multipliers)
-    let baseTypingReward = state.coinsPerPost * (postLength / 50);
+    const posts = state.totalPosts;
 
-    // CPS BONUS: Typing gives you bonus equal to X seconds of idle income
-    // This ensures typing is ALWAYS worth doing, even late game
-    // Base: 5 seconds of CPS, scales up with WPM
-    let cpsSecondsBonus = 5;
-    if (finalWPM >= 100) {
-        cpsSecondsBonus = 15; // 15 seconds of CPS for pro typing
-    } else if (finalWPM >= 80) {
-        cpsSecondsBonus = 12;
-    } else if (finalWPM >= 60) {
-        cpsSecondsBonus = 9;
-    } else if (finalWPM >= 40) {
-        cpsSecondsBonus = 7;
+    // Base typing reward - longer posts give significantly more
+    // Short posts (~30 chars) = 1x, Medium (~50 chars) = 1.4x, Long (~80 chars) = 2.3x
+    const lengthMultiplier = Math.max(1, postLength / 35);
+    let baseTypingReward = state.coinsPerPost * lengthMultiplier;
+
+    // CPS bonus unlocks at 10 posts (when player has bots)
+    let cpsBonus = 0;
+    if (posts >= 10) {
+        let cpsSecondsBonus = 5;
+        if (finalWPM >= 100) {
+            cpsSecondsBonus = 15;
+        } else if (finalWPM >= 80) {
+            cpsSecondsBonus = 12;
+        } else if (finalWPM >= 60) {
+            cpsSecondsBonus = 9;
+        } else if (finalWPM >= 40) {
+            cpsSecondsBonus = 7;
+        }
+        cpsBonus = Math.floor(state.coinsPerSecond * cpsSecondsBonus);
     }
-
-    // Calculate CPS bonus (minimum of 10 coins to be meaningful early game)
-    const cpsBonus = Math.max(10, Math.floor(state.coinsPerSecond * cpsSecondsBonus));
 
     // Total coin reward = base + CPS bonus
     let coinReward = baseTypingReward + cpsBonus;
-    let followerReward = Math.floor(postLength / 20) + 1; // +1 ensures at least 1
-    let impressionReward = state.impressionsPerPost;
+    // Followers also scale with post length
+    let followerReward = Math.floor(lengthMultiplier) + 1;
+    let impressionReward = Math.floor(state.impressionsPerPost * lengthMultiplier);
 
-    // Perfect bonus (no errors in post)
-    const perfectBonus = isPerfect ? 1.5 : 1;
-    coinReward *= perfectBonus;
-    if (isPerfect) {
-        followerReward *= 2;
-        impressionReward *= 1.5;
-    }
-
-    // WPM bonus - reward fast typing!
-    let wpmBonus = 1;
+    // Perfect bonus - unlocks at 10 posts
     let wpmBonusName = '';
-    if (finalWPM >= 120) {
-        wpmBonus = 3.0;
-        wpmBonusName = 'BLAZING SPEED';
-    } else if (finalWPM >= 100) {
-        wpmBonus = 2.5;
-        wpmBonusName = 'SPEED DEMON';
-    } else if (finalWPM >= 80) {
-        wpmBonus = 2.0;
-        wpmBonusName = 'FAST FINGERS';
-    } else if (finalWPM >= 60) {
-        wpmBonus = 1.5;
-        wpmBonusName = 'QUICK';
-    }
-    coinReward *= wpmBonus;
-
-    // Extra bonus for beating personal best!
-    if (wpmResult.isPersonalBest) {
-        coinReward *= 2;
-        followerReward *= 5;
-        impressionReward *= 3;
-    } else if (wpmResult.isAboveAvg) {
+    if (posts >= 10 && isPerfect) {
         coinReward *= 1.25;
-        followerReward *= 2;
+        followerReward *= 1.5;
+        impressionReward *= 1.25;
     }
 
-    // Combo bonus (capped at 3x for higher ceiling)
-    const comboBonus = Math.min(1 + state.combo * 0.01, 3);
-    coinReward *= comboBonus;
+    // WPM bonus - unlocks at 25 posts
+    let wpmBonus = 1;
+    if (posts >= 25) {
+        if (finalWPM >= 120) {
+            wpmBonus = 1.8;
+            wpmBonusName = 'BLAZING SPEED';
+        } else if (finalWPM >= 100) {
+            wpmBonus = 1.5;
+            wpmBonusName = 'SPEED DEMON';
+        } else if (finalWPM >= 80) {
+            wpmBonus = 1.3;
+            wpmBonusName = 'FAST FINGERS';
+        } else if (finalWPM >= 60) {
+            wpmBonus = 1.15;
+            wpmBonusName = 'QUICK';
+        }
+        coinReward *= wpmBonus;
+    }
 
-    // Streak bonus (more impactful)
-    const streakBonus = 1 + Math.floor(state.streak / 3) * 0.15;
-    coinReward *= streakBonus;
+    // Personal best bonus - unlocks at 75 posts
+    if (posts >= 75) {
+        if (wpmResult.isPersonalBest) {
+            coinReward *= 1.5;
+            followerReward *= 3;
+            impressionReward *= 2;
+        } else if (wpmResult.isAboveAvg) {
+            coinReward *= 1.15;
+            followerReward *= 1.5;
+        }
+    }
 
-    // Category bonus
+    // Streak bonus - unlocks at 50 posts
+    let streakBonus = 1;
+    if (posts >= 50) {
+        streakBonus = Math.min(1 + state.streak * 0.05, 2);
+        coinReward *= streakBonus;
+    }
+
+    // Category bonus (always active but subtle)
     if (currentPost.category) {
         coinReward *= currentPost.coinMult || 1;
         impressionReward *= currentPost.impressionMult || 1;
@@ -749,19 +789,19 @@ function completePost() {
     const accuracy = Math.round(((postLength - errorCount) / postLength) * 100);
     const isViralPost = !!viralResult;
 
-    // Show floating numbers for rewards
-    spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 30, 'xcoins');
+    // Show floating numbers for rewards (positioned below center to avoid covering coin display)
+    spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY + 50, 'xcoins');
     if (followerReward > 1) {
-        spawnFloatingNumber(`+${followerReward} Followers`, centerX, centerY - 70, 'followers');
+        spawnFloatingNumber(`+${followerReward} Followers`, centerX, centerY + 90, 'followers');
     }
     if (wpmBonusName) {
-        spawnFloatingNumber(wpmBonusName, centerX, centerY - 110, 'viral');
+        spawnFloatingNumber(wpmBonusName, centerX, centerY + 130, 'viral');
     }
     if (wpmResult.isPersonalBest) {
-        spawnFloatingNumber('NEW RECORD!', centerX, centerY - 150, 'viral');
+        spawnFloatingNumber('NEW RECORD!', centerX, centerY + 170, 'viral');
     }
     if (viralResult) {
-        spawnFloatingNumber(viralResult.name, centerX, centerY - 150, 'viral');
+        spawnFloatingNumber(viralResult.name, centerX, centerY + 170, 'viral');
     }
 
     // Show particles
@@ -775,6 +815,11 @@ function completePost() {
         spawnParticles('confetti', centerX, centerY, 25);
     } else {
         spawnParticles('confetti', centerX, centerY, 15);
+    }
+
+    // Fire burst if completed while blazing
+    if (heatValue >= 80) {
+        spawnParticles('fireburst', centerX, centerY, 30);
     }
 
     // Add to history
@@ -903,10 +948,16 @@ function calculateCurrentAccuracy() {
 }
 
 /**
- * Check if post goes viral
+ * Check if post goes viral - unlocks at 50 posts
  */
 function checkViral() {
     const state = State.getState();
+
+    // Viral posts unlock at 50 posts
+    if (state.totalPosts < 50) {
+        return null;
+    }
+
     const random = Math.random();
 
     // Pity system: increase chance based on posts without viral
@@ -1334,10 +1385,27 @@ let balloonCycleStart = 0;
 
 /**
  * Update inflating balloon (random 8-12 posts = auto-pop bonus)
- * Balloon always starts small and grows until it pops
+ * Balloon unlocks at 20 posts, always starts small and grows until it pops
  */
 function updatePostProgress() {
     const state = State.getState();
+    const balloonContainer = document.getElementById('balloon-container');
+    const balloonVisual = document.getElementById('balloon-visual');
+
+    // Hide the countdown display (user doesn't want to know when it pops)
+    if (postProgressCountEl) {
+        postProgressCountEl.textContent = '';
+    }
+
+    if (!balloonContainer || !balloonVisual) return;
+
+    // Balloon unlocks at 20 posts
+    if (state.totalPosts < 20) {
+        balloonContainer.style.display = 'none';
+        return;
+    } else {
+        balloonContainer.style.display = '';
+    }
 
     // Safety check: reset balloon cycle if it's invalid (negative posts)
     if (balloonCycleStart > state.lifetimePosts) {
@@ -1347,15 +1415,6 @@ function updatePostProgress() {
 
     // Track posts since the current balloon cycle started
     const postsInCycle = Math.max(0, state.lifetimePosts - balloonCycleStart);
-    const balloonContainer = document.getElementById('balloon-container');
-    const balloonVisual = document.getElementById('balloon-visual');
-
-    // Hide the countdown display (user doesn't want to know when it pops)
-    if (postProgressCountEl) {
-        postProgressCountEl.textContent = ''; // Don't show the number
-    }
-
-    if (!balloonContainer || !balloonVisual) return;
 
     // Calculate balloon size - visible growth from the start
     const baseSize = 35;
@@ -1500,10 +1559,11 @@ function popBalloon() {
     // Remove pop element after animation
     setTimeout(() => popEl.remove(), 600);
 
-    // Calculate bonus - increases with total posts
-    const bonusMultiplier = 1 + Math.floor(state.lifetimePosts / 100) * 0.5;
-    const bonusCoins = Math.floor(500 * state.globalMultiplier * bonusMultiplier);
-    const bonusFollowers = Math.floor(50 * bonusMultiplier);
+    // Calculate bonus - scales with CPS to stay relevant throughout progression
+    // Worth 20 seconds of passive income, minimum 50 coins for early game
+    const bonusMultiplier = 1 + Math.floor(state.lifetimePosts / 100) * 0.25;
+    const bonusCoins = Math.floor(Math.max(50, state.coinsPerSecond * 20) * bonusMultiplier);
+    const bonusFollowers = Math.floor(Math.max(5, state.followers * 0.01) * bonusMultiplier);
 
     // Award bonus
     State.addCoins(bonusCoins, 'balloon');
@@ -1520,9 +1580,9 @@ function popBalloon() {
 
     // Particles - extra explosion
     spawnParticles('confetti', centerX, centerY, 100);
-    spawnFloatingNumber(`+${formatNumber(bonusCoins)} μ₿`, centerX, centerY - 50, 'xcoins');
-    spawnFloatingNumber(`+${bonusFollowers} Followers!`, centerX, centerY - 100, 'followers');
-    spawnFloatingNumber('💰 KA-CHING! 💰', centerX, centerY - 150, 'viral');
+    spawnFloatingNumber(`+${formatNumber(bonusCoins)} μ₿`, centerX, centerY + 50, 'xcoins');
+    spawnFloatingNumber(`+${bonusFollowers} Followers!`, centerX, centerY + 100, 'followers');
+    spawnFloatingNumber('💰 KA-CHING! 💰', centerX, centerY + 150, 'viral');
 
     // Show notification
     showNotification('🎈💥 POP! +' + formatNumber(bonusCoins) + ' coins!', 'perfect');
@@ -1533,6 +1593,10 @@ function popBalloon() {
             balloonVisual.style.opacity = '1';
             balloonVisual.style.fontSize = '35px';
             balloonVisual.style.filter = '';
+        }
+        // Also remove all animation classes from container to stop vibration
+        if (balloonContainer) {
+            balloonContainer.classList.remove('ready', 'inflating', 'about-to-pop', 'critical', 'stage-1', 'stage-2', 'stage-3');
         }
     }, 500);
 }
@@ -1557,18 +1621,30 @@ function updateHeatMeter() {
 
     // Update heat level class and text
     heatMeter.classList.remove('warm', 'hot', 'blazing');
+    document.body.classList.remove('heat-cold', 'heat-warm', 'heat-hot', 'heat-blazing');
+
+    // Toggle blazing class on post text for glowing cursor
+    const postText = document.getElementById('post-text');
 
     if (heatValue >= 80) {
         heatMeter.classList.add('blazing');
+        document.body.classList.add('heat-blazing');
         heatLevel.textContent = 'BLAZING';
+        if (postText) postText.classList.add('blazing');
     } else if (heatValue >= 50) {
         heatMeter.classList.add('hot');
+        document.body.classList.add('heat-hot');
         heatLevel.textContent = 'HOT';
+        if (postText) postText.classList.remove('blazing');
     } else if (heatValue >= 25) {
         heatMeter.classList.add('warm');
+        document.body.classList.add('heat-warm');
         heatLevel.textContent = 'WARM';
+        if (postText) postText.classList.remove('blazing');
     } else {
+        document.body.classList.add('heat-cold');
         heatLevel.textContent = 'COLD';
+        if (postText) postText.classList.remove('blazing');
     }
 }
 

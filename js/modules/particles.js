@@ -3,6 +3,8 @@
  * Canvas-based particle effects for visual juice
  */
 
+import * as State from '../state.js';
+
 // Canvas and context
 let canvas;
 let ctx;
@@ -220,39 +222,75 @@ export function spawnParticles(type, x, y, count = 10) {
         case 'viral':
             spawnViralParticles(x, y, count);
             break;
+        case 'fireburst':
+            spawnFireburstParticles(x, y, count);
+            break;
         default:
             spawnDefaultParticles(x, y, count);
     }
 }
 
 /**
- * Spawn keystroke particles - subtle, elegant particles
+ * Spawn keystroke particles - blazing mode at 80+ heat
  */
 function spawnKeystrokeParticles(x, y, count) {
-    // Subtle blue palette
-    const keystrokeColors = ['#1D9BF0', '#4DABF5', '#7FC4F8'];
+    const state = State.getState();
+    const heat = state.heat || 0;
+    const isBlazing = heat >= 80;
+
+    // Fiery colors when blazing, blue otherwise - always subtle
+    const colors = isBlazing
+        ? ['#FF4500', '#FF6B35', '#FFD700']
+        : ['#1D9BF0', '#4DABF5', '#7FC4F8'];
 
     for (let i = 0; i < count; i++) {
-        // Spread mostly upward
-        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.5;
-        const speed = 15 + Math.random() * 25;
-
-        const color = keystrokeColors[Math.floor(Math.random() * keystrokeColors.length)];
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.4;
+        const color = colors[Math.floor(Math.random() * colors.length)];
 
         particles.push(getParticle({
             x: x + (Math.random() - 0.5) * 6,
             y: y + (Math.random() - 0.5) * 4,
-            vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 8,
-            vy: Math.sin(angle) * speed,
-            size: 2 + Math.random() * 2,
+            vx: Math.cos(angle) * (15 + Math.random() * 20) + (Math.random() - 0.5) * 8,
+            vy: Math.sin(angle) * (15 + Math.random() * 20),
+            size: 2 + Math.random() * 1.5,
             color: color,
             shape: 'glow',
-            life: 250 + Math.random() * 150,
+            life: 250 + Math.random() * 100,
             fadeStart: 200,
-            gravity: 10,
+            gravity: 15,
             friction: 0.95,
             rotation: 0,
             rotationSpeed: 0
+        }));
+    }
+}
+
+/**
+ * Spawn fireburst particles - explosion effect for blazing completion
+ */
+function spawnFireburstParticles(x, y, count) {
+    const colors = ['#FF4500', '#FF6B35', '#FFD700', '#FF0000', '#FFA500'];
+
+    for (let i = 0; i < count; i++) {
+        // Full 360 degree burst
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 60 + Math.random() * 80;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        particles.push(getParticle({
+            x: x + (Math.random() - 0.5) * 20,
+            y: y + (Math.random() - 0.5) * 20,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: 3 + Math.random() * 4,
+            color: color,
+            shape: Math.random() > 0.5 ? 'glow' : 'spark',
+            life: 400 + Math.random() * 300,
+            fadeStart: 300,
+            gravity: 80,
+            friction: 0.97,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 0.2
         }));
     }
 }

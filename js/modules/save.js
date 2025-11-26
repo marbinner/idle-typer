@@ -4,6 +4,7 @@
  */
 
 import * as State from '../state.js';
+import { getResetting } from '../state.js';
 import { getPostHistory, loadPostHistory, getBalloonState, loadBalloonState, getTypingState, loadTypingState } from './typing.js';
 import { getStatsHistory, loadStatsHistory } from './stats.js';
 
@@ -89,6 +90,11 @@ export function loadSavedPostHistory() {
  * Save game to localStorage
  */
 export function save() {
+    // Don't save if we're in the middle of resetting
+    if (getResetting()) {
+        console.log('Skipping save - reset in progress');
+        return false;
+    }
     try {
         const state = State.getStateForSave();
         const postHistory = getPostHistory();
@@ -375,11 +381,13 @@ export function importSave(jsonString) {
 }
 
 /**
- * Reset game (clear save)
+ * Reset game (clear save) - reloads page for clean state
  */
 export function resetSave() {
     localStorage.removeItem(SAVE_KEY);
     State.resetState(false);
+    // Reload page to ensure all modules reset properly
+    window.location.reload();
 }
 
 /**

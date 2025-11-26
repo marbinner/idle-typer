@@ -3,6 +3,17 @@
  * Single source of truth for all game data
  */
 
+// Flag to prevent autosave during reset
+let isResetting = false;
+
+export function setResetting(value) {
+    isResetting = value;
+}
+
+export function getResetting() {
+    return isResetting;
+}
+
 // Initial game state
 const initialState = {
     // Main currency
@@ -38,24 +49,24 @@ const initialState = {
 
     // Bots owned (keyed by bot ID)
     bots: {
-        // Tier 1: Early game
+        // Tier 1: Early game (hours 0-2)
         replyGuy: 0,
         lurker: 0,
-        burnerAccount: 0,
         shitposter: 0,
-        // Tier 2: Mid game
+        burnerAccount: 0,
+        // Tier 2: Mid game (hours 2-6)
         memeLord: 0,
         contentCreator: 0,
         blueCheck: 0,
-        // Tier 3: Late game
+        // Tier 3: Late game (hours 6-11)
         influencer: 0,
         cryptoBro: 0,
         grokAI: 0,
-        // Tier 4: End game
+        // Tier 4: End game (hours 11-16)
         botFarm: 0,
         elonsAlt: 0,
         mediaEmpire: 0,
-        // Tier 5: Infinite game
+        // Tier 5: Infinite game (hours 16+)
         digitalGod: 0,
         realityWarper: 0
     },
@@ -295,30 +306,36 @@ export function recalculateDerived() {
 /**
  * Get bot data definitions (coins per second)
  * These values must match the BOTS in data/upgrades.js
- * Cookie Clicker style scaling: consistent 1.15x cost mult, ~10x cost/8x CPS per tier
+ *
+ * 20-HOUR PROGRESSION SCALING:
+ * - Tier 1: Fast start (hours 0-2)
+ * - Tier 2: Building momentum (hours 2-6)
+ * - Tier 3: Mid-game grind (hours 6-11)
+ * - Tier 4: Late game (hours 11-16)
+ * - Tier 5: Infinite scaling (hours 16+)
  */
 function getBotData() {
     return {
-        // Tier 1: Early game
+        // Tier 1: Early game (hours 0-2)
         replyGuy: { cps: 0.1 },
-        lurker: { cps: 1 },
-        burnerAccount: { cps: 8 },
-        shitposter: { cps: 47 },
-        // Tier 2: Mid game
-        memeLord: { cps: 260 },
-        contentCreator: { cps: 1400 },
-        blueCheck: { cps: 7800 },
-        // Tier 3: Late game
-        influencer: { cps: 44000 },
-        cryptoBro: { cps: 260000 },
-        grokAI: { cps: 1600000 },
-        // Tier 4: End game
-        botFarm: { cps: 10000000 },
-        elonsAlt: { cps: 65000000 },
-        mediaEmpire: { cps: 430000000 },
-        // Tier 5: Infinite game
-        digitalGod: { cps: 2900000000 },
-        realityWarper: { cps: 21000000000 }
+        lurker: { cps: 0.8 },
+        shitposter: { cps: 6 },
+        burnerAccount: { cps: 45 },
+        // Tier 2: Mid game (hours 2-6)
+        memeLord: { cps: 300 },
+        contentCreator: { cps: 2000 },
+        blueCheck: { cps: 13000 },
+        // Tier 3: Late game (hours 6-11)
+        influencer: { cps: 85000 },
+        cryptoBro: { cps: 550000 },
+        grokAI: { cps: 3500000 },
+        // Tier 4: End game (hours 11-16)
+        botFarm: { cps: 22000000 },
+        elonsAlt: { cps: 140000000 },
+        mediaEmpire: { cps: 900000000 },
+        // Tier 5: Infinite game (hours 16+)
+        digitalGod: { cps: 5500000000 },
+        realityWarper: { cps: 35000000000 }
     };
 }
 
