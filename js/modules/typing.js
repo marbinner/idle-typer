@@ -760,36 +760,27 @@ function completePost() {
         viralName: viralResult ? viralResult.name : null
     });
 
-    // Show notifications and particles
+    // Show particles and floating numbers (no popup notifications)
     if (wpmResult.isPersonalBest) {
         // Huge celebration for new record!
         spawnParticles('viral', centerX, centerY, 100);
         spawnFloatingNumber(`🏆 NEW RECORD! ${finalWPM} WPM 🏆`, centerX, centerY - 100, 'viral');
         spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 50, 'coins');
-        showNotification(`NEW PERSONAL BEST! ${finalWPM} WPM`, 'record');
     } else if (viralResult) {
         spawnParticles('confetti', centerX, centerY, viralResult.particles);
         spawnFloatingNumber(`🔥 ${viralResult.name}! 🔥`, centerX, centerY - 80, 'viral');
         spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
-        showNotification(`${viralResult.name}!`, 'viral');
     } else if (wpmBonusName) {
         spawnParticles('confetti', centerX, centerY, 35);
         spawnFloatingNumber(`⚡ ${wpmBonusName} ⚡`, centerX, centerY - 80, 'default');
         spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
-        showNotification(`${finalWPM} WPM - ${wpmBonusName}!`, 'wpm');
     } else if (isPerfect) {
         spawnParticles('confetti', centerX, centerY, 25);
         spawnFloatingNumber(`✨ PERFECT! ✨`, centerX, centerY - 80, 'perfect');
         spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
-        showNotification('Perfect typing! +50% bonus', 'perfect');
     } else {
         spawnParticles('confetti', centerX, centerY, 15);
         spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 50, 'coins');
-    }
-
-    // Show idle equivalent for meaningful feedback
-    if (idleEquivalentSeconds > 0) {
-        showNotification(`= ${idleEquivalentSeconds}s of idle income`, 'coins');
     }
 
     // Add to history
