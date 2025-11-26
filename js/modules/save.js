@@ -4,13 +4,14 @@
  */
 
 import * as State from '../state.js';
-import { getPostHistory, loadPostHistory } from './typing.js';
+import { getPostHistory, loadPostHistory, getBalloonState, loadBalloonState } from './typing.js';
 
 const SAVE_KEY = 'idleTyper_save';
 const SAVE_VERSION = 2; // Bumped for post history support
 
-// Store loaded post history to apply after typing init
+// Store loaded data to apply after typing init
 let pendingPostHistory = null;
+let pendingBalloonState = null;
 
 /**
  * Initialize save system and load existing save
@@ -20,9 +21,12 @@ export function initSave() {
 
     if (saveData) {
         State.loadState(saveData.state);
-        // Store post history to load after typing is initialized
+        // Store post history and balloon state to load after typing is initialized
         if (saveData.postHistory) {
             pendingPostHistory = saveData.postHistory;
+        }
+        if (saveData.balloonState) {
+            pendingBalloonState = saveData.balloonState;
         }
         console.log('Game loaded from save');
     } else {
@@ -31,12 +35,16 @@ export function initSave() {
 }
 
 /**
- * Load post history (call after typing module is initialized)
+ * Load post history and balloon state (call after typing module is initialized)
  */
 export function loadSavedPostHistory() {
     if (pendingPostHistory) {
         loadPostHistory(pendingPostHistory);
         pendingPostHistory = null;
+    }
+    if (pendingBalloonState) {
+        loadBalloonState(pendingBalloonState);
+        pendingBalloonState = null;
     }
 }
 
@@ -47,11 +55,13 @@ export function save() {
     try {
         const state = State.getStateForSave();
         const postHistory = getPostHistory();
+        const balloonState = getBalloonState();
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
             state,
-            postHistory
+            postHistory,
+            balloonState
         };
 
         localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
@@ -132,11 +142,13 @@ export function exportSave() {
     try {
         const state = State.getStateForSave();
         const postHistory = getPostHistory();
+        const balloonState = getBalloonState();
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
             state,
-            postHistory
+            postHistory,
+            balloonState
         };
 
         const jsonString = JSON.stringify(saveData);
@@ -209,7 +221,8 @@ export function importSave(code) {
             version: SAVE_VERSION,
             timestamp: Date.now(),
             state: migratedData.state || saveData.state,
-            postHistory: migratedData.postHistory || saveData.postHistory || []
+            postHistory: migratedData.postHistory || saveData.postHistory || [],
+            balloonState: migratedData.balloonState || saveData.balloonState || null
         }));
 
         showSaveNotification('Save imported! Refresh to apply.');

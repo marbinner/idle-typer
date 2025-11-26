@@ -77,6 +77,30 @@ export function loadPostHistory(history) {
 }
 
 /**
+ * Get balloon state for saving
+ */
+export function getBalloonState() {
+    return {
+        cycleStart: balloonCycleStart,
+        popThreshold: balloonPopThreshold
+    };
+}
+
+/**
+ * Load balloon state from save
+ */
+export function loadBalloonState(state) {
+    if (state) {
+        if (typeof state.cycleStart === 'number') {
+            balloonCycleStart = state.cycleStart;
+        }
+        if (typeof state.popThreshold === 'number') {
+            balloonPopThreshold = state.popThreshold;
+        }
+    }
+}
+
+/**
  * Initialize the typing system
  */
 export function initTyping() {
@@ -1155,13 +1179,18 @@ let balloonPopping = false;
 // Random balloon pop threshold (8-12 posts)
 let balloonPopThreshold = Math.floor(Math.random() * 5) + 8; // 8-12
 
+// Track when current balloon cycle started (so it always starts small)
+let balloonCycleStart = 0;
+
 /**
  * Update inflating balloon (random 8-12 posts = auto-pop bonus)
+ * Balloon always starts small and grows until it pops
  */
 function updatePostProgress() {
     const state = State.getState();
-    // Track posts in current balloon cycle
-    const postsInCycle = state.lifetimePosts % balloonPopThreshold;
+
+    // Track posts since the current balloon cycle started
+    const postsInCycle = state.lifetimePosts - balloonCycleStart;
     const balloonContainer = document.getElementById('balloon-container');
     const balloonVisual = document.getElementById('balloon-visual');
 
@@ -1176,7 +1205,7 @@ function updatePostProgress() {
     const baseSize = 35;
     const maxSize = 150;
     // Progress from 0 to 1 based on current threshold
-    const progress = postsInCycle / balloonPopThreshold;
+    const progress = Math.min(postsInCycle / balloonPopThreshold, 1);
     // Use cubic easing for dramatic growth at the end
     const easedProgress = progress * progress * progress;
     const currentSize = baseSize + easedProgress * (maxSize - baseSize);
@@ -1189,16 +1218,18 @@ function updatePostProgress() {
     // Only add movement/wobble animations in the last few posts before pop
     balloonContainer.classList.remove('ready', 'inflating', 'about-to-pop', 'critical', 'stage-1', 'stage-2', 'stage-3');
 
-    if (postsInCycle === 0 && state.lifetimePosts > 0 && !balloonPopping) {
+    if (postsInCycle >= balloonPopThreshold && !balloonPopping) {
         // Balloon reached threshold - AUTO POP!
         balloonPopping = true;
         balloonContainer.classList.add('ready');
         balloonVisual.style.fontSize = maxSize + 'px';
 
-        // Dramatic pause before pop, then reset threshold
+        // Dramatic pause before pop, then reset for next cycle
         setTimeout(() => {
             popBalloon();
             balloonPopping = false;
+            // Reset cycle start to current post count
+            balloonCycleStart = state.lifetimePosts;
             // New random threshold for next balloon (8-12)
             balloonPopThreshold = Math.floor(Math.random() * 5) + 8;
         }, 400);
@@ -1221,7 +1252,7 @@ function updatePostProgress() {
         const glowIntensity = Math.min(progress * 0.3, 0.2);
         balloonVisual.style.filter = `drop-shadow(0 0 ${3 + progress * 5}px rgba(255, 100, 100, ${glowIntensity}))`;
     } else {
-        // Reset - empty balloon
+        // Reset - empty balloon (start of cycle)
         balloonVisual.style.filter = '';
     }
 }
