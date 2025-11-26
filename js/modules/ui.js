@@ -36,6 +36,10 @@ export function initUI() {
     console.log('UI system initialized');
 }
 
+// Track event handlers for cleanup
+let coinsGainedHandler = null;
+let followersGainedHandler = null;
+
 /**
  * Set up UI event listeners
  */
@@ -56,8 +60,16 @@ function setupEventListeners() {
         });
     }
 
+    // Remove old listeners if they exist (prevent accumulation on re-init)
+    if (coinsGainedHandler) {
+        window.removeEventListener('coins-gained', coinsGainedHandler);
+    }
+    if (followersGainedHandler) {
+        window.removeEventListener('followers-gained', followersGainedHandler);
+    }
+
     // Listen for coin gain events for number bump animation
-    window.addEventListener('coins-gained', (e) => {
+    coinsGainedHandler = (e) => {
         if (bigCoinValueEl) {
             const source = e.detail?.source || 'unknown';
             // Use subtle animation for passive income, bigger for active typing
@@ -73,10 +85,11 @@ function setupEventListeners() {
                 }, 300);
             }
         }
-    });
+    };
+    window.addEventListener('coins-gained', coinsGainedHandler);
 
     // Listen for follower gain events
-    window.addEventListener('followers-gained', (e) => {
+    followersGainedHandler = (e) => {
         if (followersCountEl) {
             followersCountEl.classList.add('animate-number-bump');
             setTimeout(() => {
@@ -85,7 +98,8 @@ function setupEventListeners() {
         }
         // Update follower multiplier display
         updateUI();
-    });
+    };
+    window.addEventListener('followers-gained', followersGainedHandler);
 }
 
 /**
@@ -193,10 +207,21 @@ function showSettingsModal() {
 
     overlay.classList.remove('hidden');
 
-    // Set up modal event listeners
-    document.getElementById('close-modal')?.addEventListener('click', () => {
+    // Helper to close and cleanup
+    const closeModal = () => {
         overlay.classList.add('hidden');
-    });
+        overlay.removeEventListener('click', handleOverlayClick);
+    };
+
+    // Handler for overlay click (close on background click)
+    const handleOverlayClick = (e) => {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    };
+
+    // Set up modal event listeners
+    document.getElementById('close-modal')?.addEventListener('click', closeModal);
 
     // Sound toggle
     document.getElementById('sound-toggle-btn')?.addEventListener('click', (e) => {
@@ -281,19 +306,17 @@ function showSettingsModal() {
             // Use save module's reset function
             const { resetSave } = await import('./save.js');
             const { clearPostHistory } = await import('./typing.js');
+            const { resetAccumulators } = await import('./idle.js');
             resetSave();
             clearPostHistory();
+            resetAccumulators();
             // Force reload bypassing cache
             window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
         }
     });
 
     // Close on overlay click
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            overlay.classList.add('hidden');
-        }
-    });
+    overlay.addEventListener('click', handleOverlayClick);
 }
 
 /**

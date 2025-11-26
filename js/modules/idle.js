@@ -11,6 +11,14 @@ let coinAccumulator = 0;
 let impressionAccumulator = 0;
 
 /**
+ * Reset accumulators (call on game reset)
+ */
+export function resetAccumulators() {
+    coinAccumulator = 0;
+    impressionAccumulator = 0;
+}
+
+/**
  * Tick function - called every frame
  * @param {number} deltaTime - Time since last tick in seconds
  */
