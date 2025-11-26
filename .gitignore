@@ -1,0 +1,22 @@
+# Python
+*.pyc
+__pycache__/
+.python-version
+*.py
+pyproject.toml
+uv.lock
+
+# Development
+.DS_Store
+Thumbs.db
+*.log
+claude_files/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Development notes
+JUICE_IDEAS.md

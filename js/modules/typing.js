@@ -750,17 +750,22 @@ function completePost() {
     const accuracy = Math.round(((postLength - errorCount) / postLength) * 100);
     const isViralPost = !!viralResult;
 
-    // Show BIG REWARD display - this is the key to satisfying completion
-    showBigReward(coinReward, followerReward, idleEquivalentSeconds, {
-        wpm: finalWPM,
-        wpmBonus: wpmBonusName,
-        isPerfect,
-        isPersonalBest: wpmResult.isPersonalBest,
-        isViral: !!viralResult,
-        viralName: viralResult ? viralResult.name : null
-    });
+    // Show floating numbers for rewards
+    spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 30, 'xcoins');
+    if (followerReward > 1) {
+        spawnFloatingNumber(`+${followerReward} Followers`, centerX, centerY - 70, 'followers');
+    }
+    if (wpmBonusName) {
+        spawnFloatingNumber(wpmBonusName, centerX, centerY - 110, 'viral');
+    }
+    if (wpmResult.isPersonalBest) {
+        spawnFloatingNumber('NEW RECORD!', centerX, centerY - 150, 'viral');
+    }
+    if (viralResult) {
+        spawnFloatingNumber(viralResult.name, centerX, centerY - 150, 'viral');
+    }
 
-    // Show particles only (no popups or floating numbers)
+    // Show particles
     if (wpmResult.isPersonalBest) {
         spawnParticles('viral', centerX, centerY, 100);
     } else if (viralResult) {
@@ -1532,81 +1537,6 @@ function popBalloon() {
         }
     }, 500);
 }
-
-/**
- * Show big reward display - dramatic celebration for post completion
- */
-function showBigReward(coins, followers, idleSeconds, bonuses) {
-    // Remove any existing reward display
-    const existing = document.getElementById('big-reward-display');
-    if (existing) existing.remove();
-
-    // Create the reward display element
-    const display = document.createElement('div');
-    display.id = 'big-reward-display';
-    display.className = 'big-reward';
-
-    // Determine styling class based on bonuses
-    if (bonuses.isPersonalBest) {
-        display.classList.add('personal-best');
-    } else if (bonuses.isViral) {
-        display.classList.add('viral');
-    } else if (bonuses.wpmBonus) {
-        display.classList.add('speed-bonus');
-    } else if (bonuses.isPerfect) {
-        display.classList.add('perfect');
-    }
-
-    // Build content
-    let html = '<div class="reward-content">';
-
-    // Main coin display
-    html += `<div class="reward-coins">
-        <span class="coin-icon">μ₿</span>
-        <span class="coin-amount">${formatNumber(coins)}</span>
-    </div>`;
-
-    // Bonus tags
-    html += '<div class="reward-bonuses">';
-    if (bonuses.isPersonalBest) {
-        html += '<span class="bonus-tag record">🏆 NEW RECORD!</span>';
-    }
-    if (bonuses.isViral) {
-        html += `<span class="bonus-tag viral">🔥 ${bonuses.viralName}</span>`;
-    }
-    if (bonuses.wpmBonus) {
-        html += `<span class="bonus-tag wpm">⚡ ${bonuses.wpmBonus}</span>`;
-    }
-    if (bonuses.isPerfect) {
-        html += '<span class="bonus-tag perfect">✨ PERFECT</span>';
-    }
-    html += '</div>';
-
-    // Stats row
-    html += `<div class="reward-stats">
-        <span class="stat"><span class="label">WPM</span> <span class="value">${bonuses.wpm}</span></span>
-        <span class="stat"><span class="label">Followers</span> <span class="value">+${followers}</span></span>
-        ${idleSeconds > 0 ? `<span class="stat idle"><span class="label">=</span> <span class="value">${idleSeconds}s idle</span></span>` : ''}
-    </div>`;
-
-    html += '</div>';
-    display.innerHTML = html;
-
-    // Add to DOM
-    document.body.appendChild(display);
-
-    // Trigger animation
-    requestAnimationFrame(() => {
-        display.classList.add('show');
-    });
-
-    // Remove after animation
-    setTimeout(() => {
-        display.classList.add('hide');
-        setTimeout(() => display.remove(), 300);
-    }, bonuses.isPersonalBest ? 2000 : 1200);
-}
-
 /**
  * Update heat meter display
  */

@@ -15,7 +15,7 @@ export const BOTS = {
         name: 'Reply Guy',
         icon: '💬',
         description: '"Great post!" on everything',
-        baseCost: 200,
+        baseCost: 100,
         costMult: 1.20,
         cps: 0.1,
         unlockAt: 0
@@ -182,7 +182,7 @@ export const UPGRADES = {
         name: 'Typing Mastery',
         icon: '⌨️',
         description: '+5% coins per typed post',
-        baseCost: 5000,
+        baseCost: 500,
         costMult: 1.15,
         maxLevel: 50,
         unlockAt: 0,
@@ -193,10 +193,10 @@ export const UPGRADES = {
         name: 'Better Bots',
         icon: '🔧',
         description: '+5% all bot output',
-        baseCost: 500,
+        baseCost: 2000,
         costMult: 1.15,
         maxLevel: 100,
-        unlockAt: 100,
+        unlockAt: 1000,
         effect: (level) => 1 + level * 0.05
     },
     goldenChance: {
@@ -204,10 +204,10 @@ export const UPGRADES = {
         name: 'Golden Chance',
         icon: '🪙',
         description: '+2% golden character spawn rate',
-        baseCost: 1000,
+        baseCost: 5000,
         costMult: 1.15,
         maxLevel: 25,
-        unlockAt: 500,
+        unlockAt: 2500,
         effect: (level) => level * 0.02
     },
 
@@ -217,10 +217,10 @@ export const UPGRADES = {
         name: 'Viral Potential',
         icon: '📊',
         description: '+1% viral chance',
-        baseCost: 10000,
+        baseCost: 15000,
         costMult: 1.15,
         maxLevel: 20,
-        unlockAt: 5000,
+        unlockAt: 10000,
         effect: (level) => level * 0.01
     },
     charisma: {
@@ -228,10 +228,10 @@ export const UPGRADES = {
         name: 'Charisma',
         icon: '😎',
         description: '+10% followers per post',
-        baseCost: 25000,
+        baseCost: 40000,
         costMult: 1.15,
         maxLevel: 50,
-        unlockAt: 10000,
+        unlockAt: 25000,
         effect: (level) => 1 + level * 0.1
     },
     balloonBoost: {
@@ -239,10 +239,10 @@ export const UPGRADES = {
         name: 'Balloon Boost',
         icon: '🎈',
         description: '+10% balloon pop reward',
-        baseCost: 50000,
+        baseCost: 100000,
         costMult: 1.15,
         maxLevel: 50,
-        unlockAt: 25000,
+        unlockAt: 50000,
         effect: (level) => 1 + level * 0.1
     },
     synergy: {
@@ -250,10 +250,10 @@ export const UPGRADES = {
         name: 'Bot Synergy',
         icon: '🔗',
         description: '+1% CPS per bot type owned',
-        baseCost: 100000,
+        baseCost: 250000,
         costMult: 1.15,
         maxLevel: 50,
-        unlockAt: 50000,
+        unlockAt: 100000,
         effect: (level) => 1 + level * 0.01
     },
 

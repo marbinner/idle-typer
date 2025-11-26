@@ -145,8 +145,11 @@ function renderBots() {
             `;
         }
 
-        const totalCPS = bot.cps * owned;
-        const cpsDisplay = formatNumber(bot.cps, 1);
+        // Triangular growth: total CPS = baseCPS * n*(n+1)/2
+        const totalCPS = owned > 0 ? bot.cps * owned * (owned + 1) / 2 : 0;
+        // Next bot gives: baseCPS * (owned + 1)
+        const nextBotCPS = bot.cps * (owned + 1);
+        const cpsDisplay = formatNumber(nextBotCPS, 1);
 
         return `
             <div class="upgrade-item ${canAfford ? 'affordable' : ''}"
