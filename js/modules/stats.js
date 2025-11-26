@@ -79,6 +79,19 @@ export function loadStatsHistory(savedHistory) {
 }
 
 /**
+ * Reset stats history (for game reset)
+ */
+export function resetStatsHistory() {
+    history = {
+        timestamps: [],
+        coins: [],
+        followers: [],
+        impressions: [],
+        posts: []
+    };
+}
+
+/**
  * Format large numbers
  */
 function formatNumber(num) {
@@ -116,7 +129,7 @@ export function showStatsPanel() {
     const playTime = state.totalPlayTime || 0;
     const coinsPerMinute = playTime > 60000 ? (state.lifetimeCoins / (playTime / 60000)).toFixed(1) : 0;
     const accuracy = state.totalCharsTyped > 0
-        ? Math.round(((state.totalCharsTyped - state.errors) / state.totalCharsTyped) * 100)
+        ? Math.max(0, Math.round(((state.totalCharsTyped - state.errors) / state.totalCharsTyped) * 100))
         : 100;
 
     content.innerHTML = `

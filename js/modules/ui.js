@@ -307,9 +307,11 @@ function showSettingsModal() {
             const { resetSave } = await import('./save.js');
             const { clearPostHistory } = await import('./typing.js');
             const { resetAccumulators } = await import('./idle.js');
+            const { resetStatsHistory } = await import('./stats.js');
             resetSave();
             clearPostHistory();
             resetAccumulators();
+            resetStatsHistory();
             // Force reload bypassing cache
             window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
         }
