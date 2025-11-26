@@ -36,6 +36,10 @@ let goldenCharIndex = -1; // Index of golden character (-1 = none)
 let heatValue = 0;
 let heatDecayInterval = null;
 let keystrokeTimes = []; // Track recent keystroke timestamps
+let engagementGrowthInterval = null; // For periodic engagement growth
+
+// Constants
+const MAX_HISTORY_POSTS = 8;
 
 // Rank system
 const RANKS = [
@@ -195,6 +199,10 @@ export function initTyping() {
     // Initialize rank display
     updateRankDisplay();
 
+    // Clear any existing intervals to prevent memory leaks on re-init
+    if (heatDecayInterval) clearInterval(heatDecayInterval);
+    if (engagementGrowthInterval) clearInterval(engagementGrowthInterval);
+
     // Start heat decay interval
     heatDecayInterval = setInterval(() => {
         if (heatValue > 0) {
@@ -202,6 +210,11 @@ export function initTyping() {
             updateHeatMeter();
         }
     }, 100);
+
+    // Start engagement growth interval (grows likes/retweets on posts over time)
+    engagementGrowthInterval = setInterval(() => {
+        postHistory.forEach((_, index) => startEngagementGrowth(index));
+    }, 2000);
 
     // Initialize progress ring
     if (progressCircleEl) {
@@ -678,15 +691,15 @@ function completePost() {
         playSound('perfect');
     }
 
-    // Visual feedback
-    const postContainer = document.getElementById('post-container');
-    if (postContainer) {
-        postContainer.classList.add('animate-celebrate');
+    // Visual feedback on compose box
+    const composeBox = document.getElementById('compose-box');
+    if (composeBox) {
+        composeBox.classList.add('animate-celebrate');
         if (wpmResult.isPersonalBest) {
-            postContainer.classList.add('animate-main-character');
+            composeBox.classList.add('animate-main-character');
         }
         setTimeout(() => {
-            postContainer.classList.remove('animate-celebrate', 'animate-main-character');
+            composeBox.classList.remove('animate-celebrate', 'animate-main-character');
         }, 1000);
     }
 
@@ -1076,7 +1089,7 @@ function addToHistory(postText, wpm, accuracy, coins, isPerfect, isViral) {
     postHistory.unshift(entry);
 
     // Keep only last 8 posts in the panel
-    if (postHistory.length > 8) {
+    if (postHistory.length > MAX_HISTORY_POSTS) {
         postHistory.pop();
     }
 
@@ -1186,10 +1199,7 @@ function formatEngagement(num) {
     return (num / 1000000).toFixed(1) + 'M';
 }
 
-// Periodically grow engagement on all posts
-setInterval(() => {
-    postHistory.forEach((_, index) => startEngagementGrowth(index));
-}, 2000);
+// Note: engagementGrowthInterval is started in initTyping()
 
 /**
  * Render history panel
