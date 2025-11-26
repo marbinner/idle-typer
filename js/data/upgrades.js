@@ -5,7 +5,8 @@
  */
 
 // Bot definitions (cps = coins per second)
-// All bots use 1.15 cost multiplier (Cookie Clicker standard)
+// Bots use 1.20 cost multiplier (steeper than Cookie Clicker for longer progression)
+// Each bot of the same type gives +1% more CPS (cumulative bonus)
 export const BOTS = {
     // ===== TIER 1: EARLY GAME =====
     replyGuy: {
@@ -14,8 +15,8 @@ export const BOTS = {
         icon: '💬',
         description: '"Great post!" on everything',
         baseCost: 15,
-        costMult: 1.15,
-        cps: 0.1,      // ROI: 150s
+        costMult: 1.20,
+        cps: 0.1,
         unlockAt: 0
     },
     lurker: {
@@ -24,8 +25,8 @@ export const BOTS = {
         icon: '👀',
         description: 'Silent but deadly engagement',
         baseCost: 100,
-        costMult: 1.15,
-        cps: 1,        // ROI: 100s
+        costMult: 1.20,
+        cps: 1,
         unlockAt: 50
     },
     burnerAccount: {
@@ -34,8 +35,8 @@ export const BOTS = {
         icon: '🔥',
         description: 'Anonymous chaos generator',
         baseCost: 1100,
-        costMult: 1.15,
-        cps: 8,        // ROI: 137s
+        costMult: 1.20,
+        cps: 8,
         unlockAt: 500
     },
     shitposter: {
@@ -44,8 +45,8 @@ export const BOTS = {
         icon: '💩',
         description: 'Low effort, high volume',
         baseCost: 12000,
-        costMult: 1.15,
-        cps: 47,       // ROI: 255s
+        costMult: 1.20,
+        cps: 47,
         unlockAt: 5000
     },
 
@@ -56,8 +57,8 @@ export const BOTS = {
         icon: '🐸',
         description: 'Pepe enthusiast',
         baseCost: 130000,
-        costMult: 1.15,
-        cps: 260,      // ROI: 500s
+        costMult: 1.20,
+        cps: 260,
         unlockAt: 50000
     },
     contentCreator: {
@@ -66,8 +67,8 @@ export const BOTS = {
         icon: '📱',
         description: 'Consistent daily content',
         baseCost: 1400000,
-        costMult: 1.15,
-        cps: 1400,     // ROI: 1000s
+        costMult: 1.20,
+        cps: 1400,
         unlockAt: 500000
     },
     blueCheck: {
@@ -76,8 +77,8 @@ export const BOTS = {
         icon: '✓',
         description: '$8/month premium account',
         baseCost: 20000000,
-        costMult: 1.15,
-        cps: 7800,     // ROI: 2564s
+        costMult: 1.20,
+        cps: 7800,
         unlockAt: 5000000
     },
 
@@ -88,8 +89,8 @@ export const BOTS = {
         icon: '🌟',
         description: '500K+ followers',
         baseCost: 330000000,
-        costMult: 1.15,
-        cps: 44000,    // ROI: 7500s
+        costMult: 1.20,
+        cps: 44000,
         unlockAt: 100000000
     },
     cryptoBro: {
@@ -98,8 +99,8 @@ export const BOTS = {
         icon: '📈',
         description: 'WAGMI energy',
         baseCost: 5100000000,
-        costMult: 1.15,
-        cps: 260000,   // ROI: 19615s
+        costMult: 1.20,
+        cps: 260000,
         unlockAt: 1000000000
     },
     grokAI: {
@@ -108,8 +109,8 @@ export const BOTS = {
         icon: '🤖',
         description: 'AI-generated hot takes',
         baseCost: 75000000000,
-        costMult: 1.15,
-        cps: 1600000,  // ROI: 46875s
+        costMult: 1.20,
+        cps: 1600000,
         unlockAt: 10000000000
     },
 
@@ -120,7 +121,7 @@ export const BOTS = {
         icon: '🏭',
         description: 'Industrial scale posting',
         baseCost: 1000000000000,
-        costMult: 1.15,
+        costMult: 1.20,
         cps: 10000000,
         unlockAt: 100000000000
     },
@@ -130,7 +131,7 @@ export const BOTS = {
         icon: '🚀',
         description: 'Main character energy',
         baseCost: 14000000000000,
-        costMult: 1.15,
+        costMult: 1.20,
         cps: 65000000,
         unlockAt: 1000000000000
     },
@@ -140,7 +141,7 @@ export const BOTS = {
         icon: '🏰',
         description: 'You own the algorithm',
         baseCost: 170000000000000,
-        costMult: 1.15,
+        costMult: 1.20,
         cps: 430000000,
         unlockAt: 10000000000000
     },
@@ -152,7 +153,7 @@ export const BOTS = {
         icon: '👁️',
         description: 'Omniscient social presence',
         baseCost: 2100000000000000,
-        costMult: 1.15,
+        costMult: 1.20,
         cps: 2900000000,
         unlockAt: 100000000000000
     },
@@ -162,11 +163,14 @@ export const BOTS = {
         icon: '✨',
         description: 'Your posts reshape existence',
         baseCost: 26000000000000000,
-        costMult: 1.15,
+        costMult: 1.20,
         cps: 21000000000,
         unlockAt: 1000000000000000
     }
 };
+
+// Cumulative bonus per bot of the same type (1% per bot = 0.01)
+export const BOT_CUMULATIVE_BONUS = 0.01;
 
 // Upgrade definitions - multipliers and bonuses that stack
 // Using consistent 1.15 cost multiplier where appropriate

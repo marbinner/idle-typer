@@ -242,10 +242,13 @@ export function recalculateDerived() {
     const followerMult = Math.min(1 + (followers / 1000), 10);
 
     // Calculate coins per second from bots
+    // Each bot of the same type gives +1% more CPS (cumulative bonus)
     const botData = getBotData();
+    const CUMULATIVE_BONUS = 0.01; // 1% per bot
     Object.entries(bots).forEach(([botId, count]) => {
         if (count > 0 && botData[botId]) {
-            baseCPS += botData[botId].cps * count;
+            const cumulativeBonus = 1 + (CUMULATIVE_BONUS * count);
+            baseCPS += botData[botId].cps * count * cumulativeBonus;
         }
     });
 
