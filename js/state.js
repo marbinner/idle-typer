@@ -242,13 +242,15 @@ export function recalculateDerived() {
     const followerMult = Math.min(1 + (followers / 1000), 10);
 
     // Calculate coins per second from bots
-    // Each bot of the same type gives +1% more CPS (cumulative bonus)
+    // Each bot gives linearly more CPS: 1st=1x, 2nd=2x, 3rd=3x, etc.
+    // Total CPS = baseCPS * (1+2+3+...+n) = baseCPS * n*(n+1)/2 (triangular growth)
+    // Cost grows exponentially, CPS grows quadratically = satisfying progression
     const botData = getBotData();
-    const CUMULATIVE_BONUS = 0.01; // 1% per bot
     Object.entries(bots).forEach(([botId, count]) => {
         if (count > 0 && botData[botId]) {
-            const cumulativeBonus = 1 + (CUMULATIVE_BONUS * count);
-            baseCPS += botData[botId].cps * count * cumulativeBonus;
+            // Triangular number formula: n * (n + 1) / 2
+            const triangularBonus = count * (count + 1) / 2;
+            baseCPS += botData[botId].cps * triangularBonus;
         }
     });
 

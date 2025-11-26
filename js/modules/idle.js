@@ -76,20 +76,19 @@ export function getTotalBots() {
  */
 export function getBotContributions() {
     const state = State.getState();
-    const CUMULATIVE_BONUS = 0.01; // 1% per bot
 
     const contributions = [];
 
     Object.entries(state.bots).forEach(([botId, count]) => {
         if (count > 0 && BOTS[botId]) {
             const bot = BOTS[botId];
-            // Include cumulative bonus in CPS calculation
-            const cumulativeBonus = 1 + (CUMULATIVE_BONUS * count);
+            // Triangular number formula: n * (n + 1) / 2
+            const triangularBonus = count * (count + 1) / 2;
             contributions.push({
                 id: botId,
                 name: bot.name,
                 count,
-                cps: bot.cps * count * cumulativeBonus,
+                cps: bot.cps * triangularBonus,
                 percentage: 0 // Will be calculated
             });
         }

@@ -170,8 +170,8 @@ export const BOTS = {
     }
 };
 
-// Cumulative bonus per bot of the same type (1% per bot = 0.01)
-export const BOT_CUMULATIVE_BONUS = 0.01;
+// Bot CPS uses triangular growth: each bot gives more than the last
+// Total CPS = baseCPS * n*(n+1)/2 where n = number of bots owned
 
 // Upgrade definitions - multipliers and bonuses that stack
 // Using consistent 1.15 cost multiplier where appropriate
