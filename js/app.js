@@ -9,7 +9,7 @@ import { initUpgrades, renderUpgrades } from './modules/upgrades.js';
 import { initUI, updateUI } from './modules/ui.js';
 import { initParticles, updateParticles } from './modules/particles.js';
 import { initSound } from './modules/sound.js';
-import { initSave, autoSave } from './modules/save.js';
+import { initSave, autoSave, loadSavedPostHistory } from './modules/save.js';
 import { tick } from './modules/idle.js';
 import { initAchievements } from './modules/achievements.js';
 import { initEvents } from './modules/events.js';
@@ -103,6 +103,10 @@ async function init() {
         // Initialize typing mechanic
         initTyping();
         console.log('Typing system ready');
+
+        // Load saved post history (must be after typing init)
+        loadSavedPostHistory();
+        console.log('Post history loaded');
 
         // Initialize upgrades system
         initUpgrades();

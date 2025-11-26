@@ -22,7 +22,8 @@ const SOUNDS = {
     upgrade: { type: 'synth', frequency: [400, 600, 800, 1000], duration: 0.25, wave: 'sine' },
     premium: { type: 'synth', frequency: [500, 700, 900, 1100, 1300], duration: 0.4, wave: 'sine' },
     viral: { type: 'synth', frequency: [300, 400, 500, 600, 700, 800], duration: 0.5, wave: 'sine' },
-    achievement: { type: 'synth', frequency: [600, 800, 1000], duration: 0.3, wave: 'triangle' }
+    achievement: { type: 'synth', frequency: [600, 800, 1000], duration: 0.3, wave: 'triangle' },
+    kaching: { type: 'custom' } // Special kaching sound for balloon pop
 };
 
 /**
@@ -184,17 +185,21 @@ export function isSoundEnabled() {
 
 /**
  * Play anticipation keystroke - pitch increases based on progress
+ * Creates stronger feeling of anticipation as you near completion
  * @param {number} progress - 0 to 1, how far through the post
  */
 export function playAnticipationKeystroke(progress) {
     const state = State.getState();
     if (!state.soundEnabled) return;
 
-    // Base pitch increases from 0.7 to 1.3 as progress increases
-    const basePitch = 0.7 + (progress * 0.6);
+    // Use quadratic easing to make anticipation build more dramatically at the end
+    const easedProgress = progress * progress;
 
-    // Add slight variation
-    const pitchVariation = 0.05;
+    // Base pitch increases from 0.5 to 1.6 as progress increases (wider range)
+    const basePitch = 0.5 + (easedProgress * 1.1);
+
+    // Add slight variation (less variation at the end for cleaner climax)
+    const pitchVariation = 0.08 * (1 - progress * 0.5);
 
     playSound('keystroke', { pitch: basePitch, pitchVariation });
 }
@@ -267,6 +272,112 @@ export function playCompletionClimax() {
         oscillator.connect(envelope);
         oscillator.start(chordStart);
         oscillator.stop(chordStart + 0.5);
+    });
+}
+
+/**
+ * Play KACHING cash register sound - super rewarding for balloon pop!
+ */
+export function playKachingSound() {
+    const state = State.getState();
+    if (!state.soundEnabled) return;
+
+    if (!audioContext) {
+        initAudioContext();
+        if (!audioContext) return;
+    }
+
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
+    const volume = state.volume * 0.6;
+    const now = audioContext.currentTime;
+
+    // Create master gain for this sound
+    const gainNode = audioContext.createGain();
+    gainNode.connect(masterGain);
+    gainNode.gain.value = volume;
+
+    // Cash register "ka-" part - quick metallic hit
+    const kaGain = audioContext.createGain();
+    kaGain.connect(gainNode);
+    kaGain.gain.setValueAtTime(0.8, now);
+    kaGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+    const kaOsc1 = audioContext.createOscillator();
+    kaOsc1.type = 'square';
+    kaOsc1.frequency.value = 1200;
+    kaOsc1.connect(kaGain);
+    kaOsc1.start(now);
+    kaOsc1.stop(now + 0.1);
+
+    const kaOsc2 = audioContext.createOscillator();
+    kaOsc2.type = 'triangle';
+    kaOsc2.frequency.value = 2400;
+    kaOsc2.connect(kaGain);
+    kaOsc2.start(now);
+    kaOsc2.stop(now + 0.08);
+
+    // "-CHING!" part - bright, shimmery coin sound
+    const chingStart = now + 0.08;
+    const chingFreqs = [2500, 3000, 3500, 4000];
+
+    chingFreqs.forEach((freq, i) => {
+        const osc = audioContext.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+
+        const env = audioContext.createGain();
+        env.connect(gainNode);
+
+        const noteStart = chingStart + i * 0.01;
+        env.gain.setValueAtTime(0, noteStart);
+        env.gain.linearRampToValueAtTime(0.4, noteStart + 0.01);
+        env.gain.exponentialRampToValueAtTime(0.01, noteStart + 0.5);
+
+        osc.connect(env);
+        osc.start(noteStart);
+        osc.stop(noteStart + 0.5);
+    });
+
+    // Add some shimmer/sparkle effect
+    for (let i = 0; i < 5; i++) {
+        const sparkleOsc = audioContext.createOscillator();
+        sparkleOsc.type = 'sine';
+        sparkleOsc.frequency.value = 3000 + Math.random() * 2000;
+
+        const sparkleEnv = audioContext.createGain();
+        sparkleEnv.connect(gainNode);
+
+        const sparkleStart = chingStart + 0.1 + i * 0.05;
+        sparkleEnv.gain.setValueAtTime(0, sparkleStart);
+        sparkleEnv.gain.linearRampToValueAtTime(0.15, sparkleStart + 0.01);
+        sparkleEnv.gain.exponentialRampToValueAtTime(0.01, sparkleStart + 0.15);
+
+        sparkleOsc.connect(sparkleEnv);
+        sparkleOsc.start(sparkleStart);
+        sparkleOsc.stop(sparkleStart + 0.2);
+    }
+
+    // Coin drop/clink sounds
+    const coinFreqs = [1800, 2200, 2600, 2000, 2400];
+    coinFreqs.forEach((freq, i) => {
+        const coinOsc = audioContext.createOscillator();
+        coinOsc.type = 'triangle';
+        coinOsc.frequency.value = freq;
+
+        const coinEnv = audioContext.createGain();
+        coinEnv.connect(gainNode);
+
+        const coinStart = now + 0.15 + i * 0.06;
+        coinEnv.gain.setValueAtTime(0, coinStart);
+        coinEnv.gain.linearRampToValueAtTime(0.25, coinStart + 0.005);
+        coinEnv.gain.exponentialRampToValueAtTime(0.01, coinStart + 0.1);
+
+        coinOsc.connect(coinEnv);
+        coinOsc.start(coinStart);
+        coinOsc.stop(coinStart + 0.12);
     });
 }
 

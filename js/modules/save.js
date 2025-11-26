@@ -4,21 +4,39 @@
  */
 
 import * as State from '../state.js';
+import { getPostHistory, loadPostHistory } from './typing.js';
 
 const SAVE_KEY = 'idleTyper_save';
-const SAVE_VERSION = 1;
+const SAVE_VERSION = 2; // Bumped for post history support
+
+// Store loaded post history to apply after typing init
+let pendingPostHistory = null;
 
 /**
  * Initialize save system and load existing save
  */
 export function initSave() {
-    const savedData = loadFromStorage();
+    const saveData = loadFromStorage();
 
-    if (savedData) {
-        State.loadState(savedData);
+    if (saveData) {
+        State.loadState(saveData.state);
+        // Store post history to load after typing is initialized
+        if (saveData.postHistory) {
+            pendingPostHistory = saveData.postHistory;
+        }
         console.log('Game loaded from save');
     } else {
         console.log('No save found, starting fresh');
+    }
+}
+
+/**
+ * Load post history (call after typing module is initialized)
+ */
+export function loadSavedPostHistory() {
+    if (pendingPostHistory) {
+        loadPostHistory(pendingPostHistory);
+        pendingPostHistory = null;
     }
 }
 
@@ -28,10 +46,12 @@ export function initSave() {
 export function save() {
     try {
         const state = State.getStateForSave();
+        const postHistory = getPostHistory();
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
-            state
+            state,
+            postHistory
         };
 
         localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
@@ -79,7 +99,7 @@ function loadFromStorage() {
             return migrateData(saveData);
         }
 
-        return saveData.state;
+        return saveData; // Return full save data object
     } catch (error) {
         console.error('Failed to load save:', error);
         return null;
@@ -93,8 +113,16 @@ function migrateData(saveData) {
     // Handle version migrations here
     console.log(`Migrating save from v${saveData.version} to v${SAVE_VERSION}`);
 
-    // For now, just return the state as-is
-    return saveData.state;
+    // Migration from v1 to v2: add empty postHistory
+    if (saveData.version === 1) {
+        return {
+            state: saveData.state,
+            postHistory: []
+        };
+    }
+
+    // For now, just return the data as-is
+    return saveData;
 }
 
 /**
@@ -103,14 +131,16 @@ function migrateData(saveData) {
 export function exportSave() {
     try {
         const state = State.getStateForSave();
+        const postHistory = getPostHistory();
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
-            state
+            state,
+            postHistory
         };
 
         const jsonString = JSON.stringify(saveData);
-        return btoa(jsonString);
+        return btoa(unescape(encodeURIComponent(jsonString))); // Handle unicode
     } catch (error) {
         console.error('Failed to export save:', error);
         return null;
@@ -118,11 +148,49 @@ export function exportSave() {
 }
 
 /**
+ * Export save and copy to clipboard
+ */
+export function exportToClipboard() {
+    const exportCode = exportSave();
+    if (exportCode) {
+        navigator.clipboard.writeText(exportCode).then(() => {
+            showSaveNotification('Save copied to clipboard!');
+        }).catch(() => {
+            // Fallback: show in prompt
+            prompt('Copy this save code:', exportCode);
+        });
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Export save as downloadable file
+ */
+export function exportToFile() {
+    const exportCode = exportSave();
+    if (exportCode) {
+        const blob = new Blob([exportCode], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `idle-typer-save-${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showSaveNotification('Save file downloaded!');
+        return true;
+    }
+    return false;
+}
+
+/**
  * Import save from Base64 string
  */
 export function importSave(code) {
     try {
-        const jsonString = atob(code);
+        const jsonString = decodeURIComponent(escape(atob(code))); // Handle unicode
         const saveData = JSON.parse(jsonString);
 
         // Validate save data
@@ -131,21 +199,24 @@ export function importSave(code) {
         }
 
         // Version migration if needed
-        let state = saveData.state;
+        let migratedData = saveData;
         if (saveData.version !== SAVE_VERSION) {
-            state = migrateData(saveData);
+            migratedData = migrateData(saveData);
         }
 
         // Save to localStorage
         localStorage.setItem(SAVE_KEY, JSON.stringify({
             version: SAVE_VERSION,
             timestamp: Date.now(),
-            state
+            state: migratedData.state || saveData.state,
+            postHistory: migratedData.postHistory || saveData.postHistory || []
         }));
 
+        showSaveNotification('Save imported! Refresh to apply.');
         return true;
     } catch (error) {
         console.error('Failed to import save:', error);
+        showSaveNotification('Import failed! Invalid save code.');
         return false;
     }
 }

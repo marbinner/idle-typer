@@ -5,7 +5,7 @@
 
 import * as State from '../state.js';
 import { POSTS } from '../data/posts.js';
-import { playSound, playAnticipationKeystroke, playCompletionClimax } from './sound.js';
+import { playSound, playAnticipationKeystroke, playCompletionClimax, playKachingSound } from './sound.js';
 import { spawnParticles, spawnFloatingNumber } from './particles.js';
 
 // DOM Elements
@@ -58,6 +58,23 @@ const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * 15.5; // r=15.5 from SVG
 
 // History storage (last 20 posts)
 let postHistory = [];
+
+/**
+ * Get post history for saving
+ */
+export function getPostHistory() {
+    return postHistory;
+}
+
+/**
+ * Load post history from save
+ */
+export function loadPostHistory(history) {
+    if (Array.isArray(history)) {
+        postHistory = history;
+        renderHistory();
+    }
+}
 
 /**
  * Initialize the typing system
@@ -946,56 +963,80 @@ function startEngagementGrowth(index) {
     const ageFactor = Math.max(0.1, 1 - (index * 0.15));
     const viralFactor = entry.isViral ? 3 : 1;
 
+    // Track changes for floating numbers
+    const changes = { views: 0, likes: 0, retweets: 0, comments: 0 };
+
     // Random engagement increases
     if (Math.random() < 0.3 * ageFactor * viralFactor) {
-        entry.engagement.views += Math.floor(Math.random() * 10 * ageFactor * viralFactor) + 1;
+        const increase = Math.floor(Math.random() * 10 * ageFactor * viralFactor) + 1;
+        entry.engagement.views += increase;
+        changes.views = increase;
     }
     if (Math.random() < 0.15 * ageFactor * viralFactor) {
-        entry.engagement.likes += Math.floor(Math.random() * 3 * ageFactor * viralFactor) + 1;
+        const increase = Math.floor(Math.random() * 3 * ageFactor * viralFactor) + 1;
+        entry.engagement.likes += increase;
+        changes.likes = increase;
     }
     if (Math.random() < 0.05 * ageFactor * viralFactor) {
         entry.engagement.retweets += 1;
+        changes.retweets = 1;
     }
     if (Math.random() < 0.03 * ageFactor * viralFactor) {
         entry.engagement.comments += 1;
+        changes.comments = 1;
     }
 
-    // Update display
-    updateEngagementDisplay(index);
+    // Update display with floating indicators
+    updateEngagementDisplay(index, changes);
 }
 
 /**
  * Update engagement display for a specific post
  */
-function updateEngagementDisplay(index) {
+function updateEngagementDisplay(index, changes = null) {
     const engagementEl = document.querySelector(`[data-history-index="${index}"] .tweet-engagement`);
-    if (engagementEl && postHistory[index]) {
-        const e = postHistory[index].engagement;
-        // SVG icons for Twitter-like engagement buttons
-        const commentSvg = '<svg viewBox="0 0 24 24"><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z"/></svg>';
-        const retweetSvg = '<svg viewBox="0 0 24 24"><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"/></svg>';
-        const likeSvg = '<svg viewBox="0 0 24 24"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>';
-        const viewsSvg = '<svg viewBox="0 0 24 24"><path d="M8.75 21V3h2v18h-2zM18 21V8.5h2V21h-2zM4 21l.004-10h2L6 21H4zm9.248 0v-7h2v7h-2z"/></svg>';
+    if (!engagementEl || !postHistory[index]) return;
 
-        engagementEl.innerHTML = `
-            <div class="engagement-item comments">
-                <div class="icon-wrap">${commentSvg}</div>
-                <span class="count">${formatEngagement(e.comments)}</span>
-            </div>
-            <div class="engagement-item retweets">
-                <div class="icon-wrap">${retweetSvg}</div>
-                <span class="count">${formatEngagement(e.retweets)}</span>
-            </div>
-            <div class="engagement-item likes">
-                <div class="icon-wrap">${likeSvg}</div>
-                <span class="count">${formatEngagement(e.likes)}</span>
-            </div>
-            <div class="engagement-item views">
-                <div class="icon-wrap">${viewsSvg}</div>
-                <span class="count">${formatEngagement(e.views)}</span>
-            </div>
-        `;
-    }
+    const e = postHistory[index].engagement;
+
+    // Update each stat and show floating +N if changed
+    const stats = [
+        { key: 'comments', selector: '.comments .count', color: '#1d9bf0' },
+        { key: 'retweets', selector: '.retweets .count', color: '#00ba7c' },
+        { key: 'likes', selector: '.likes .count', color: '#f91880' },
+        { key: 'views', selector: '.views .count', color: '#1d9bf0' }
+    ];
+
+    stats.forEach(stat => {
+        const countEl = engagementEl.querySelector(stat.selector);
+        if (countEl) {
+            countEl.textContent = formatEngagement(e[stat.key]);
+
+            // Show floating +N indicator if there's a change
+            if (changes && changes[stat.key] > 0) {
+                showEngagementPopup(countEl, changes[stat.key], stat.color);
+            }
+        }
+    });
+}
+
+/**
+ * Show a floating +N popup next to an engagement stat
+ */
+function showEngagementPopup(element, amount, color) {
+    const rect = element.getBoundingClientRect();
+
+    const popup = document.createElement('div');
+    popup.className = 'engagement-popup';
+    popup.textContent = '+' + amount;
+    popup.style.left = (rect.left + rect.width / 2) + 'px';
+    popup.style.top = rect.top + 'px';
+    popup.style.color = color;
+
+    document.body.appendChild(popup);
+
+    // Remove after animation
+    setTimeout(() => popup.remove(), 800);
 }
 
 /**
@@ -1108,38 +1149,80 @@ function getTimeAgo(timestamp) {
     return Math.floor(seconds / 86400) + 'd';
 }
 
+// Track if balloon is currently popping (prevent double-pop)
+let balloonPopping = false;
+
+// Random balloon pop threshold (8-12 posts)
+let balloonPopThreshold = Math.floor(Math.random() * 5) + 8; // 8-12
+
 /**
- * Update inflating balloon (10 posts = pop bonus)
+ * Update inflating balloon (random 8-12 posts = auto-pop bonus)
  */
 function updatePostProgress() {
     const state = State.getState();
-    const postsInCycle = state.lifetimePosts % 10;
+    // Track posts in current balloon cycle
+    const postsInCycle = state.lifetimePosts % balloonPopThreshold;
     const balloonContainer = document.getElementById('balloon-container');
     const balloonVisual = document.getElementById('balloon-visual');
 
-    // Update count display
+    // Hide the countdown display (user doesn't want to know when it pops)
     if (postProgressCountEl) {
-        postProgressCountEl.textContent = postsInCycle;
+        postProgressCountEl.textContent = ''; // Don't show the number
     }
 
     if (!balloonContainer || !balloonVisual) return;
 
-    // Calculate balloon size based on progress (40px base, grows to 80px)
-    const baseSize = 40;
-    const maxSize = 90;
-    const currentSize = baseSize + (postsInCycle / 10) * (maxSize - baseSize);
+    // Calculate balloon size - grows exponentially for more dramatic effect
+    const baseSize = 35;
+    const maxSize = 150;
+    // Progress from 0 to 1 based on current threshold
+    const progress = postsInCycle / balloonPopThreshold;
+    // Use cubic easing for dramatic growth at the end
+    const easedProgress = progress * progress * progress;
+    const currentSize = baseSize + easedProgress * (maxSize - baseSize);
     balloonVisual.style.fontSize = currentSize + 'px';
 
-    // Update balloon state classes
-    balloonContainer.classList.remove('ready', 'inflating');
+    // Calculate how close we are to popping (last 3 posts = intense)
+    const postsUntilPop = balloonPopThreshold - postsInCycle;
 
-    if (postsInCycle === 0 && state.lifetimePosts > 0) {
-        // Balloon is full and ready to pop!
+    // Update balloon state classes and intensity
+    // Only add movement/wobble animations in the last few posts before pop
+    balloonContainer.classList.remove('ready', 'inflating', 'about-to-pop', 'critical', 'stage-1', 'stage-2', 'stage-3');
+
+    if (postsInCycle === 0 && state.lifetimePosts > 0 && !balloonPopping) {
+        // Balloon reached threshold - AUTO POP!
+        balloonPopping = true;
         balloonContainer.classList.add('ready');
         balloonVisual.style.fontSize = maxSize + 'px';
+
+        // Dramatic pause before pop, then reset threshold
+        setTimeout(() => {
+            popBalloon();
+            balloonPopping = false;
+            // New random threshold for next balloon (8-12)
+            balloonPopThreshold = Math.floor(Math.random() * 5) + 8;
+        }, 400);
+    } else if (postsUntilPop === 1) {
+        // CRITICAL - about to burst! (last post before pop)
+        balloonContainer.classList.add('critical');
+        balloonVisual.style.filter = 'drop-shadow(0 0 25px rgba(255, 50, 50, 1)) hue-rotate(-20deg) saturate(1.5)';
+    } else if (postsUntilPop <= 2) {
+        // Almost ready - wobble intensifies! (2 posts left)
+        balloonContainer.classList.add('about-to-pop');
+        balloonVisual.style.filter = 'drop-shadow(0 0 15px rgba(255, 100, 100, 0.8)) hue-rotate(-10deg)';
+    } else if (postsUntilPop <= 3) {
+        // Starting to wobble (3 posts left) - noticeable glow
+        balloonContainer.classList.add('inflating', 'stage-2');
+        balloonVisual.style.filter = 'drop-shadow(0 0 8px rgba(255, 100, 100, 0.5))';
     } else if (postsInCycle > 0) {
-        // Balloon is inflating
+        // Balloon is inflating - NO wobble, just grows silently
         balloonContainer.classList.add('inflating');
+        // Just a subtle glow, no animation classes
+        const glowIntensity = Math.min(progress * 0.3, 0.2);
+        balloonVisual.style.filter = `drop-shadow(0 0 ${3 + progress * 5}px rgba(255, 100, 100, ${glowIntensity}))`;
+    } else {
+        // Reset - empty balloon
+        balloonVisual.style.filter = '';
     }
 }
 
@@ -1158,10 +1241,11 @@ function handleBalloonClick(e) {
 }
 
 /**
- * Pop balloon animation and give bonus
+ * Pop balloon animation and give bonus - super rewarding!
  */
 function popBalloon() {
     const balloonContainer = document.getElementById('balloon-container');
+    const balloonVisual = document.getElementById('balloon-visual');
     if (!balloonContainer) return;
 
     const state = State.getState();
@@ -1169,26 +1253,51 @@ function popBalloon() {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    // Create pop animation element
+    // Hide the balloon immediately
+    if (balloonVisual) {
+        balloonVisual.style.opacity = '0';
+    }
+
+    // Create pop animation element (explosion effect)
     const popEl = document.createElement('div');
     popEl.className = 'balloon-pop';
-    popEl.textContent = '🎈';
+    popEl.textContent = '💥';
     popEl.style.left = centerX - 50 + 'px';
     popEl.style.top = centerY - 50 + 'px';
     document.body.appendChild(popEl);
 
-    // Create confetti burst
-    const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#a29bfe', '#fd79a8'];
-    for (let i = 0; i < 30; i++) {
+    // Create massive confetti burst
+    const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#a29bfe', '#fd79a8', '#ff9f43', '#00d2d3'];
+    for (let i = 0; i < 60; i++) {
         const confetti = document.createElement('div');
         confetti.className = 'balloon-confetti';
         confetti.style.left = centerX + 'px';
         confetti.style.top = centerY + 'px';
         confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.setProperty('--x', ((Math.random() - 0.5) * 300) + 'px');
-        confetti.style.setProperty('--y', ((Math.random() - 0.5) * 200) + 'px');
+        // Spread in all directions
+        const angle = (i / 60) * Math.PI * 2;
+        const distance = 150 + Math.random() * 180;
+        confetti.style.setProperty('--x', (Math.cos(angle) * distance) + 'px');
+        confetti.style.setProperty('--y', (Math.sin(angle) * distance - 50) + 'px');
         document.body.appendChild(confetti);
         setTimeout(() => confetti.remove(), 1500);
+    }
+
+    // COIN BURST! Spawn lots of golden coins flying out
+    for (let i = 0; i < 25; i++) {
+        const coin = document.createElement('div');
+        coin.className = 'balloon-coin';
+        coin.textContent = '🪙';
+        coin.style.left = centerX + 'px';
+        coin.style.top = centerY + 'px';
+        coin.style.fontSize = (16 + Math.random() * 12) + 'px';
+        // Random directions
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 80 + Math.random() * 120;
+        coin.style.setProperty('--x', (Math.cos(angle) * distance) + 'px');
+        coin.style.setProperty('--y', (Math.sin(angle) * distance - 30) + 'px');
+        document.body.appendChild(coin);
+        setTimeout(() => coin.remove(), 1200);
     }
 
     // Remove pop element after animation
@@ -1203,20 +1312,29 @@ function popBalloon() {
     State.addCoins(bonusCoins, 'balloon');
     State.addFollowers(bonusFollowers, 'balloon');
 
-    // Play sound
-    playSound('achievement');
-    playSound('viral');
+    // Play KACHING sound - super satisfying!
+    playKachingSound();
+    // Additional celebration sounds
+    setTimeout(() => playSound('achievement'), 150);
+    setTimeout(() => playSound('viral'), 300);
 
-    // Particles
-    spawnParticles('confetti', centerX, centerY, 60);
+    // Particles - extra explosion
+    spawnParticles('confetti', centerX, centerY, 100);
     spawnFloatingNumber(`+${formatNumber(bonusCoins)} ₿`, centerX, centerY - 50, 'xcoins');
     spawnFloatingNumber(`+${bonusFollowers} Followers!`, centerX, centerY - 100, 'followers');
+    spawnFloatingNumber('💰 KA-CHING! 💰', centerX, centerY - 150, 'viral');
 
     // Show notification
-    showNotification('POP! +' + formatNumber(bonusCoins) + ' coins!', 'perfect');
+    showNotification('🎈💥 POP! +' + formatNumber(bonusCoins) + ' coins!', 'perfect');
 
-    // Reset balloon
-    updatePostProgress();
+    // Reset balloon after a brief delay
+    setTimeout(() => {
+        if (balloonVisual) {
+            balloonVisual.style.opacity = '1';
+            balloonVisual.style.fontSize = '35px';
+            balloonVisual.style.filter = '';
+        }
+    }, 500);
 }
 
 /**

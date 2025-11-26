@@ -78,10 +78,19 @@ function setupEventListeners() {
     // Listen for coin gain events for number bump animation
     window.addEventListener('coins-gained', (e) => {
         if (bigCoinValueEl) {
-            bigCoinValueEl.classList.add('animate-number-bump');
-            setTimeout(() => {
-                bigCoinValueEl.classList.remove('animate-number-bump');
-            }, 300);
+            const source = e.detail?.source || 'unknown';
+            // Use subtle animation for passive income, bigger for active typing
+            if (source === 'passive' || source === 'bots') {
+                bigCoinValueEl.classList.add('animate-number-tick');
+                setTimeout(() => {
+                    bigCoinValueEl.classList.remove('animate-number-tick');
+                }, 150);
+            } else {
+                bigCoinValueEl.classList.add('animate-number-bump');
+                setTimeout(() => {
+                    bigCoinValueEl.classList.remove('animate-number-bump');
+                }, 300);
+            }
         }
     });
 

@@ -13,6 +13,11 @@
         <!-- Header Stats Bar -->
         <header id="stats-bar">
             <div class="stat-group">
+                <!-- Player Rank (compact) -->
+                <div class="stat" id="rank-stat">
+                    <span id="rank-icon">🥚</span>
+                    <span class="stat-value" id="rank-name">Lurker</span>
+                </div>
                 <div class="stat" id="followers-stat" data-tooltip="Followers boost all coin earnings">
                     <span class="stat-icon">👥</span>
                     <span class="stat-value" id="followers-count">0</span>
@@ -22,6 +27,13 @@
                     <span class="stat-value" id="follower-mult">1.0x</span>
                     <span class="stat-label">boost</span>
                 </div>
+            </div>
+            <!-- Heat Meter (compact in header) -->
+            <div id="heat-meter">
+                <div id="heat-bar">
+                    <div id="heat-fill"></div>
+                </div>
+                <div id="heat-level">COLD</div>
             </div>
             <div class="header-controls">
                 <button id="achievements-btn" class="icon-btn" title="Achievements">🏆</button>
@@ -46,18 +58,6 @@
 
             <!-- Center Panel: Typing Area (X-style compose box) -->
             <section id="typing-section">
-                <!-- Player Level/Rank Display -->
-                <div id="player-rank-display">
-                    <div id="rank-badge">
-                        <span id="rank-icon">🥚</span>
-                        <span id="rank-name">Lurker</span>
-                    </div>
-                    <div id="rank-progress">
-                        <div id="rank-progress-fill"></div>
-                    </div>
-                    <span id="rank-xp">0 / 100 XP</span>
-                </div>
-
                 <!-- Big Coin Counter - THE NUMBER GO UP -->
                 <div id="big-coin-display">
                     <span id="big-coin-icon">₿</span>
@@ -66,15 +66,6 @@
                         <span id="big-cps-value">+0</span>
                         <span class="cps-label">/sec</span>
                     </div>
-                </div>
-
-                <!-- Heat Meter - Typing Intensity -->
-                <div id="heat-meter">
-                    <div id="heat-label">🔥 HEAT</div>
-                    <div id="heat-bar">
-                        <div id="heat-fill"></div>
-                    </div>
-                    <div id="heat-level">COLD</div>
                 </div>
 
                 <!-- Floating notifications container -->
