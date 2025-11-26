@@ -101,10 +101,10 @@ function renderBots() {
                     <div class="upgrade-icon locked-icon">🔒</div>
                     <div class="upgrade-info">
                         <div class="upgrade-name">???</div>
-                        <div class="upgrade-desc">Unlock at ₿${formatNumber(bot.unlockAt)} lifetime</div>
+                        <div class="upgrade-desc">Unlock at μ₿${formatNumber(bot.unlockAt)} lifetime</div>
                     </div>
                     <div class="upgrade-cost">
-                        <span class="cost-icon">₿</span>
+                        <span class="cost-icon">μ₿</span>
                         <span class="cost-value locked-cost">${formatNumber(bot.unlockAt)}</span>
                     </div>
                 </div>
@@ -129,7 +129,7 @@ function renderBots() {
                         <span class="gain-value">+${cpsDisplay}/s</span>
                     </div>
                     <div class="upgrade-cost ${canAfford ? 'can-afford' : 'cant-afford'}">
-                        <span class="cost-icon">₿</span>
+                        <span class="cost-icon">μ₿</span>
                         <span class="cost-value">${formatNumber(cost)}</span>
                     </div>
                 </div>
@@ -205,7 +205,7 @@ function renderUpgradesList() {
                 </div>
                 <div class="upgrade-cost ${!isMaxed && canAfford ? 'can-afford' : !isMaxed ? 'cant-afford' : ''}">
                     ${isMaxed ? '<span class="cost-value maxed-text">✓ MAX</span>' : `
-                        <span class="cost-icon">₿</span>
+                        <span class="cost-icon">μ₿</span>
                         <span class="cost-value">${formatNumber(cost)}</span>
                     `}
                 </div>
@@ -285,7 +285,7 @@ function renderPremium() {
                 </div>
                 <div class="upgrade-cost ${!isOwned && canAfford && !isLocked ? 'can-afford' : !isOwned ? 'cant-afford' : ''}">
                     ${isOwned ? '<span class="cost-value" style="color: var(--success-green)">OWNED</span>' : `
-                        <span class="cost-icon">₿</span>
+                        <span class="cost-icon">μ₿</span>
                         <span class="cost-value">${formatNumber(item.cost)}</span>
                     `}
                 </div>

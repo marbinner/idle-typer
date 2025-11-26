@@ -280,7 +280,9 @@ function showSettingsModal() {
         if (confirm('Are you sure? This will delete ALL progress!')) {
             // Use save module's reset function
             const { resetSave } = await import('./save.js');
+            const { clearPostHistory } = await import('./typing.js');
             resetSave();
+            clearPostHistory();
             // Force reload bypassing cache
             window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
         }

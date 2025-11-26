@@ -9,7 +9,7 @@ import { getStatsHistory, loadStatsHistory } from './stats.js';
 
 const SAVE_KEY = 'idleTyper_save';
 const SAVE_VERSION = 4; // Bumped for Cookie Clicker style rebalance
-const MAX_HISTORY_POSTS = 8; // Max posts to keep in history
+const MAX_HISTORY_POSTS = 6; // Max posts to keep in history
 
 // Store loaded data to apply after typing init
 let pendingPostHistory = null;

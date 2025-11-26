@@ -148,6 +148,9 @@ async function init() {
         // Set up visibility change handling
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
+        // Set up page unload handler to save game
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
         // Initial UI update
         updateUI();
 
@@ -177,6 +180,14 @@ function handleVisibilityChange() {
         // Tab is visible again - calculate offline progress
         calculateOfflineProgress();
     }
+}
+
+/**
+ * Handle page unload - save game before leaving
+ */
+function handleBeforeUnload() {
+    // Save game state before unloading
+    autoSave();
 }
 
 /**

@@ -14,7 +14,7 @@ let postTextEl;
 let progressCircleEl;
 let charCountEl;
 let comboCountEl;
-let postEarningsEl;
+let totalPostsCountEl;
 let postBtnEl;
 let notificationContainerEl;
 let historyListEl;
@@ -39,7 +39,7 @@ let keystrokeTimes = []; // Track recent keystroke timestamps
 let engagementGrowthInterval = null; // For periodic engagement growth
 
 // Constants
-const MAX_HISTORY_POSTS = 8;
+const MAX_HISTORY_POSTS = 6;
 
 // Rank system
 const RANKS = [
@@ -72,16 +72,27 @@ export function getPostHistory() {
 }
 
 /**
+ * Clear post history (for reset)
+ */
+export function clearPostHistory() {
+    postHistory = [];
+    renderHistory();
+}
+
+/**
  * Load post history from save
  */
 export function loadPostHistory(history) {
     console.log('loadPostHistory called with:', history?.length || 0, 'posts');
     if (Array.isArray(history)) {
-        postHistory = history;
-        console.log('Post history set, rendering...');
+        // Trim to max allowed posts (keep most recent)
+        postHistory = history.slice(0, MAX_HISTORY_POSTS);
+        console.log('Post history set to', postHistory.length, 'posts, rendering...');
         renderHistory();
     } else {
         console.log('History is not an array, skipping');
+        postHistory = [];
+        renderHistory();
     }
 }
 
@@ -180,7 +191,7 @@ export function initTyping() {
     progressCircleEl = document.getElementById('progress-circle');
     charCountEl = document.getElementById('char-count');
     comboCountEl = document.getElementById('combo-count');
-    postEarningsEl = document.getElementById('post-earnings');
+    totalPostsCountEl = document.getElementById('total-posts-count');
     postBtnEl = document.getElementById('post-btn');
     notificationContainerEl = document.getElementById('notification-container');
     historyListEl = document.getElementById('history-list');
@@ -222,7 +233,8 @@ export function initTyping() {
         progressCircleEl.style.strokeDashoffset = CIRCLE_CIRCUMFERENCE;
     }
 
-    // Set up keyboard listener
+    // Set up keyboard listener (remove first to prevent duplicates on re-init)
+    document.removeEventListener('keydown', handleKeyDown);
     document.addEventListener('keydown', handleKeyDown);
 
     // Note: loadNewPost() is called by app.js after checking for saved typing state
@@ -559,18 +571,22 @@ function handleIncorrectChar() {
  * Complete the current post
  */
 function completePost() {
+    // Guard against null currentPost
+    if (!currentPost) return;
+
     // Stop WPM updates
     if (wpmUpdateInterval) clearInterval(wpmUpdateInterval);
 
     const state = State.getState();
     const postLength = currentPost.text.length;
     const typingTime = Date.now() - postStartTime;
-    const isPerfect = state.errors === 0 || (state.errors === state.combo);
+    // Use local errorCount for THIS post, not global state.errors
+    const isPerfect = errorCount === 0;
 
-    // Calculate final WPM
+    // Calculate final WPM (guard against division by zero)
     const words = postLength / 5; // Standard: 5 chars = 1 word
     const minutes = typingTime / 60000;
-    const finalWPM = Math.round(words / minutes);
+    const finalWPM = minutes > 0 ? Math.round(words / minutes) : 0;
 
     // Track WPM records
     const wpmResult = trackWPMRecord(finalWPM, state);
@@ -727,26 +743,26 @@ function completePost() {
         // Huge celebration for new record!
         spawnParticles('viral', centerX, centerY, 100);
         spawnFloatingNumber(`🏆 NEW RECORD! ${finalWPM} WPM 🏆`, centerX, centerY - 100, 'viral');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 50, 'coins');
+        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 50, 'coins');
         showNotification(`NEW PERSONAL BEST! ${finalWPM} WPM`, 'record');
     } else if (viralResult) {
         spawnParticles('confetti', centerX, centerY, viralResult.particles);
         spawnFloatingNumber(`🔥 ${viralResult.name}! 🔥`, centerX, centerY - 80, 'viral');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 40, 'coins');
+        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
         showNotification(`${viralResult.name}!`, 'viral');
     } else if (wpmBonusName) {
         spawnParticles('confetti', centerX, centerY, 35);
         spawnFloatingNumber(`⚡ ${wpmBonusName} ⚡`, centerX, centerY - 80, 'default');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 40, 'coins');
+        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
         showNotification(`${finalWPM} WPM - ${wpmBonusName}!`, 'wpm');
     } else if (isPerfect) {
         spawnParticles('confetti', centerX, centerY, 25);
         spawnFloatingNumber(`✨ PERFECT! ✨`, centerX, centerY - 80, 'perfect');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 40, 'coins');
+        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
         showNotification('Perfect typing! +50% bonus', 'perfect');
     } else {
         spawnParticles('confetti', centerX, centerY, 15);
-        spawnFloatingNumber(`+${formatNumber(coinReward)} ₿`, centerX, centerY - 50, 'coins');
+        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 50, 'coins');
     }
 
     // Show idle equivalent for meaningful feedback
@@ -935,21 +951,18 @@ function updateProgress() {
         charCountEl.textContent = `${typedIndex}/${currentPost.text.length}`;
     }
 
-    // Update estimated earnings
-    updateEstimatedEarnings();
+    // Update total posts display
+    updateTotalPostsDisplay();
 }
 
 /**
- * Update estimated earnings display
+ * Update total posts display
  */
-function updateEstimatedEarnings() {
-    if (!postEarningsEl || !currentPost) return;
+function updateTotalPostsDisplay() {
+    if (!totalPostsCountEl) return;
 
     const state = State.getState();
-    const baseCoins = state.coinsPerPost * currentPost.text.length / 100;
-    const estimated = Math.floor(baseCoins * (1 + state.combo * 0.01));
-
-    postEarningsEl.textContent = `+${formatNumber(estimated)}`;
+    totalPostsCountEl.textContent = formatNumber(state.lifetimePosts || 0);
 }
 
 /**
@@ -980,8 +993,8 @@ function updateComboDisplay() {
         }
     }
 
-    // Update estimated earnings when combo changes
-    updateEstimatedEarnings();
+    // Update total posts display when combo changes
+    updateTotalPostsDisplay();
 
     // Update streak display
     updateStreakDisplay();
@@ -1283,7 +1296,7 @@ function renderHistory() {
                         <div class="tweet-stats">
                             <span class="tweet-stat wpm"><span class="label">WPM</span> <span class="value">${entry.wpm}</span></span>
                             <span class="tweet-stat accuracy"><span class="label">ACC</span> <span class="value">${entry.accuracy}%</span></span>
-                            <span class="tweet-stat coins"><span class="label">+</span> <span class="value">₿${formatNumber(entry.coins)}</span></span>
+                            <span class="tweet-stat coins"><span class="label">+</span> <span class="value">μ₿${formatNumber(entry.coins)}</span></span>
                         </div>
                     </div>
                 </div>
@@ -1500,7 +1513,7 @@ function popBalloon() {
 
     // Particles - extra explosion
     spawnParticles('confetti', centerX, centerY, 100);
-    spawnFloatingNumber(`+${formatNumber(bonusCoins)} ₿`, centerX, centerY - 50, 'xcoins');
+    spawnFloatingNumber(`+${formatNumber(bonusCoins)} μ₿`, centerX, centerY - 50, 'xcoins');
     spawnFloatingNumber(`+${bonusFollowers} Followers!`, centerX, centerY - 100, 'followers');
     spawnFloatingNumber('💰 KA-CHING! 💰', centerX, centerY - 150, 'viral');
 
@@ -1546,7 +1559,7 @@ function showBigReward(coins, followers, idleSeconds, bonuses) {
 
     // Main coin display
     html += `<div class="reward-coins">
-        <span class="coin-icon">₿</span>
+        <span class="coin-icon">μ₿</span>
         <span class="coin-amount">${formatNumber(coins)}</span>
     </div>`;
 

@@ -84,6 +84,7 @@ const MIN_EVENT_INTERVAL = 60000; // Minimum 1 minute between events
 let floatingBonusElement = null;
 let floatingBonusInterval = null;
 let floatingBonusTimeout = null;
+let floatingBonusAnimationId = null;
 let bonusModeEndTime = 0;
 let bonusModeTimerInterval = null;
 const FLOATING_BONUS_SPAWN_INTERVAL = 45000; // Check every 45 seconds
@@ -373,10 +374,19 @@ function spawnFloatingBonus() {
 function animateFloatingBonus() {
     if (!floatingBonusElement) return;
 
+    // Cancel any existing animation
+    if (floatingBonusAnimationId) {
+        cancelAnimationFrame(floatingBonusAnimationId);
+        floatingBonusAnimationId = null;
+    }
+
     // Floating animation with sinusoidal movement
     let time = 0;
     const animate = () => {
-        if (!floatingBonusElement) return;
+        if (!floatingBonusElement) {
+            floatingBonusAnimationId = null;
+            return;
+        }
 
         time += 0.02;
 
@@ -404,10 +414,10 @@ function animateFloatingBonus() {
         floatingBonusElement.style.left = newX + 'px';
         floatingBonusElement.style.top = newY + 'px';
 
-        requestAnimationFrame(animate);
+        floatingBonusAnimationId = requestAnimationFrame(animate);
     };
 
-    requestAnimationFrame(animate);
+    floatingBonusAnimationId = requestAnimationFrame(animate);
 }
 
 /**
@@ -431,18 +441,25 @@ function handleFloatingBonusClick(e) {
  * Remove floating bonus element
  */
 function removeFloatingBonus() {
+    // Cancel animation frame
+    if (floatingBonusAnimationId) {
+        cancelAnimationFrame(floatingBonusAnimationId);
+        floatingBonusAnimationId = null;
+    }
+
     if (floatingBonusTimeout) {
         clearTimeout(floatingBonusTimeout);
         floatingBonusTimeout = null;
     }
 
     if (floatingBonusElement) {
+        // Remove event listener before removing element
+        floatingBonusElement.removeEventListener('click', handleFloatingBonusClick);
         floatingBonusElement.classList.add('animate-fade-out');
+        const elementToRemove = floatingBonusElement;
+        floatingBonusElement = null; // Clear reference immediately to stop animation
         setTimeout(() => {
-            if (floatingBonusElement) {
-                floatingBonusElement.remove();
-                floatingBonusElement = null;
-            }
+            elementToRemove.remove();
         }, 300);
     }
 }

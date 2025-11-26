@@ -813,7 +813,7 @@
 }
 
 #big-coin-value::before {
-    content: '₿';
+    content: 'μ₿';
     margin-right: 8px;
     font-size: 48px;
     opacity: 0.9;
@@ -1537,13 +1537,9 @@
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
-/* Earnings */
-#earnings-display .stat-icon::before {
-    content: '₿';
-}
-
-#earnings-display .stat-number {
-    color: var(--success-green);
+/* Posts count */
+#posts-display .stat-number {
+    color: var(--x-premium-blue);
 }
 
 /* Typing Feedback */
