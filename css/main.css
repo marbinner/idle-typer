@@ -2003,12 +2003,11 @@
 }
 
 .upgrade-cost.can-afford .cost-value {
-    color: var(--success-green);
+    color: #ffffff !important;
 }
 
 .upgrade-cost.cant-afford .cost-value {
-    color: var(--error-red);
-    opacity: 0.7;
+    color: var(--error-red) !important;
 }
 
 .locked-cost {

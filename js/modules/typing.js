@@ -411,7 +411,8 @@ function handleKeyDown(event) {
     if (ignoredKeys.includes(event.key)) return;
 
     // Prevent default for space to avoid page scroll
-    if (event.key === ' ') {
+    // Also prevent ' and / which trigger Firefox quick find
+    if (event.key === ' ' || event.key === "'" || event.key === '/') {
         event.preventDefault();
     }
 
