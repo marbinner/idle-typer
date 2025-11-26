@@ -14,6 +14,7 @@ let floatingNumbers = [];
 // Particle pool for performance
 const particlePool = [];
 const MAX_POOL_SIZE = 500;
+const MAX_PARTICLES = 150; // Cap total particles for performance
 
 // Colors for particles
 const COLORS = {
@@ -194,6 +195,18 @@ function drawStar(ctx, cx, cy, outerRadius, innerRadius, points, color) {
  * Spawn particles of a given type
  */
 export function spawnParticles(type, x, y, count = 10) {
+    // Cap particle count to prevent performance issues
+    if (particles.length >= MAX_PARTICLES) {
+        // Remove oldest particles to make room
+        const toRemove = Math.min(count, particles.length - MAX_PARTICLES + count);
+        for (let i = 0; i < toRemove; i++) {
+            returnParticle(particles.shift());
+        }
+    }
+    // Limit spawn count based on available space
+    count = Math.min(count, MAX_PARTICLES - particles.length + 10);
+    if (count <= 0) return;
+
     switch (type) {
         case 'keystroke':
             spawnKeystrokeParticles(x, y, count);

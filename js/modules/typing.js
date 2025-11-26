@@ -244,10 +244,8 @@ export function initTyping() {
         }
     }, 100);
 
-    // Start engagement growth interval (grows likes/retweets on posts over time)
-    engagementGrowthInterval = setInterval(() => {
-        postHistory.forEach((_, index) => startEngagementGrowth(index));
-    }, 2000);
+    // Engagement growth interval disabled for performance
+    // (was running every 2s and iterating all posts, causing lag)
 
     // Initialize progress ring
     if (progressCircleEl) {
@@ -482,7 +480,7 @@ function handleCorrectChar() {
             playSound('keystroke', { pitch: 1.3, pitchVariation: 0.1 });
             if (charEl) {
                 const rect = charEl.getBoundingClientRect();
-                spawnParticles('keystroke', rect.left + rect.width / 2, rect.top, 5);
+                spawnParticles('keystroke', rect.left + rect.width / 2, rect.top, 2);
             }
         } else {
             // Big effect for single golden character
@@ -500,10 +498,10 @@ function handleCorrectChar() {
         playAnticipationKeystroke(progress);
     }
 
-    // Small particle burst at character position (non-golden)
-    if (charEl && !isGoldenChar) {
+    // Small particle burst at character position (non-golden) - reduced for performance
+    if (charEl && !isGoldenChar && typedIndex % 3 === 0) {
         const rect = charEl.getBoundingClientRect();
-        spawnParticles('keystroke', rect.left + rect.width / 2, rect.top, 3);
+        spawnParticles('keystroke', rect.left + rect.width / 2, rect.top, 1);
     }
 
     // Move to next character
