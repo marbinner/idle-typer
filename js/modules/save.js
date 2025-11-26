@@ -172,13 +172,15 @@ export function exportSave() {
         const postHistory = getPostHistory();
         const balloonState = getBalloonState();
         const typingState = getTypingState();
+        const statsHistory = getStatsHistory();
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
             state,
             postHistory,
             balloonState,
-            typingState
+            typingState,
+            statsHistory
         };
 
         const jsonString = JSON.stringify(saveData);
@@ -253,7 +255,8 @@ export function importSave(code) {
             state: migratedData.state || saveData.state,
             postHistory: migratedData.postHistory || saveData.postHistory || [],
             balloonState: migratedData.balloonState || saveData.balloonState || null,
-            typingState: migratedData.typingState || saveData.typingState || null
+            typingState: migratedData.typingState || saveData.typingState || null,
+            statsHistory: migratedData.statsHistory || saveData.statsHistory || null
         }));
 
         showSaveNotification('Save imported! Refresh to apply.');

@@ -411,6 +411,9 @@ function handleCorrectChar() {
         const bonusCoins = Math.floor((isAllGolden ? 5 : 50) * state.globalMultiplier);
         State.addCoins(bonusCoins, 'golden');
 
+        // Track golden chars hit for achievements
+        State.updateState({ goldenCharsHit: (state.goldenCharsHit || 0) + 1 });
+
         if (isAllGolden) {
             // Quieter effect for all-golden mode
             playSound('keystroke', { pitch: 1.3, pitchVariation: 0.1 });
@@ -609,6 +612,12 @@ function completePost() {
     State.addFollowers(followerReward, 'typing');
     State.addImpressions(impressionReward);
     State.completePost(isPerfect, viralResult ? viralResult.name : null);
+
+    // Track pro typer posts (95%+ accuracy AND 80+ WPM)
+    const postAccuracy = postLength > 0 ? ((postLength - errorCount) / postLength) * 100 : 100;
+    if (postAccuracy >= 95 && finalWPM >= 80) {
+        State.updateState({ proTyperPosts: (state.proTyperPosts || 0) + 1 });
+    }
 
     // Play completion climax sound!
     playCompletionClimax();
@@ -1395,6 +1404,9 @@ function popBalloon() {
     State.addCoins(bonusCoins, 'balloon');
     State.addFollowers(bonusFollowers, 'balloon');
 
+    // Track balloon pop for achievements
+    State.updateState({ balloonPops: (state.balloonPops || 0) + 1 });
+
     // Play KACHING sound - super satisfying!
     playKachingSound();
     // Additional celebration sounds
@@ -1430,6 +1442,12 @@ function updateHeatMeter() {
 
     if (!heatMeter || !heatFill || !heatLevel) return;
 
+    // Sync heat to state for achievements (only update if changed significantly)
+    const state = State.getState();
+    if (Math.abs(heatValue - (state.heat || 0)) >= 5) {
+        State.updateState({ heat: heatValue }, true);
+    }
+
     // Update fill width
     heatFill.style.width = heatValue + '%';
 
@@ -1456,6 +1474,11 @@ function updateHeatMeter() {
 function updateRankDisplay() {
     const state = State.getState();
     const xp = state.lifetimePosts * 10; // 10 XP per post
+
+    // Sync XP to state for achievements
+    if (state.xp !== xp) {
+        State.updateState({ xp: xp }, true);
+    }
 
     // Find current rank
     let currentRank = RANKS[0];

@@ -77,6 +77,14 @@ const initialState = {
     totalCharsTyped: 0,
     totalImpressions: 0,
 
+    // New achievement tracking stats
+    balloonPops: 0,
+    goldenCharsHit: 0,
+    proTyperPosts: 0,     // Posts with 95%+ accuracy AND 80+ WPM
+    bestCPS: 0,           // Best characters per second
+    xp: 0,                // Experience points (updated from lifetimePosts)
+    heat: 0,              // Current heat level (0-100)
+
     // Prestige
     prestigeCount: 0,
     permanentBonuses: {},
