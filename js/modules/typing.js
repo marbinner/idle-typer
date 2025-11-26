@@ -77,6 +77,28 @@ export function getPostHistory() {
 export function clearPostHistory() {
     postHistory = [];
     renderHistory();
+    // Also reset balloon state
+    resetBalloonState();
+}
+
+/**
+ * Reset balloon state to defaults
+ */
+function resetBalloonState() {
+    balloonPopping = false;
+    balloonCycleStart = 0;
+    balloonPopThreshold = Math.floor(Math.random() * 5) + 8; // 8-12
+    // Reset balloon visual
+    const balloonVisual = document.getElementById('balloon-visual');
+    if (balloonVisual) {
+        balloonVisual.style.fontSize = '35px';
+        balloonVisual.style.filter = '';
+        balloonVisual.style.opacity = '1';
+    }
+    const balloonContainer = document.getElementById('balloon-container');
+    if (balloonContainer) {
+        balloonContainer.classList.remove('ready', 'inflating', 'about-to-pop', 'critical', 'stage-1', 'stage-2', 'stage-3');
+    }
 }
 
 /**
