@@ -760,27 +760,17 @@ function completePost() {
         viralName: viralResult ? viralResult.name : null
     });
 
-    // Show particles and floating numbers (no popup notifications)
+    // Show particles only (no popups or floating numbers)
     if (wpmResult.isPersonalBest) {
-        // Huge celebration for new record!
         spawnParticles('viral', centerX, centerY, 100);
-        spawnFloatingNumber(`🏆 NEW RECORD! ${finalWPM} WPM 🏆`, centerX, centerY - 100, 'viral');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 50, 'coins');
     } else if (viralResult) {
         spawnParticles('confetti', centerX, centerY, viralResult.particles);
-        spawnFloatingNumber(`🔥 ${viralResult.name}! 🔥`, centerX, centerY - 80, 'viral');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
     } else if (wpmBonusName) {
         spawnParticles('confetti', centerX, centerY, 35);
-        spawnFloatingNumber(`⚡ ${wpmBonusName} ⚡`, centerX, centerY - 80, 'default');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
     } else if (isPerfect) {
         spawnParticles('confetti', centerX, centerY, 25);
-        spawnFloatingNumber(`✨ PERFECT! ✨`, centerX, centerY - 80, 'perfect');
-        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 40, 'coins');
     } else {
         spawnParticles('confetti', centerX, centerY, 15);
-        spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY - 50, 'coins');
     }
 
     // Add to history
