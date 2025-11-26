@@ -13,6 +13,9 @@ let botsListEl;
 let upgradesListEl;
 let premiumListEl;
 
+// Track if already initialized
+let isInitialized = false;
+
 /**
  * Initialize the upgrades system
  */
@@ -22,16 +25,47 @@ export function initUpgrades() {
     upgradesListEl = document.getElementById('upgrades-list');
     premiumListEl = document.getElementById('premium-list');
 
-    // Set up tab switching
-    const tabs = document.querySelectorAll('.panel-tabs .tab');
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
-    });
+    // Only set up listeners once (prevent duplication on re-init)
+    if (!isInitialized) {
+        // Set up tab switching
+        const tabs = document.querySelectorAll('.panel-tabs .tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        });
 
-    // Subscribe to state changes for affordability updates
-    State.subscribe(() => {
-        updateAffordability();
-    });
+        // Use event delegation for upgrade items to avoid listener accumulation
+        if (botsListEl) {
+            botsListEl.addEventListener('click', (e) => {
+                const item = e.target.closest('.upgrade-item[data-type="bot"]');
+                if (item && item.dataset.id) {
+                    handleBotPurchase(item.dataset.id);
+                }
+            });
+        }
+        if (upgradesListEl) {
+            upgradesListEl.addEventListener('click', (e) => {
+                const item = e.target.closest('.upgrade-item[data-type="upgrade"]');
+                if (item && item.dataset.id) {
+                    handleUpgradePurchase(item.dataset.id);
+                }
+            });
+        }
+        if (premiumListEl) {
+            premiumListEl.addEventListener('click', (e) => {
+                const item = e.target.closest('.upgrade-item[data-type="premium"]');
+                if (item && item.dataset.id) {
+                    handlePremiumPurchaseById(item.dataset.id);
+                }
+            });
+        }
+
+        // Subscribe to state changes for affordability updates
+        State.subscribe(() => {
+            updateAffordability();
+        });
+
+        isInitialized = true;
+    }
 
     console.log('Upgrades system initialized');
 }
@@ -138,11 +172,7 @@ function renderBots() {
     }).join('');
 
     botsListEl.innerHTML = botsHtml;
-
-    // Add click handlers
-    botsListEl.querySelectorAll('.upgrade-item[data-type="bot"]').forEach(item => {
-        item.addEventListener('click', () => handleBotPurchase(item.dataset.id));
-    });
+    // Click handlers use event delegation from initUpgrades()
 }
 
 /**
@@ -214,11 +244,7 @@ function renderUpgradesList() {
     }).join('');
 
     upgradesListEl.innerHTML = upgradesHtml;
-
-    // Add click handlers
-    upgradesListEl.querySelectorAll('.upgrade-item[data-type="upgrade"]').forEach(item => {
-        item.addEventListener('click', () => handleUpgradePurchase(item.dataset.id));
-    });
+    // Click handlers use event delegation from initUpgrades()
 }
 
 /**
@@ -294,14 +320,7 @@ function renderPremium() {
     }).join('');
 
     premiumListEl.innerHTML = premiumHtml;
-
-    // Add click handlers
-    premiumListEl.querySelectorAll('.upgrade-item[data-type="premium"]').forEach(item => {
-        const itemData = premiumItems.find(p => p.id === item.dataset.id);
-        if (itemData && !itemData.owned) {
-            item.addEventListener('click', () => handlePremiumPurchase(itemData));
-        }
-    });
+    // Click handlers use event delegation from initUpgrades()
 }
 
 /**
@@ -397,11 +416,68 @@ function handleUpgradePurchase(upgradeId) {
 }
 
 /**
+ * Get premium items with current state
+ */
+function getPremiumItems() {
+    const state = State.getState();
+    return [
+        {
+            id: 'xPremium',
+            name: 'X Premium',
+            icon: '✓',
+            description: 'Get verified and unlock premium features',
+            cost: 8000,
+            owned: state.hasXPremium,
+            requires: true,
+            effect: () => {
+                State.updateState({ hasXPremium: true, verificationTier: 'blue' });
+                State.recalculateDerived();
+            }
+        },
+        {
+            id: 'goldCheck',
+            name: 'Gold Verification',
+            icon: '✓',
+            description: 'Organization badge - 1.5x all bonuses',
+            cost: 100000,
+            owned: state.verificationTier === 'gold' || state.verificationTier === 'gray',
+            requires: state.hasXPremium,
+            effect: () => {
+                State.updateState({ verificationTier: 'gold' });
+                State.recalculateDerived();
+            }
+        },
+        {
+            id: 'grayCheck',
+            name: 'Government Badge',
+            icon: '✓',
+            description: 'Gray check (parody) - 2x all bonuses',
+            cost: 1000000,
+            owned: state.verificationTier === 'gray',
+            requires: state.verificationTier === 'gold',
+            effect: () => {
+                State.updateState({ verificationTier: 'gray' });
+                State.recalculateDerived();
+            }
+        }
+    ];
+}
+
+/**
+ * Handle premium purchase by ID (for event delegation)
+ */
+function handlePremiumPurchaseById(premiumId) {
+    const premiumItems = getPremiumItems();
+    const item = premiumItems.find(p => p.id === premiumId);
+    if (item) {
+        handlePremiumPurchase(item);
+    }
+}
+
+/**
  * Handle premium purchase
  */
 function handlePremiumPurchase(item) {
-    const state = State.getState();
-
     if (item.owned) {
         showMessage('Already owned!');
         return;
