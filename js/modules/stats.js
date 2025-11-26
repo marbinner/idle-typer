@@ -183,10 +183,22 @@ export function showStatsPanel() {
 
     overlay.classList.remove('hidden');
 
-    // Set up close button
-    document.getElementById('close-stats').addEventListener('click', () => {
+    // Helper to close and cleanup
+    const closeModal = () => {
         overlay.classList.add('hidden');
-    });
+        // Remove listeners to prevent memory leak
+        overlay.removeEventListener('click', handleOverlayClick);
+    };
+
+    // Handler for overlay click (close on background click)
+    const handleOverlayClick = (e) => {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    };
+
+    // Set up close button
+    document.getElementById('close-stats').addEventListener('click', closeModal);
 
     // Set up graph tabs
     const tabs = content.querySelectorAll('.graph-tab');
@@ -199,11 +211,7 @@ export function showStatsPanel() {
     });
 
     // Close on overlay click
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            overlay.classList.add('hidden');
-        }
-    });
+    overlay.addEventListener('click', handleOverlayClick);
 
     // Render initial graph
     renderGraph('coins');

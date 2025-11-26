@@ -41,6 +41,8 @@ export function initParticles() {
 
     // Set canvas size
     resizeCanvas();
+    // Remove existing listener to prevent duplicates on re-init
+    window.removeEventListener('resize', resizeCanvas);
     window.addEventListener('resize', resizeCanvas);
 
     console.log('Particle system initialized');

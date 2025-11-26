@@ -218,18 +218,26 @@ export function showAchievementsModal() {
 
     overlay.classList.remove('hidden');
 
+    // Helper to close and cleanup
+    const closeModal = () => {
+        overlay.classList.add('hidden');
+        // Remove listeners to prevent memory leak
+        overlay.removeEventListener('click', handleOverlayClick);
+    };
+
+    // Handler for overlay click (close on background click)
+    const handleOverlayClick = (e) => {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    };
+
     // Close button
     const closeBtn = document.getElementById('close-modal');
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            overlay.classList.add('hidden');
-        });
+        closeBtn.addEventListener('click', closeModal);
     }
 
     // Close on overlay click
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            overlay.classList.add('hidden');
-        }
-    });
+    overlay.addEventListener('click', handleOverlayClick);
 }
