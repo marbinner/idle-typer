@@ -11,7 +11,7 @@
 #stats-bar {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     padding: var(--spacing-md) var(--spacing-lg);
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(12px);
@@ -22,6 +22,16 @@
     position: sticky;
     top: 0;
     z-index: 10;
+}
+
+#game-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    text-shadow: 0 0 20px rgba(29, 155, 240, 0.3);
 }
 
 .stat-group {
@@ -84,6 +94,55 @@
 
 #xcoins-stat .stat-value {
     color: var(--x-premium-gold);
+}
+
+/* Rank Display with XP Progress */
+#rank-stat {
+    gap: var(--spacing-sm);
+}
+
+#rank-stat #rank-icon {
+    font-size: 1.3rem;
+}
+
+.rank-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rank-info .stat-value {
+    font-size: var(--font-size-sm);
+    min-width: auto;
+}
+
+.rank-progress-container {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.rank-progress-bar {
+    width: 60px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+#rank-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--x-blue), var(--x-premium-gold));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+#rank-xp {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    white-space: nowrap;
 }
 
 #fps-stat {

@@ -4,7 +4,7 @@
  */
 
 import * as State from '../state.js';
-import { getPostHistory, loadPostHistory, getBalloonState, loadBalloonState } from './typing.js';
+import { getPostHistory, loadPostHistory, getBalloonState, loadBalloonState, getTypingState, loadTypingState } from './typing.js';
 
 const SAVE_KEY = 'idleTyper_save';
 const SAVE_VERSION = 2; // Bumped for post history support
@@ -12,6 +12,7 @@ const SAVE_VERSION = 2; // Bumped for post history support
 // Store loaded data to apply after typing init
 let pendingPostHistory = null;
 let pendingBalloonState = null;
+let pendingTypingState = null;
 
 /**
  * Initialize save system and load existing save
@@ -28,6 +29,9 @@ export function initSave() {
         if (saveData.balloonState) {
             pendingBalloonState = saveData.balloonState;
         }
+        if (saveData.typingState) {
+            pendingTypingState = saveData.typingState;
+        }
         console.log('Game loaded from save');
     } else {
         console.log('No save found, starting fresh');
@@ -35,7 +39,8 @@ export function initSave() {
 }
 
 /**
- * Load post history and balloon state (call after typing module is initialized)
+ * Load post history, balloon state, and typing state (call after typing module is initialized)
+ * Returns true if there was a saved typing state to restore
  */
 export function loadSavedPostHistory() {
     if (pendingPostHistory) {
@@ -45,6 +50,15 @@ export function loadSavedPostHistory() {
     // Always call loadBalloonState - it handles null/missing state
     loadBalloonState(pendingBalloonState);
     pendingBalloonState = null;
+
+    // Load typing state if available (restored post)
+    const hadTypingState = pendingTypingState !== null;
+    if (hadTypingState) {
+        loadTypingState(pendingTypingState);
+    }
+    pendingTypingState = null;
+
+    return hadTypingState;
 }
 
 /**
@@ -55,12 +69,14 @@ export function save() {
         const state = State.getStateForSave();
         const postHistory = getPostHistory();
         const balloonState = getBalloonState();
+        const typingState = getTypingState();
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
             state,
             postHistory,
-            balloonState
+            balloonState,
+            typingState
         };
 
         localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
@@ -142,12 +158,14 @@ export function exportSave() {
         const state = State.getStateForSave();
         const postHistory = getPostHistory();
         const balloonState = getBalloonState();
+        const typingState = getTypingState();
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
             state,
             postHistory,
-            balloonState
+            balloonState,
+            typingState
         };
 
         const jsonString = JSON.stringify(saveData);
@@ -221,7 +239,8 @@ export function importSave(code) {
             timestamp: Date.now(),
             state: migratedData.state || saveData.state,
             postHistory: migratedData.postHistory || saveData.postHistory || [],
-            balloonState: migratedData.balloonState || saveData.balloonState || null
+            balloonState: migratedData.balloonState || saveData.balloonState || null,
+            typingState: migratedData.typingState || saveData.typingState || null
         }));
 
         showSaveNotification('Save imported! Refresh to apply.');

@@ -12,11 +12,20 @@
     <div id="app">
         <!-- Header Stats Bar -->
         <header id="stats-bar">
+            <div id="game-title">Shitpost Hero</div>
             <div class="stat-group">
-                <!-- Player Rank (compact) -->
+                <!-- Player Rank with XP progress -->
                 <div class="stat" id="rank-stat">
                     <span id="rank-icon">🥚</span>
-                    <span class="stat-value" id="rank-name">Lurker</span>
+                    <div class="rank-info">
+                        <span class="stat-value" id="rank-name">Lurker</span>
+                        <div class="rank-progress-container">
+                            <div class="rank-progress-bar">
+                                <div id="rank-progress-fill"></div>
+                            </div>
+                            <span id="rank-xp">0/100 XP</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="stat" id="followers-stat" data-tooltip="Followers boost all coin earnings">
                     <span class="stat-icon">👥</span>

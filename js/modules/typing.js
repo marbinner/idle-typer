@@ -87,6 +87,50 @@ export function getBalloonState() {
 }
 
 /**
+ * Get current typing state for saving
+ */
+export function getTypingState() {
+    if (!currentPost) return null;
+    return {
+        postText: currentPost.text,
+        postCategory: currentPost.category,
+        typedIndex: typedIndex,
+        goldenCharIndex: goldenCharIndex,
+        errorCount: errorCount
+    };
+}
+
+/**
+ * Load typing state from save (restore current post)
+ */
+export function loadTypingState(state) {
+    if (state && state.postText) {
+        currentPost = {
+            text: state.postText,
+            category: state.postCategory || null
+        };
+        typedIndex = state.typedIndex || 0;
+        goldenCharIndex = state.goldenCharIndex !== undefined ? state.goldenCharIndex : -1;
+        errorCount = state.errorCount || 0;
+
+        // Reset timing - will start fresh when typing resumes
+        postStartTime = 0;
+        lastCharTime = 0;
+
+        // Start WPM update interval
+        if (wpmUpdateInterval) clearInterval(wpmUpdateInterval);
+        wpmUpdateInterval = setInterval(updateLiveWPM, 200);
+
+        // Render the restored post
+        renderPost();
+        updateProgress();
+        updateWPMDisplay();
+        return true;
+    }
+    return false;
+}
+
+/**
  * Load balloon state from save
  * If no state saved, initialize balloon to start fresh (empty)
  */
@@ -153,8 +197,7 @@ export function initTyping() {
     // Set up keyboard listener
     document.addEventListener('keydown', handleKeyDown);
 
-    // Load first post
-    loadNewPost();
+    // Note: loadNewPost() is called by app.js after checking for saved typing state
 }
 
 /**
@@ -328,8 +371,8 @@ function handleKeyDown(event) {
  * Handle correct character typed
  */
 function handleCorrectChar() {
-    // Start timer on first character
-    if (typedIndex === 0) {
+    // Start timer on first character (or when resuming a saved post)
+    if (postStartTime === 0) {
         postStartTime = Date.now();
     }
     lastCharTime = Date.now();

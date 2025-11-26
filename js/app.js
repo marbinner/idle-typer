@@ -4,7 +4,7 @@
  */
 
 import * as State from './state.js';
-import { initTyping } from './modules/typing.js';
+import { initTyping, loadNewPost } from './modules/typing.js';
 import { initUpgrades, renderUpgrades } from './modules/upgrades.js';
 import { initUI, updateUI } from './modules/ui.js';
 import { initParticles, updateParticles } from './modules/particles.js';
@@ -104,9 +104,15 @@ async function init() {
         initTyping();
         console.log('Typing system ready');
 
-        // Load saved post history (must be after typing init)
-        loadSavedPostHistory();
+        // Load saved post history and typing state (must be after typing init)
+        const hadSavedTypingState = loadSavedPostHistory();
         console.log('Post history loaded');
+
+        // If no saved typing state, load a new post
+        if (!hadSavedTypingState) {
+            loadNewPost();
+        }
+        console.log('Typing ready');
 
         // Initialize upgrades system
         initUpgrades();
