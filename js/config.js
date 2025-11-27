@@ -128,9 +128,10 @@ export const GOLDEN_CONFIG = {
     singleMultiplier: 3,
     singleMinimum: 30,
 
-    // All-golden event reward per character
-    allGoldenMultiplier: 0.3,
-    allGoldenMinimum: 3
+    // All-golden event reward per character (should be meaningful but less than single golden)
+    // At 1.0x, a 100-char post gives 100x coinsPerPost total during golden hour
+    allGoldenMultiplier: 1.0,
+    allGoldenMinimum: 5
 };
 
 // =============================================================================

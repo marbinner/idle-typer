@@ -39,6 +39,9 @@ let wpmUpdateInterval = null;
 let errorCount = 0; // Track errors per post
 let goldenCharIndex = -1; // Index of golden character (-1 = none)
 
+// DOM element cache for character elements (performance optimization)
+let charElementCache = new Map();
+
 // Heat meter state
 let heatValue = 0;
 let heatDecayInterval = null;
@@ -246,6 +249,13 @@ export function initTyping() {
     if (heatDecayInterval) clearInterval(heatDecayInterval);
     if (engagementGrowthInterval) clearInterval(engagementGrowthInterval);
 
+    // Load heat value from saved state (so it persists across reloads)
+    const savedHeat = State.getValue('heat');
+    if (savedHeat && savedHeat > 0) {
+        heatValue = savedHeat;
+        updateHeatMeter();
+    }
+
     // Start heat decay interval
     heatDecayInterval = setInterval(() => {
         if (heatValue > 0) {
@@ -413,6 +423,12 @@ function renderPost() {
     });
 
     postTextEl.innerHTML = html;
+
+    // Cache all character elements for fast lookup (performance optimization)
+    charElementCache.clear();
+    postTextEl.querySelectorAll('[data-index]').forEach(el => {
+        charElementCache.set(parseInt(el.dataset.index, 10), el);
+    });
 }
 
 /**
@@ -457,8 +473,11 @@ function handleCorrectChar() {
     lastCharTime = Date.now();
 
     // Update heat meter - calibrated to user's average WPM
-    keystrokeTimes.push(Date.now());
-    keystrokeTimes = keystrokeTimes.filter(t => Date.now() - t < 2000); // Keep last 2 seconds for smoother calculation
+    const now = Date.now();
+    keystrokeTimes.push(now);
+    // Filter to new array (avoid mutation issues during rapid typing)
+    const cutoff = now - 2000;
+    keystrokeTimes = keystrokeTimes.filter(t => t > cutoff); // Keep last 2 seconds for smoother calculation
 
     // Calculate current WPM from recent keystrokes (chars per minute / 5 = WPM)
     const recentChars = keystrokeTimes.length;
@@ -483,7 +502,7 @@ function handleCorrectChar() {
     heatValue = heatValue * 0.85 + targetHeat * 0.15;
     updateHeatMeter();
 
-    const charEl = postTextEl.querySelector(`[data-index="${typedIndex}"]`);
+    const charEl = charElementCache.get(typedIndex);
     const isGoldenChar = typedIndex === goldenCharIndex || goldenCharIndex === -2;
 
     // Update character state
@@ -554,13 +573,14 @@ function handleCorrectChar() {
     });
 
     // Combo milestone celebrations!
-    const newCombo = state.combo + 1;
-    if (COMBO_CONFIG.milestones.includes(newCombo)) {
-        celebrateComboMilestone(newCombo);
+    // Note: state.combo was already incremented by State.incrementCombo() above
+    const currentCombo = State.getState().combo;
+    if (COMBO_CONFIG.milestones.includes(currentCombo)) {
+        celebrateComboMilestone(currentCombo);
     }
 
-    // Update next character highlight
-    const nextCharEl = postTextEl.querySelector(`[data-index="${typedIndex}"]`);
+    // Update next character highlight (using cached element)
+    const nextCharEl = charElementCache.get(typedIndex);
     if (nextCharEl) {
         nextCharEl.classList.add('current');
     }
@@ -606,7 +626,7 @@ function celebrateComboMilestone(combo) {
  * Handle incorrect character typed
  */
 function handleIncorrectChar() {
-    const charEl = postTextEl.querySelector(`[data-index="${typedIndex}"]`);
+    const charEl = charElementCache.get(typedIndex);
 
     // Show error state
     if (charEl) {

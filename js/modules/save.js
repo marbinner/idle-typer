@@ -7,6 +7,7 @@ import * as State from '../state.js';
 import { getResetting } from '../state.js';
 import { getPostHistory, loadPostHistory, getBalloonState, loadBalloonState, getTypingState, loadTypingState } from './typing.js';
 import { getStatsHistory, loadStatsHistory } from './stats.js';
+import { BOTS } from '../data/upgrades.js';
 
 const SAVE_KEY = 'idleTyper_save';
 const SAVE_VERSION = 4; // Bumped for Cookie Clicker style rebalance
@@ -111,7 +112,19 @@ export function save() {
             statsHistory
         };
 
-        localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+        try {
+            localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+        } catch (storageError) {
+            // Handle storage quota exceeded or other storage errors
+            if (storageError.name === 'QuotaExceededError' ||
+                storageError.code === 22 || // Legacy quota error code
+                storageError.code === 1014) { // Firefox quota error
+                console.error('Save failed: Storage quota exceeded');
+                showSaveNotification('Save failed: Storage full!');
+                return false;
+            }
+            throw storageError; // Re-throw other errors
+        }
         State.updateState({ lastSaveTime: Date.now() }, true);
 
         return true;
@@ -189,25 +202,20 @@ function migrateData(saveData) {
         result.state = state;
     }
 
-    // Migration to v4: Cookie Clicker rebalance - remove old bots, keep valid ones
+    // Migration to v4: Cookie Clicker rebalance - preserve all valid bots from current game
     if (saveData.version < 4 && state.bots) {
-        // Valid bots in v4
-        const validBots = [
-            'replyGuy', 'lurker', 'burnerAccount', 'shitposter',
-            'memeLord', 'contentCreator', 'blueCheck',
-            'influencer', 'cryptoBro', 'grokAI',
-            'botFarm', 'elonsAlt', 'mediaEmpire',
-            'digitalGod', 'realityWarper'
-        ];
+        // Get valid bots dynamically from current game definition (not hardcoded)
+        // This ensures new bots added to the game aren't lost during migration
+        const validBots = Object.keys(BOTS);
 
-        // Create new bots object with only valid bots
+        // Create new bots object, preserving any saved counts for valid bots
         const newBots = {};
         validBots.forEach(botId => {
             newBots[botId] = state.bots[botId] || 0;
         });
         state.bots = newBots;
         result.state = state;
-        console.log('Migrated bots to v4:', Object.keys(newBots));
+        console.log('Migrated bots to v4:', Object.keys(newBots).length, 'bots');
     }
 
     result.version = SAVE_VERSION;

@@ -160,3 +160,18 @@ export function formatDuration(seconds) {
     const mins = Math.floor((seconds % 3600) / 60);
     return hours + 'h ' + mins + 'm';
 }
+
+/**
+ * Escape HTML special characters to prevent XSS
+ * @param {string} str - The string to escape
+ * @returns {string} Escaped string safe for innerHTML
+ */
+export function escapeHtml(str) {
+    if (typeof str !== 'string') return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}

@@ -282,20 +282,32 @@ function showEventMessage(message, type = 'normal') {
 }
 
 /**
- * Show error message
+ * Show error message (XSS-safe using textContent)
  */
 function showErrorMessage(error) {
     const app = document.getElementById('app');
     if (app) {
-        app.innerHTML = `
-            <div style="padding: 2rem; text-align: center; color: var(--error-red);">
-                <h1>Failed to load game</h1>
-                <p>${error.message}</p>
-                <button onclick="location.reload()" class="btn btn-primary" style="margin-top: 1rem;">
-                    Reload
-                </button>
-            </div>
-        `;
+        app.innerHTML = '';
+
+        const container = document.createElement('div');
+        container.style.cssText = 'padding: 2rem; text-align: center; color: var(--error-red);';
+
+        const heading = document.createElement('h1');
+        heading.textContent = 'Failed to load game';
+        container.appendChild(heading);
+
+        const message = document.createElement('p');
+        message.textContent = error.message;
+        container.appendChild(message);
+
+        const button = document.createElement('button');
+        button.textContent = 'Reload';
+        button.className = 'btn btn-primary';
+        button.style.marginTop = '1rem';
+        button.addEventListener('click', () => location.reload());
+        container.appendChild(button);
+
+        app.appendChild(container);
     }
 }
 
@@ -306,33 +318,3 @@ if (document.readyState === 'loading') {
     init();
 }
 
-// Export for debugging
-window.IdleTyper = {
-    State,
-    startGameLoop,
-    stopGameLoop,
-    formatNumber,
-    // Debug functions - use in browser console
-    debug: {
-        addCoins: (amount) => {
-            State.addCoins(amount, 'debug');
-            console.log(`Added ${formatNumber(amount)} coins`);
-        },
-        setCoins: (amount) => {
-            State.updateState({ coins: amount });
-            console.log(`Set coins to ${formatNumber(amount)}`);
-        },
-        addFollowers: (amount) => {
-            State.addFollowers(amount, 'debug');
-            console.log(`Added ${formatNumber(amount)} followers`);
-        },
-        maxCoins: () => {
-            State.updateState({ coins: 1e15 });
-            console.log('Set coins to 1 quadrillion');
-        },
-        unlockAll: () => {
-            State.updateState({ lifetimeCoins: 1e15 });
-            console.log('Unlocked all bots (set lifetime coins to 1 quadrillion)');
-        }
-    }
-};

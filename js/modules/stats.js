@@ -21,6 +21,9 @@ let history = {
 
 let snapshotInterval = null;
 
+// Track modal overlay handler for cleanup (prevent listener accumulation)
+let currentStatsOverlayHandler = null;
+
 /**
  * Initialize stats tracking
  */
@@ -197,15 +200,22 @@ export function showStatsPanel() {
 
     overlay.classList.remove('hidden');
 
+    // Remove any existing overlay handler to prevent accumulation
+    if (currentStatsOverlayHandler) {
+        overlay.removeEventListener('click', currentStatsOverlayHandler);
+    }
+
     // Helper to close and cleanup
     const closeModal = () => {
         overlay.classList.add('hidden');
-        // Remove listeners to prevent memory leak
-        overlay.removeEventListener('click', handleOverlayClick);
+        if (currentStatsOverlayHandler) {
+            overlay.removeEventListener('click', currentStatsOverlayHandler);
+            currentStatsOverlayHandler = null;
+        }
     };
 
     // Handler for overlay click (close on background click)
-    const handleOverlayClick = (e) => {
+    currentStatsOverlayHandler = (e) => {
         if (e.target === overlay) {
             closeModal();
         }
@@ -224,8 +234,8 @@ export function showStatsPanel() {
         });
     });
 
-    // Close on overlay click
-    overlay.addEventListener('click', handleOverlayClick);
+    // Close on overlay click (using tracked handler)
+    overlay.addEventListener('click', currentStatsOverlayHandler);
 
     // Render initial graph
     renderGraph('coins');

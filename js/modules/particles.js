@@ -17,6 +17,7 @@ let floatingNumbers = [];
 const particlePool = [];
 const MAX_POOL_SIZE = 500;
 const MAX_PARTICLES = 150; // Cap total particles for performance
+const MAX_FLOATING_NUMBERS = 30; // Cap floating DOM elements for performance
 
 // Colors for particles
 const COLORS = {
@@ -407,6 +408,16 @@ function spawnDefaultParticles(x, y, count) {
 export function spawnFloatingNumber(text, x, y, type = 'default') {
     const container = document.getElementById('floating-numbers');
     if (!container) return;
+
+    // Cap floating numbers to prevent DOM overload during heavy spawning
+    const existing = container.children.length;
+    if (existing >= MAX_FLOATING_NUMBERS) {
+        // Remove oldest floating numbers to make room
+        const toRemove = existing - MAX_FLOATING_NUMBERS + 1;
+        for (let i = 0; i < toRemove; i++) {
+            container.firstChild?.remove();
+        }
+    }
 
     const el = document.createElement('div');
     el.className = `floating-number ${type} animate-float-up`;

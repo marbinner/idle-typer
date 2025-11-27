@@ -1,7 +1,5 @@
 export const POSTS_BATCH_11 = [
-    { text: "my therapist and i have beef now", category: "unhinged" },
-    { text: "normalize leaving parties to pet the host's cat", category: "wholesome" },
-    { text: "the microwave fish guy needs to be studied in a lab", category: "hot-take" },
+            { text: "the microwave fish guy needs to be studied in a lab", category: "hot-take" },
     { text: "sorry i can't work weekends i have plans to stare at my ceiling", category: "ratio" },
     { text: "my boss thinks unlimited pto means never taking pto", category: "drama" },
     { text: "synergy's just friendship for people who hate joy", category: "hot-take" },

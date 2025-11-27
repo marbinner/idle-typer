@@ -396,8 +396,9 @@ function animateFloatingBonus() {
         const xOffset = Math.sin(time * 2) * 30;
         const yOffset = Math.cos(time * 1.5) * 20;
 
-        const currentLeft = parseFloat(floatingBonusElement.style.left);
-        const currentTop = parseFloat(floatingBonusElement.style.top);
+        // parseFloat returns NaN for empty strings, provide defaults
+        const currentLeft = parseFloat(floatingBonusElement.style.left) || window.innerWidth / 2;
+        const currentTop = parseFloat(floatingBonusElement.style.top) || window.innerHeight / 2;
 
         // Keep within bounds
         const maxX = window.innerWidth - 100;

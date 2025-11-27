@@ -130,7 +130,7 @@ const BOT_FLAVOR = [
     { id: 'salesBro', name: 'Sales Bro', icon: '🤝', description: 'Crushing quotas' },
     { id: 'consultantChad', name: 'Consultant Chad', icon: '📊', description: 'Per my last email...' },
     { id: 'projectManager', name: 'Project Manager', icon: '📋', description: 'Lets sync up' },
-    { id: 'scrum Master', name: 'Scrum Master', icon: '🔄', description: 'Agile transformation' },
+    { id: 'scrumMaster', name: 'Scrum Master', icon: '🔄', description: 'Agile transformation' },
     { id: 'dataAnalyst', name: 'Data Analyst', icon: '📈', description: 'Insights incoming' },
     { id: 'uxDesigner', name: 'UX Designer', icon: '🎨', description: 'Think about the user' },
     { id: 'productManager', name: 'Product Manager', icon: '🗺️', description: 'Roadmap season' },

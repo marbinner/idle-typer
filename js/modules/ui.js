@@ -4,7 +4,7 @@
  */
 
 import * as State from '../state.js';
-import { formatNumber, formatFull, formatCoins as formatCoinsUtil } from '../utils.js';
+import { formatNumber, formatFull, formatCoins as formatCoinsUtil, escapeHtml } from '../utils.js';
 import { setResetting } from '../state.js';
 import { getPostHistory, loadNewPost } from './typing.js';
 
@@ -47,6 +47,9 @@ export function initUI() {
 let coinsGainedHandler = null;
 let followersGainedHandler = null;
 
+// Track modal overlay handler for cleanup (prevent accumulation)
+let currentOverlayHandler = null;
+
 /**
  * Set up UI event listeners
  */
@@ -61,9 +64,13 @@ function setupEventListeners() {
     const achievementsBtn = document.getElementById('achievements-btn');
     if (achievementsBtn) {
         achievementsBtn.addEventListener('click', () => {
-            import('./achievements.js').then(module => {
-                module.showAchievementsModal();
-            });
+            import('./achievements.js')
+                .then(module => {
+                    module.showAchievementsModal();
+                })
+                .catch(err => {
+                    console.error('Failed to load achievements module:', err);
+                });
         });
     }
 
@@ -235,14 +242,22 @@ function showSettingsModal() {
 
     overlay.classList.remove('hidden');
 
+    // Remove any existing overlay handler to prevent accumulation
+    if (currentOverlayHandler) {
+        overlay.removeEventListener('click', currentOverlayHandler);
+    }
+
     // Helper to close and cleanup
     const closeModal = () => {
         overlay.classList.add('hidden');
-        overlay.removeEventListener('click', handleOverlayClick);
+        if (currentOverlayHandler) {
+            overlay.removeEventListener('click', currentOverlayHandler);
+            currentOverlayHandler = null;
+        }
     };
 
     // Handler for overlay click (close on background click)
-    const handleOverlayClick = (e) => {
+    currentOverlayHandler = (e) => {
         if (e.target === overlay) {
             closeModal();
         }
@@ -347,8 +362,8 @@ function showSettingsModal() {
         }
     });
 
-    // Close on overlay click
-    overlay.addEventListener('click', handleOverlayClick);
+    // Close on overlay click (using tracked handler)
+    overlay.addEventListener('click', currentOverlayHandler);
 }
 
 /**
@@ -401,7 +416,7 @@ function showAllPostsModal() {
                                 <span style="color: var(--text-secondary);">@player · ${timeAgo}</span>
                             </div>
                             ${badges ? `<div style="margin-bottom: 4px;">${badges}</div>` : ''}
-                            <div style="margin-bottom: 8px; word-wrap: break-word;">${entry.text}</div>
+                            <div style="margin-bottom: 8px; word-wrap: break-word;">${escapeHtml(entry.text)}</div>
                             <div style="display: flex; gap: 24px; color: var(--text-secondary); font-size: 13px;">
                                 <span>💬 ${formatEngagement(e.comments)}</span>
                                 <span style="color: #00ba7c;">🔄 ${formatEngagement(e.retweets)}</span>
@@ -435,21 +450,29 @@ function showAllPostsModal() {
 
     overlay.classList.remove('hidden');
 
+    // Remove any existing overlay handler to prevent accumulation
+    if (currentOverlayHandler) {
+        overlay.removeEventListener('click', currentOverlayHandler);
+    }
+
     // Helper to close and cleanup
     const closeModal = () => {
         overlay.classList.add('hidden');
-        overlay.removeEventListener('click', handleOverlayClick);
+        if (currentOverlayHandler) {
+            overlay.removeEventListener('click', currentOverlayHandler);
+            currentOverlayHandler = null;
+        }
     };
 
     // Handler for overlay click (close on background click)
-    const handleOverlayClick = (e) => {
+    currentOverlayHandler = (e) => {
         if (e.target === overlay) {
             closeModal();
         }
     };
 
     document.getElementById('close-modal')?.addEventListener('click', closeModal);
-    overlay.addEventListener('click', handleOverlayClick);
+    overlay.addEventListener('click', currentOverlayHandler);
 }
 
 /**

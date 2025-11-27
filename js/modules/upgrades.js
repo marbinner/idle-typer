@@ -17,6 +17,9 @@ let premiumListEl;
 // Track if already initialized
 let isInitialized = false;
 
+// Prevent race conditions in purchase flow
+let tierUpgradePurchasing = false;
+
 /**
  * Initialize the upgrades system
  */
@@ -555,38 +558,46 @@ function handlePremiumPurchaseById(premiumId) {
  * Handle tier upgrade purchase
  */
 function handleTierUpgradePurchase(tier) {
-    const state = State.getState();
-    const tierUpgrades = state.tierUpgrades || {};
+    // Prevent race condition from rapid double-clicks
+    if (tierUpgradePurchasing) return;
+    tierUpgradePurchasing = true;
 
-    if (tierUpgrades[tier]) {
-        showMessage('Already owned!');
-        return;
-    }
+    try {
+        const state = State.getState();
+        const tierUpgrades = state.tierUpgrades || {};
 
-    if (!isTierUnlocked(tier, state)) {
-        showMessage(`Unlock Tier ${tier} bots first!`);
-        return;
-    }
-
-    const cost = getTierUpgradeCost(tier);
-    if (State.spendCoins(cost)) {
-        const newTierUpgrades = { ...tierUpgrades, [tier]: true };
-        State.updateState({ tierUpgrades: newTierUpgrades });
-        State.recalculateDerived();
-        playSound('premium');
-
-        // Celebration
-        const panel = document.getElementById('premium-list');
-        if (panel) {
-            const rect = panel.getBoundingClientRect();
-            spawnParticles('confetti', rect.left + rect.width / 2, rect.top, 50);
+        if (tierUpgrades[tier]) {
+            showMessage('Already owned!');
+            return;
         }
 
-        renderPremium();
-        showMessage(`Tier ${tier} boost unlocked! +50% output!`);
-    } else {
-        showMessage('Not enough coins!');
-        playSound('error');
+        if (!isTierUnlocked(tier, state)) {
+            showMessage(`Unlock Tier ${tier} bots first!`);
+            return;
+        }
+
+        const cost = getTierUpgradeCost(tier);
+        if (State.spendCoins(cost)) {
+            const newTierUpgrades = { ...tierUpgrades, [tier]: true };
+            State.updateState({ tierUpgrades: newTierUpgrades });
+            State.recalculateDerived();
+            playSound('premium');
+
+            // Celebration
+            const panel = document.getElementById('premium-list');
+            if (panel) {
+                const rect = panel.getBoundingClientRect();
+                spawnParticles('confetti', rect.left + rect.width / 2, rect.top, 50);
+            }
+
+            renderPremium();
+            showMessage(`Tier ${tier} boost unlocked! +50% output!`);
+        } else {
+            showMessage('Not enough coins!');
+            playSound('error');
+        }
+    } finally {
+        tierUpgradePurchasing = false;
     }
 }
 

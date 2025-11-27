@@ -14,6 +14,9 @@ let shownNotifications = new Set();
 // Track active notifications for stacking
 let activeNotifications = 0;
 
+// Track modal overlay handler for cleanup (prevent listener accumulation)
+let currentAchievementOverlayHandler = null;
+
 /**
  * Initialize achievements system
  */
@@ -218,15 +221,22 @@ export function showAchievementsModal() {
 
     overlay.classList.remove('hidden');
 
+    // Remove any existing overlay handler to prevent accumulation
+    if (currentAchievementOverlayHandler) {
+        overlay.removeEventListener('click', currentAchievementOverlayHandler);
+    }
+
     // Helper to close and cleanup
     const closeModal = () => {
         overlay.classList.add('hidden');
-        // Remove listeners to prevent memory leak
-        overlay.removeEventListener('click', handleOverlayClick);
+        if (currentAchievementOverlayHandler) {
+            overlay.removeEventListener('click', currentAchievementOverlayHandler);
+            currentAchievementOverlayHandler = null;
+        }
     };
 
     // Handler for overlay click (close on background click)
-    const handleOverlayClick = (e) => {
+    currentAchievementOverlayHandler = (e) => {
         if (e.target === overlay) {
             closeModal();
         }
@@ -238,6 +248,6 @@ export function showAchievementsModal() {
         closeBtn.addEventListener('click', closeModal);
     }
 
-    // Close on overlay click
-    overlay.addEventListener('click', handleOverlayClick);
+    // Close on overlay click (using tracked handler)
+    overlay.addEventListener('click', currentAchievementOverlayHandler);
 }

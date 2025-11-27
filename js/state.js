@@ -67,6 +67,7 @@ const initialState = {
     followerMultiplier: 1,    // Multiplier from followers (1 + followers/1000)
     impressionsPerPost: 10,
     globalMultiplier: 1,      // Combined multiplier from all sources
+    botCostDiscount: 1,       // Bot cost discount from Tier 3 upgrade (1 = no discount)
 
     // Achievements unlocked
     achievements: [],
@@ -329,8 +330,9 @@ export function recalculateDerived() {
     // Include Typing Mastery upgrade (+5% per level) and Tier 2 bonus
     const typingMultiplier = totalMultiplier * bonusMult * typingBonus * typingMasteryMult;
 
-    // Calculate final CPS
-    const finalCPS = baseCPS * totalMultiplier;
+    // Calculate final CPS (include event multiplier so events affect passive income)
+    const eventMult = state.eventCoinMultiplier || 1;
+    const finalCPS = baseCPS * totalMultiplier * eventMult;
 
     // Scale coinsPerPost with CPS to keep typing relevant throughout progression
     // This ensures combo bonuses, golden chars, and viral posts all scale properly

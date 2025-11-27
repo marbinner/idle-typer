@@ -1,7 +1,5 @@
 export const POSTS_BATCH_3 = [
-    { text: "my therapist and i have beef now", category: "unhinged" },
-    { text: "normalize leaving parties to pet the host's cat", category: "wholesome" },
-    { text: "wifi went out for two minutes and i almost started a new life in the woods", category: "tech-bro" },
+            { text: "wifi went out for two minutes and i almost started a new life in the woods", category: "tech-bro" },
     { text: "blocked my ex and somehow still seeing their tweets through pure psychic damage", category: "dating" },
     { text: "my sleep paralysis demon and i are working through some trust issues", category: "unhinged" },
     { text: "just remembered something cringe i did and now i have to fake my death", category: "relatable" },
