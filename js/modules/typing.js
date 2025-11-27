@@ -7,7 +7,14 @@ import * as State from '../state.js';
 import { POSTS } from '../data/posts.js';
 import { playSound, playAnticipationKeystroke, playCompletionClimax, playKachingSound } from './sound.js';
 import { spawnParticles, spawnFloatingNumber } from './particles.js';
-import { formatNumber } from '../utils.js';
+import { formatNumber, formatCoins } from '../utils.js';
+import {
+    TYPING_CONFIG,
+    COMBO_CONFIG,
+    GOLDEN_CONFIG,
+    BALLOON_CONFIG,
+    VIRAL_CONFIG
+} from '../config.js';
 
 // DOM Elements
 let postTextEl;
@@ -90,7 +97,7 @@ export function clearPostHistory() {
 function resetBalloonState() {
     balloonPopping = false;
     balloonCycleStart = 0;
-    balloonPopThreshold = Math.floor(Math.random() * 5) + 8; // 8-12
+    balloonPopThreshold = Math.floor(Math.random() * (BALLOON_CONFIG.popThresholdMax - BALLOON_CONFIG.popThresholdMin + 1)) + BALLOON_CONFIG.popThresholdMin;
     // Reset balloon visual
     const balloonVisual = document.getElementById('balloon-visual');
     if (balloonVisual) {
@@ -276,25 +283,31 @@ export function loadNewPost() {
     postStartTime = 0; // Will be set on first keystroke
     lastCharTime = 0;
 
-    // Golden characters - unlock at 30 posts
-    // 20% chance, random position, OR all golden during Golden Hour event
+    // Golden characters - unlock after certain posts
+    // Random position, OR all golden during Golden Hour event
     const initState = State.getState();
     goldenCharIndex = -1;
 
-    if (initState.totalPosts >= 30) {
+    if (initState.totalPosts >= GOLDEN_CONFIG.unlockAtPosts) {
         if (initState.eventAllGolden) {
             // All characters are golden during Golden Hour!
             goldenCharIndex = -2; // Special value meaning "all golden"
-        } else if (Math.random() < 0.20 && currentPost.text.length > 10) {
-            // Pick a random character that isn't a space (in the middle 60% of the post)
-            const start = Math.floor(currentPost.text.length * 0.2);
-            const end = Math.floor(currentPost.text.length * 0.8);
-            const attempts = 10;
-            for (let i = 0; i < attempts; i++) {
-                const idx = start + Math.floor(Math.random() * (end - start));
-                if (currentPost.text[idx] !== ' ') {
-                    goldenCharIndex = idx;
-                    break;
+        } else {
+            // Apply Tier 8 golden chance multiplier (2x if owned)
+            const goldenMult = initState.goldenChanceMultiplier || 1;
+            const adjustedChance = Math.min(GOLDEN_CONFIG.spawnChance * goldenMult, 0.8); // Cap at 80%
+
+            if (Math.random() < adjustedChance && currentPost.text.length > 10) {
+                // Pick a random character that isn't a space (in the middle 60% of the post)
+                const start = Math.floor(currentPost.text.length * 0.2);
+                const end = Math.floor(currentPost.text.length * 0.8);
+                const attempts = 10;
+                for (let i = 0; i < attempts; i++) {
+                    const idx = start + Math.floor(Math.random() * (end - start));
+                    if (currentPost.text[idx] !== ' ') {
+                        goldenCharIndex = idx;
+                        break;
+                    }
                 }
             }
         }
@@ -493,9 +506,12 @@ function handleCorrectChar() {
     // Golden character bonus!
     if (isGoldenChar) {
         // Scales with coinsPerPost to stay relevant throughout progression
-        // Single golden = 3x a post's value, all-golden event = 0.3x each (but many chars)
+        // Minimum ensures golden chars feel rewarding even in early game
         const isAllGolden = goldenCharIndex === -2;
-        const bonusCoins = Math.floor(state.coinsPerPost * (isAllGolden ? 0.3 : 3));
+        const multiplier = isAllGolden ? GOLDEN_CONFIG.allGoldenMultiplier : GOLDEN_CONFIG.singleMultiplier;
+        const minimum = isAllGolden ? GOLDEN_CONFIG.allGoldenMinimum : GOLDEN_CONFIG.singleMinimum;
+        const scaledBonus = state.coinsPerPost * multiplier;
+        const bonusCoins = Math.floor(Math.max(scaledBonus, minimum));
         State.addCoins(bonusCoins, 'golden');
 
         // Track golden chars hit for achievements
@@ -539,7 +555,7 @@ function handleCorrectChar() {
 
     // Combo milestone celebrations!
     const newCombo = state.combo + 1;
-    if (newCombo === 25 || newCombo === 50 || newCombo === 100 || newCombo === 200 || newCombo === 500) {
+    if (COMBO_CONFIG.milestones.includes(newCombo)) {
         celebrateComboMilestone(newCombo);
     }
 
@@ -564,11 +580,16 @@ function handleCorrectChar() {
 /**
  * Celebrate reaching a combo milestone
  * Scales with coinsPerPost to stay relevant throughout progression
+ * Has minimum floor to ensure early game combos feel rewarding
  */
 function celebrateComboMilestone(combo) {
     const state = State.getState();
-    // Combo 25 = 2.5 posts worth, combo 100 = 10 posts worth, combo 500 = 50 posts worth
-    const bonusCoins = Math.floor(combo * state.coinsPerPost * 0.1);
+    // Nice bonus but not a primary income source
+    const scaledBonus = combo * state.coinsPerPost * COMBO_CONFIG.rewardMultiplier;
+    const minimumBonus = combo * COMBO_CONFIG.minimumPerLevel;
+    // Apply Tier 5 combo bonus (2x if owned)
+    const tierComboBonus = state.comboBonus || 1;
+    const bonusCoins = Math.floor(Math.max(scaledBonus, minimumBonus) * tierComboBonus);
     State.addCoins(bonusCoins, 'combo');
 
     playSound('achievement');
@@ -578,7 +599,7 @@ function celebrateComboMilestone(combo) {
     spawnParticles('confetti', centerX, centerY, combo >= 100 ? 40 : 20);
     spawnFloatingNumber(combo + ' COMBO!', centerX, centerY + 100, 'viral');
 
-    showNotification(combo + ' Combo! +' + formatNumber(bonusCoins) + ' coins', 'perfect');
+    showNotification(combo + ' Combo! +' + formatCoins(bonusCoins).full, 'perfect');
 }
 
 /**
@@ -652,22 +673,21 @@ function completePost() {
     const posts = state.totalPosts;
 
     // Base typing reward - longer posts give significantly more
-    // Short posts (~30 chars) = 1x, Medium (~50 chars) = 1.4x, Long (~80 chars) = 2.3x
-    const lengthMultiplier = Math.max(1, postLength / 35);
+    const lengthMultiplier = Math.max(1, postLength / TYPING_CONFIG.lengthDivisor);
     let baseTypingReward = state.coinsPerPost * lengthMultiplier;
 
-    // CPS bonus unlocks at 10 posts (when player has bots)
+    // CPS bonus unlocks at configured posts (when player has bots)
     let cpsBonus = 0;
-    if (posts >= 10) {
-        let cpsSecondsBonus = 5;
+    if (posts >= TYPING_CONFIG.perfectBonus.unlockAtPosts) {
+        let cpsSecondsBonus = TYPING_CONFIG.cpsSecondsBonus.base;
         if (finalWPM >= 100) {
-            cpsSecondsBonus = 15;
+            cpsSecondsBonus = TYPING_CONFIG.cpsSecondsBonus.wpm100;
         } else if (finalWPM >= 80) {
-            cpsSecondsBonus = 12;
+            cpsSecondsBonus = TYPING_CONFIG.cpsSecondsBonus.wpm80;
         } else if (finalWPM >= 60) {
-            cpsSecondsBonus = 9;
+            cpsSecondsBonus = TYPING_CONFIG.cpsSecondsBonus.wpm60;
         } else if (finalWPM >= 40) {
-            cpsSecondsBonus = 7;
+            cpsSecondsBonus = TYPING_CONFIG.cpsSecondsBonus.wpm40;
         }
         cpsBonus = Math.floor(state.coinsPerSecond * cpsSecondsBonus);
     }
@@ -678,49 +698,52 @@ function completePost() {
     let followerReward = Math.floor(lengthMultiplier) + 1;
     let impressionReward = Math.floor(state.impressionsPerPost * lengthMultiplier);
 
-    // Perfect bonus - unlocks at 10 posts
+    // Perfect bonus - unlocks at configured posts
     let wpmBonusName = '';
-    if (posts >= 10 && isPerfect) {
-        coinReward *= 1.25;
-        followerReward *= 1.5;
-        impressionReward *= 1.25;
+    if (posts >= TYPING_CONFIG.perfectBonus.unlockAtPosts && isPerfect) {
+        coinReward *= TYPING_CONFIG.perfectBonus.coinMultiplier;
+        followerReward *= TYPING_CONFIG.perfectBonus.followerMultiplier;
+        impressionReward *= TYPING_CONFIG.perfectBonus.impressionMultiplier;
     }
 
-    // WPM bonus - unlocks at 25 posts
+    // WPM bonus - unlocks at configured posts
     let wpmBonus = 1;
-    if (posts >= 25) {
+    if (posts >= TYPING_CONFIG.wpmBonus.unlockAtPosts) {
         if (finalWPM >= 120) {
-            wpmBonus = 1.8;
-            wpmBonusName = 'BLAZING SPEED';
+            wpmBonus = TYPING_CONFIG.wpmBonus.wpm120.multiplier;
+            wpmBonusName = TYPING_CONFIG.wpmBonus.wpm120.name;
         } else if (finalWPM >= 100) {
-            wpmBonus = 1.5;
-            wpmBonusName = 'SPEED DEMON';
+            wpmBonus = TYPING_CONFIG.wpmBonus.wpm100.multiplier;
+            wpmBonusName = TYPING_CONFIG.wpmBonus.wpm100.name;
         } else if (finalWPM >= 80) {
-            wpmBonus = 1.3;
-            wpmBonusName = 'FAST FINGERS';
+            wpmBonus = TYPING_CONFIG.wpmBonus.wpm80.multiplier;
+            wpmBonusName = TYPING_CONFIG.wpmBonus.wpm80.name;
         } else if (finalWPM >= 60) {
-            wpmBonus = 1.15;
-            wpmBonusName = 'QUICK';
+            wpmBonus = TYPING_CONFIG.wpmBonus.wpm60.multiplier;
+            wpmBonusName = TYPING_CONFIG.wpmBonus.wpm60.name;
         }
         coinReward *= wpmBonus;
     }
 
-    // Personal best bonus - unlocks at 75 posts
-    if (posts >= 75) {
+    // Personal best bonus - unlocks at configured posts
+    if (posts >= TYPING_CONFIG.personalBestBonus.unlockAtPosts) {
         if (wpmResult.isPersonalBest) {
-            coinReward *= 1.5;
-            followerReward *= 3;
-            impressionReward *= 2;
+            coinReward *= TYPING_CONFIG.personalBestBonus.coinMultiplier;
+            followerReward *= TYPING_CONFIG.personalBestBonus.followerMultiplier;
+            impressionReward *= TYPING_CONFIG.personalBestBonus.impressionMultiplier;
         } else if (wpmResult.isAboveAvg) {
-            coinReward *= 1.15;
-            followerReward *= 1.5;
+            coinReward *= TYPING_CONFIG.personalBestBonus.aboveAvgCoinMultiplier;
+            followerReward *= TYPING_CONFIG.personalBestBonus.aboveAvgFollowerMultiplier;
         }
     }
 
-    // Streak bonus - unlocks at 50 posts
+    // Streak bonus - unlocks at configured posts
     let streakBonus = 1;
-    if (posts >= 50) {
-        streakBonus = Math.min(1 + state.streak * 0.05, 2);
+    if (posts >= TYPING_CONFIG.streakBonus.unlockAtPosts) {
+        streakBonus = Math.min(
+            1 + state.streak * TYPING_CONFIG.streakBonus.perStreak,
+            TYPING_CONFIG.streakBonus.maxMultiplier
+        );
         coinReward *= streakBonus;
     }
 
@@ -790,7 +813,7 @@ function completePost() {
     const isViralPost = !!viralResult;
 
     // Show floating numbers for rewards (positioned below center to avoid covering coin display)
-    spawnFloatingNumber(`+${formatNumber(coinReward)} μ₿`, centerX, centerY + 50, 'xcoins');
+    spawnFloatingNumber(`+${formatCoins(coinReward).full}`, centerX, centerY + 50, 'xcoins');
     if (followerReward > 1) {
         spawnFloatingNumber(`+${followerReward} Followers`, centerX, centerY + 90, 'followers');
     }
@@ -1354,7 +1377,7 @@ function renderHistory() {
                         <div class="tweet-stats">
                             <span class="tweet-stat wpm"><span class="label">WPM</span> <span class="value">${entry.wpm}</span></span>
                             <span class="tweet-stat accuracy"><span class="label">ACC</span> <span class="value">${entry.accuracy}%</span></span>
-                            <span class="tweet-stat coins"><span class="label">+</span> <span class="value">μ₿${formatNumber(entry.coins)}</span></span>
+                            <span class="tweet-stat coins"><span class="label">+</span> <span class="value">${formatCoins(entry.coins).full}</span></span>
                         </div>
                     </div>
                 </div>
@@ -1399,8 +1422,8 @@ function updatePostProgress() {
 
     if (!balloonContainer || !balloonVisual) return;
 
-    // Balloon unlocks at 20 posts
-    if (state.totalPosts < 20) {
+    // Balloon unlocks after configured posts
+    if (state.totalPosts < BALLOON_CONFIG.unlockAtPosts) {
         balloonContainer.style.display = 'none';
         return;
     } else {
@@ -1560,10 +1583,17 @@ function popBalloon() {
     setTimeout(() => popEl.remove(), 600);
 
     // Calculate bonus - scales with CPS to stay relevant throughout progression
-    // Worth 20 seconds of passive income, minimum 50 coins for early game
-    const bonusMultiplier = 1 + Math.floor(state.lifetimePosts / 100) * 0.25;
-    const bonusCoins = Math.floor(Math.max(50, state.coinsPerSecond * 20) * bonusMultiplier);
-    const bonusFollowers = Math.floor(Math.max(5, state.followers * 0.01) * bonusMultiplier);
+    // Bonus multiplier grows with lifetime posts for long-term engagement
+    const bonusMultiplier = 1 + Math.floor(state.lifetimePosts / BALLOON_CONFIG.postsPerBonus) * BALLOON_CONFIG.bonusPerTier;
+    const bonusCoins = Math.floor(Math.max(
+        BALLOON_CONFIG.minimumCoins,
+        state.coinsPerSecond * BALLOON_CONFIG.cpsSeconds
+    ) * bonusMultiplier);
+    // Follower bonus scales with sqrt of followers for diminishing but continuous returns
+    const bonusFollowers = Math.floor(Math.max(
+        BALLOON_CONFIG.followerMinimum,
+        Math.sqrt(state.followers) * BALLOON_CONFIG.followerMultiplier
+    ) * bonusMultiplier);
 
     // Award bonus
     State.addCoins(bonusCoins, 'balloon');
@@ -1580,12 +1610,12 @@ function popBalloon() {
 
     // Particles - extra explosion
     spawnParticles('confetti', centerX, centerY, 100);
-    spawnFloatingNumber(`+${formatNumber(bonusCoins)} μ₿`, centerX, centerY + 50, 'xcoins');
+    spawnFloatingNumber(`+${formatCoins(bonusCoins).full}`, centerX, centerY + 50, 'xcoins');
     spawnFloatingNumber(`+${bonusFollowers} Followers!`, centerX, centerY + 100, 'followers');
     spawnFloatingNumber('💰 KA-CHING! 💰', centerX, centerY + 150, 'viral');
 
     // Show notification
-    showNotification('🎈💥 POP! +' + formatNumber(bonusCoins) + ' coins!', 'perfect');
+    showNotification('🎈💥 POP! +' + formatCoins(bonusCoins).full + '!', 'perfect');
 
     // Reset balloon after a brief delay
     setTimeout(() => {

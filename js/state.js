@@ -3,6 +3,9 @@
  * Single source of truth for all game data
  */
 
+import { TYPING_CONFIG, FOLLOWER_CONFIG, MISC_CONFIG } from './config.js';
+import { BOTS, UPGRADES } from './data/upgrades.js';
+
 // Flag to prevent autosave during reset
 let isResetting = false;
 
@@ -47,29 +50,8 @@ const initialState = {
     avgWPM: 0,
     wpmRecordStreak: 0, // Times in a row beating avg
 
-    // Bots owned (keyed by bot ID)
-    bots: {
-        // Tier 1: Early game (hours 0-2)
-        replyGuy: 0,
-        lurker: 0,
-        shitposter: 0,
-        burnerAccount: 0,
-        // Tier 2: Mid game (hours 2-6)
-        memeLord: 0,
-        contentCreator: 0,
-        blueCheck: 0,
-        // Tier 3: Late game (hours 6-11)
-        influencer: 0,
-        cryptoBro: 0,
-        grokAI: 0,
-        // Tier 4: End game (hours 11-16)
-        botFarm: 0,
-        elonsAlt: 0,
-        mediaEmpire: 0,
-        // Tier 5: Infinite game (hours 16+)
-        digitalGod: 0,
-        realityWarper: 0
-    },
+    // Bots owned (keyed by bot ID) - dynamically initialized from BOTS
+    bots: Object.keys(BOTS).reduce((acc, id) => ({ ...acc, [id]: 0 }), {}),
 
     // Upgrades purchased (keyed by upgrade ID)
     upgrades: {},
@@ -77,6 +59,7 @@ const initialState = {
     // Premium status
     hasXPremium: false,
     verificationTier: null, // 'blue', 'gold', 'gray', or null
+    tierUpgrades: {}, // Tier boost upgrades (keyed by tier number 1-10)
 
     // Derived values (recalculated on change)
     coinsPerPost: 10,         // Base coins per completed post
@@ -240,30 +223,75 @@ function notifySubscribers(oldState, newState) {
  * Called after significant changes (upgrades, bots, etc.)
  */
 export function recalculateDerived() {
-    const { bots, upgrades, followers, verificationTier, prestigeCount, permanentBonuses } = state;
+    const { bots, upgrades, followers, verificationTier, prestigeCount, permanentBonuses, tierUpgrades } = state;
 
     // Base values
     let baseCPS = 0;  // Coins per second from bots
-    let baseCoinsPerPost = 10;
     let baseImpressionsPerPost = 10;
     let totalMultiplier = 1;
 
-    // Calculate follower multiplier: 1 + (followers / 1000)
-    // Caps at 10x boost at 9000 followers
-    const followerMult = Math.min(1 + (followers / 1000), 10);
+    // Apply purchased upgrades
+    // Typing Mastery: +5% coins per typed post per level
+    const typingMasteryLevel = upgrades?.typingMastery || 0;
+    const typingMasteryMult = UPGRADES.typingMastery.effect(typingMasteryLevel);
+
+    // Better Bots: +5% all bot output per level
+    const betterBotsLevel = upgrades?.betterBots || 0;
+    const betterBotsMult = UPGRADES.betterBots.effect(betterBotsLevel);
+
+    // Tier upgrade bonuses (unique effects)
+    // Tier 1: +50% Tier 1 CPS (handled in bot loop)
+    // Tier 2: +25% typing coins
+    const typingBonus = tierUpgrades?.[2] ? 1.25 : 1;
+    // Tier 3: +50% Tier 3 CPS + -10% bot costs
+    const botCostDiscount = tierUpgrades?.[3] ? 0.9 : 1;
+    // Tier 4: +50% follower gains
+    const followerGainBonus = tierUpgrades?.[4] ? 1.5 : 1;
+    // Tier 5: +50% Tier 5 CPS + 2x combo bonus
+    const comboBonus = tierUpgrades?.[5] ? 2 : 1;
+    // Tier 6: +25% all bot output
+    const allCpsBonus = tierUpgrades?.[6] ? 1.25 : 1;
+    // Tier 7: +50% Tier 7 CPS + +50% offline earnings
+    const offlineBonus = tierUpgrades?.[7] ? 1.5 : 1;
+    // Tier 8: Golden chars 2x more frequent
+    const goldenChanceMultiplier = tierUpgrades?.[8] ? 2 : 1;
+    // Tier 9: +50% Tier 9 CPS + +100% impressions
+    const impressionsBonus = tierUpgrades?.[9] ? 2 : 1;
+    // Tier 10: 2x ALL multipliers!
+    const ultimateMultiplier = tierUpgrades?.[10] ? 2 : 1;
+
+    // Calculate follower multiplier with continuous scaling (no hard cap)
+    // Uses sqrt scaling for smooth continuous growth
+    const followerMult = 1 + Math.sqrt(Math.max(0, followers)) / FOLLOWER_CONFIG.sqrtDivisor;
 
     // Calculate coins per second from bots
     // Each bot gives linearly more CPS: 1st=1x, 2nd=2x, 3rd=3x, etc.
     // Total CPS = baseCPS * (1+2+3+...+n) = baseCPS * n*(n+1)/2 (triangular growth)
     // Cost grows exponentially, CPS grows quadratically = satisfying progression
     const botData = getBotData();
+    const botIds = Object.keys(botData);
     Object.entries(bots).forEach(([botId, count]) => {
         if (count > 0 && botData[botId]) {
             // Triangular number formula: n * (n + 1) / 2
             const triangularBonus = count * (count + 1) / 2;
-            baseCPS += botData[botId].cps * triangularBonus;
+            let botCPS = botData[botId].cps * triangularBonus;
+
+            // Apply tier-specific CPS bonus (+50% for tiers 1,3,5,7,9 if upgrade owned)
+            const botIndex = botIds.indexOf(botId);
+            const botTier = Math.floor(botIndex / 15) + 1;
+            if (tierUpgrades && tierUpgrades[botTier] && [1, 3, 5, 7, 9].includes(botTier)) {
+                botCPS *= 1.5;
+            }
+
+            baseCPS += botCPS;
         }
     });
+
+    // Apply Tier 6 bonus: +25% all bot output
+    baseCPS *= allCpsBonus;
+
+    // Apply Better Bots upgrade: +5% per level
+    baseCPS *= betterBotsMult;
 
     // Apply verification bonuses
     if (verificationTier === 'blue') {
@@ -276,6 +304,9 @@ export function recalculateDerived() {
         totalMultiplier *= 2;
         baseImpressionsPerPost *= 3;
     }
+
+    // Apply Tier 9 bonus: +100% impressions
+    baseImpressionsPerPost *= impressionsBonus;
 
     // Apply prestige bonuses
     if (prestigeCount > 0) {
@@ -290,53 +321,51 @@ export function recalculateDerived() {
     // Apply follower multiplier to total
     totalMultiplier *= followerMult;
 
+    // Apply Tier 10 ultimate multiplier
+    totalMultiplier *= ultimateMultiplier;
+
     // Apply bonus mode multiplier (5x from floating bonus)
     const bonusMult = state.bonusModeMultiplier || 1;
-    const typingMultiplier = totalMultiplier * bonusMult;
+    // Include Typing Mastery upgrade (+5% per level) and Tier 2 bonus
+    const typingMultiplier = totalMultiplier * bonusMult * typingBonus * typingMasteryMult;
+
+    // Calculate final CPS
+    const finalCPS = baseCPS * totalMultiplier;
+
+    // Scale coinsPerPost with CPS to keep typing relevant throughout progression
+    // This ensures combo bonuses, golden chars, and viral posts all scale properly
+    // Note: Use baseCPS (before multipliers) since typingMultiplier is applied separately
+    const baseCoinsPerPost = Math.max(
+        TYPING_CONFIG.baseCoinsPerPost,
+        baseCPS * TYPING_CONFIG.cpsScalingFactor
+    );
 
     updateState({
-        coinsPerSecond: baseCPS * totalMultiplier,
+        coinsPerSecond: finalCPS,
         coinsPerPost: baseCoinsPerPost * typingMultiplier,
         followerMultiplier: followerMult,
         impressionsPerPost: baseImpressionsPerPost * bonusMult,
-        globalMultiplier: typingMultiplier
+        globalMultiplier: typingMultiplier,
+        // Store tier bonuses for other modules to use
+        botCostDiscount,
+        followerGainBonus,
+        comboBonus,
+        offlineBonus,
+        goldenChanceMultiplier
     }, true);
 }
 
 /**
- * Get bot data definitions (coins per second)
- * These values must match the BOTS in data/upgrades.js
- *
- * 20-HOUR PROGRESSION SCALING:
- * - Tier 1: Fast start (hours 0-2)
- * - Tier 2: Building momentum (hours 2-6)
- * - Tier 3: Mid-game grind (hours 6-11)
- * - Tier 4: Late game (hours 11-16)
- * - Tier 5: Infinite scaling (hours 16+)
+ * Get bot CPS data from the centralized BOTS definition
+ * No longer hardcoded - uses the formula-generated values from upgrades.js
  */
 function getBotData() {
-    return {
-        // Tier 1: Early game (hours 0-2)
-        replyGuy: { cps: 0.1 },
-        lurker: { cps: 0.8 },
-        shitposter: { cps: 6 },
-        burnerAccount: { cps: 45 },
-        // Tier 2: Mid game (hours 2-6)
-        memeLord: { cps: 300 },
-        contentCreator: { cps: 2000 },
-        blueCheck: { cps: 13000 },
-        // Tier 3: Late game (hours 6-11)
-        influencer: { cps: 85000 },
-        cryptoBro: { cps: 550000 },
-        grokAI: { cps: 3500000 },
-        // Tier 4: End game (hours 11-16)
-        botFarm: { cps: 22000000 },
-        elonsAlt: { cps: 140000000 },
-        mediaEmpire: { cps: 900000000 },
-        // Tier 5: Infinite game (hours 16+)
-        digitalGod: { cps: 5500000000 },
-        realityWarper: { cps: 35000000000 }
-    };
+    // Transform BOTS into the format expected by recalculateDerived
+    const botData = {};
+    Object.entries(BOTS).forEach(([id, bot]) => {
+        botData[id] = { cps: bot.cps };
+    });
+    return botData;
 }
 
 /**
@@ -356,13 +385,17 @@ export function addCoins(amount, source = 'typing') {
  * Add followers (passive multiplier currency)
  */
 export function addFollowers(amount, source = 'typing') {
-    const newFollowers = state.followers + amount;
+    // Apply Tier 4 follower gain bonus
+    const bonus = state.followerGainBonus || 1;
+    const boostedAmount = Math.floor(amount * bonus);
+
+    const newFollowers = state.followers + boostedAmount;
     updateState({ followers: newFollowers });
     recalculateDerived(); // Recalc since followers affect multiplier
 
     // Emit event for UI feedback
     window.dispatchEvent(new CustomEvent('followers-gained', {
-        detail: { amount, source, total: newFollowers }
+        detail: { amount: boostedAmount, source, total: newFollowers }
     }));
 }
 

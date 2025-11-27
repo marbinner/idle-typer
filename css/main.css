@@ -818,8 +818,20 @@
     z-index: 150; /* Above floating numbers and notifications */
 }
 
+#big-coin-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+}
+
 #big-coin-icon {
-    display: none; /* Hidden - we show it inline with the number instead */
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--x-premium-gold);
+    opacity: 0.9;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    margin-right: 8px;
 }
 
 #big-coin-value {
@@ -836,13 +848,7 @@
     transition: transform 0.15s ease, text-shadow 0.2s ease;
 }
 
-#big-coin-value::before {
-    content: 'μ₿';
-    margin-right: 8px;
-    font-size: 48px;
-    opacity: 0.9;
-    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
-}
+/* Unit symbol now controlled by #big-coin-icon element via JavaScript */
 
 #big-coin-value.bump {
     transform: scale(1.03);
@@ -1896,14 +1902,11 @@
 }
 
 .upgrade-item.affordable {
-    border-color: var(--success-green);
-    background: rgba(0, 186, 124, 0.08);
-    border-left: 3px solid var(--success-green);
+    /* No special styling for affordable items */
 }
 
 .upgrade-item.affordable:hover {
-    box-shadow: var(--shadow-glow-green);
-    background: rgba(0, 186, 124, 0.12);
+    /* Same as regular hover */
 }
 
 .upgrade-item.locked {
@@ -1951,8 +1954,7 @@
 }
 
 .upgrade-item.affordable .upgrade-icon {
-    border-color: var(--success-green);
-    box-shadow: 0 0 10px rgba(0, 186, 124, 0.3);
+    /* No special styling for affordable items */
 }
 
 .locked-icon {
@@ -3401,4 +3403,46 @@ body.bonus-mode-active #big-coin-value {
 .upgrade-item[data-id="realityWarper"] {
     background: linear-gradient(135deg, rgba(255, 0, 255, 0.15) 0%, rgba(255, 0, 255, 0.05) 100%);
     border-left: 3px solid rgba(255, 0, 255, 0.5);
+}
+
+/* Bot tier background colors (15 bots per tier) */
+.upgrade-item.bot-tier-1 {
+    background: linear-gradient(135deg, rgba(128, 128, 128, 0.12) 0%, rgba(128, 128, 128, 0.04) 100%);
+    border-left: 3px solid rgba(128, 128, 128, 0.5);
+}
+.upgrade-item.bot-tier-2 {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.04) 100%);
+    border-left: 3px solid rgba(59, 130, 246, 0.55);
+}
+.upgrade-item.bot-tier-3 {
+    background: linear-gradient(135deg, rgba(0, 200, 83, 0.12) 0%, rgba(0, 200, 83, 0.04) 100%);
+    border-left: 3px solid rgba(0, 200, 83, 0.5);
+}
+.upgrade-item.bot-tier-4 {
+    background: linear-gradient(135deg, rgba(255, 165, 0, 0.12) 0%, rgba(255, 165, 0, 0.04) 100%);
+    border-left: 3px solid rgba(255, 165, 0, 0.5);
+}
+.upgrade-item.bot-tier-5 {
+    background: linear-gradient(135deg, rgba(255, 69, 0, 0.12) 0%, rgba(255, 69, 0, 0.04) 100%);
+    border-left: 3px solid rgba(255, 69, 0, 0.5);
+}
+.upgrade-item.bot-tier-6 {
+    background: linear-gradient(135deg, rgba(255, 105, 180, 0.12) 0%, rgba(255, 105, 180, 0.04) 100%);
+    border-left: 3px solid rgba(255, 105, 180, 0.5);
+}
+.upgrade-item.bot-tier-7 {
+    background: linear-gradient(135deg, rgba(0, 200, 200, 0.12) 0%, rgba(0, 200, 200, 0.04) 100%);
+    border-left: 3px solid rgba(0, 200, 200, 0.5);
+}
+.upgrade-item.bot-tier-8 {
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.15) 0%, rgba(138, 43, 226, 0.05) 100%);
+    border-left: 3px solid rgba(138, 43, 226, 0.6);
+}
+.upgrade-item.bot-tier-9 {
+    background: linear-gradient(135deg, rgba(218, 165, 32, 0.18) 0%, rgba(218, 165, 32, 0.06) 100%);
+    border-left: 3px solid rgba(218, 165, 32, 0.65);
+}
+.upgrade-item.bot-tier-10 {
+    background: linear-gradient(135deg, rgba(255, 0, 255, 0.15) 0%, rgba(255, 0, 255, 0.05) 100%);
+    border-left: 3px solid rgba(255, 0, 255, 0.6);
 }

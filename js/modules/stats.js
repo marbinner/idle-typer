@@ -4,6 +4,7 @@
  */
 
 import * as State from '../state.js';
+import { formatCoins } from '../utils.js';
 
 // Maximum data points to keep (one per minute for 24 hours = 1440)
 const MAX_HISTORY_POINTS = 500;
@@ -141,7 +142,7 @@ export function showStatsPanel() {
 
             <div class="stats-summary">
                 <div class="stat-card">
-                    <div class="stat-card-value">${formatNumber(state.lifetimeCoins)}</div>
+                    <div class="stat-card-value">${formatCoins(state.lifetimeCoins).full}</div>
                     <div class="stat-card-label">Lifetime Coins</div>
                 </div>
                 <div class="stat-card">

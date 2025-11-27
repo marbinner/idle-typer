@@ -4,15 +4,16 @@
  */
 
 import * as State from '../state.js';
-import { formatNumber, formatFull } from '../utils.js';
+import { formatNumber, formatFull, formatCoins as formatCoinsUtil } from '../utils.js';
 import { setResetting } from '../state.js';
-import { getPostHistory } from './typing.js';
+import { getPostHistory, loadNewPost } from './typing.js';
 
 // DOM Elements cache
 let followersCountEl;
 let followerMultEl;
 let bigCoinValueEl;
 let bigCpsValueEl;
+let bigCoinIconEl;
 
 // Animation state for smooth number transitions
 let displayedCoins = 0;
@@ -28,6 +29,7 @@ export function initUI() {
     followerMultEl = document.getElementById('follower-mult');
     bigCoinValueEl = document.getElementById('big-coin-value');
     bigCpsValueEl = document.getElementById('big-cps-value');
+    bigCoinIconEl = document.getElementById('big-coin-icon');
 
     // Set up event listeners
     setupEventListeners();
@@ -125,9 +127,15 @@ export function updateUI() {
 
     const currentCoins = Math.floor(displayedCoins);
 
-    // Update BIG coin display (center) - full numbers for "number go up" satisfaction
+    // Update BIG coin display (center) with dynamic unit
     if (bigCoinValueEl) {
-        bigCoinValueEl.textContent = formatCoins(currentCoins);
+        const formatted = formatCoinsUtil(currentCoins);
+        bigCoinValueEl.textContent = formatted.value;
+
+        // Update the unit icon dynamically (μ₿ under 1M, ₿ at 1M+)
+        if (bigCoinIconEl && bigCoinIconEl.textContent !== formatted.unit) {
+            bigCoinIconEl.textContent = formatted.unit;
+        }
 
         // Add bump animation when coins increase significantly
         if (currentCoins > lastCoinValue + 5) {
@@ -137,10 +145,15 @@ export function updateUI() {
         lastCoinValue = currentCoins;
     }
 
-    // Update big CPS display
+    // Update big CPS display with dynamic unit based on current coin scale
     if (bigCpsValueEl) {
         const cps = state.coinsPerSecond || 0;
-        bigCpsValueEl.textContent = cps > 0 ? `+${formatNumber(cps, 1)}` : '+0';
+        if (cps > 0) {
+            const formatted = formatCoinsUtil(cps);
+            bigCpsValueEl.textContent = `+${formatted.value}`;
+        } else {
+            bigCpsValueEl.textContent = '+0';
+        }
     }
 
     // Update followers display
@@ -198,6 +211,10 @@ function showSettingsModal() {
                 <input type="range" id="volume-slider" min="0" max="100" value="${state.volume * 100}">
             </div>
             <div class="setting-item">
+                <label>Skip Current Text</label>
+                <button id="skip-post-btn" class="btn btn-secondary">⏭️ Skip Post</button>
+            </div>
+            <div class="setting-item">
                 <label>Export Save</label>
                 <button id="export-btn" class="btn btn-secondary">💾 Download Save File</button>
             </div>
@@ -245,6 +262,12 @@ function showSettingsModal() {
 
     document.getElementById('volume-slider')?.addEventListener('input', (e) => {
         State.updateState({ volume: e.target.value / 100 });
+    });
+
+    // Skip post button
+    document.getElementById('skip-post-btn')?.addEventListener('click', () => {
+        loadNewPost();
+        closeModal();
     });
 
     // Export - download JSON file
@@ -388,7 +411,7 @@ function showAllPostsModal() {
                             <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
                                 <span>WPM: ${entry.wpm}</span>
                                 <span>ACC: ${entry.accuracy}%</span>
-                                <span style="color: var(--x-premium-gold);">+μ₿${formatNumber(entry.coins)}</span>
+                                <span style="color: var(--x-premium-gold);">+${formatCoinsUtil(entry.coins).full}</span>
                             </div>
                         </div>
                     </div>
@@ -458,18 +481,11 @@ function showToast(message) {
 }
 
 /**
- * Format coins with full number display (commas) - only abbreviate at very high values
- * This lets players see the "number go up" experience
- * No decimals for cleaner display
+ * Format coins with dynamic unit (μ₿ → ₿ → K₿ etc.)
+ * Returns just the full string for simple usage
  */
 export function formatCoins(num) {
-    const n = Math.floor(num);
-    // Show full numbers up to 10 million for satisfying "number go up"
-    if (n < 10000000) {
-        return n.toLocaleString('en-US');
-    }
-    // After 10M, use consistent formatting from utils
-    return formatNumber(n, 1);
+    return formatCoinsUtil(num).full;
 }
 
 /**

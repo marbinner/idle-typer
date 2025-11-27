@@ -5,6 +5,8 @@
 
 import * as State from './state.js';
 import { getResetting } from './state.js';
+import { OFFLINE_CONFIG, MISC_CONFIG } from './config.js';
+import { formatCoins } from './utils.js';
 import { initTyping, loadNewPost } from './modules/typing.js';
 import { initUpgrades, renderUpgrades } from './modules/upgrades.js';
 import { initUI, updateUI } from './modules/ui.js';
@@ -19,7 +21,7 @@ import { initStats } from './modules/stats.js';
 // Game configuration
 const CONFIG = {
     targetFPS: 60,
-    autoSaveInterval: 30000, // 30 seconds
+    autoSaveInterval: MISC_CONFIG.autoSaveInterval,
     tickRate: 1000 / 60 // ~16.67ms
 };
 
@@ -207,12 +209,13 @@ function calculateOfflineProgress() {
     // Only calculate if significant time passed (> 1 second)
     if (offlineTime > 1000) {
         const offlineSeconds = offlineTime / 1000;
-        const maxOfflineSeconds = 2 * 60 * 60; // 2 hours max by default
-        const effectiveSeconds = Math.min(offlineSeconds, maxOfflineSeconds);
+        const effectiveSeconds = Math.min(offlineSeconds, OFFLINE_CONFIG.maxOfflineSeconds);
 
-        // Calculate offline earnings at 50% efficiency
-        const offlineEfficiency = 0.5;
-        const offlineCoins = state.coinsPerSecond * effectiveSeconds * offlineEfficiency;
+        // Apply Tier 7 offline bonus
+        const offlineBonus = state.offlineBonus || 1;
+
+        // Calculate offline earnings with configured efficiency + tier bonus
+        const offlineCoins = state.coinsPerSecond * effectiveSeconds * OFFLINE_CONFIG.efficiency * offlineBonus;
 
         if (offlineCoins > 0) {
             State.addCoins(Math.floor(offlineCoins), 'offline');
@@ -232,8 +235,8 @@ function calculateOfflineProgress() {
  */
 function formatOfflineMessage(seconds, coins) {
     const timeStr = formatDuration(seconds);
-    const coinsStr = formatNumber(Math.floor(coins));
-    return `Welcome back! You earned ${coinsStr} coins while away (${timeStr})`;
+    const coinsStr = formatCoins(Math.floor(coins)).full;
+    return `Welcome back! You earned ${coinsStr} while away (${timeStr})`;
 }
 
 /**
@@ -308,5 +311,28 @@ window.IdleTyper = {
     State,
     startGameLoop,
     stopGameLoop,
-    formatNumber
+    formatNumber,
+    // Debug functions - use in browser console
+    debug: {
+        addCoins: (amount) => {
+            State.addCoins(amount, 'debug');
+            console.log(`Added ${formatNumber(amount)} coins`);
+        },
+        setCoins: (amount) => {
+            State.updateState({ coins: amount });
+            console.log(`Set coins to ${formatNumber(amount)}`);
+        },
+        addFollowers: (amount) => {
+            State.addFollowers(amount, 'debug');
+            console.log(`Added ${formatNumber(amount)} followers`);
+        },
+        maxCoins: () => {
+            State.updateState({ coins: 1e15 });
+            console.log('Set coins to 1 quadrillion');
+        },
+        unlockAll: () => {
+            State.updateState({ lifetimeCoins: 1e15 });
+            console.log('Unlocked all bots (set lifetime coins to 1 quadrillion)');
+        }
+    }
 };

@@ -2,10 +2,15 @@
  * Utility functions used across the app
  */
 
+// Standard metric suffixes for large numbers
+const SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc',
+                  'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc', 'SxDc', 'SpDc', 'OcDc', 'NoDc',
+                  'Vg', 'UVg', 'DVg', 'TVg', 'QaVg', 'QiVg', 'SxVg', 'SpVg', 'OcVg', 'NoVg',
+                  'Tg', 'UTg', 'DTg'];
+
 /**
  * Format a number with units (K, M, B, T, etc.)
- * Numbers reset at each power of 1000, keeping display clean
- * Examples: 999 -> "999", 1000 -> "1.00K", 1234567 -> "1.23M"
+ * Supports numbers up to 10^100, then uses scientific notation
  *
  * @param {number} num - The number to format
  * @param {number} decimals - Decimal places to show (default 2)
@@ -17,36 +22,101 @@ export function formatNumber(num, decimals = 2) {
     const sign = num < 0 ? '-' : '';
     num = Math.abs(num);
 
-    // Units for each power of 1000
-    const units = [
-        { value: 1e15, suffix: 'Q' },   // Quadrillion
-        { value: 1e12, suffix: 'T' },   // Trillion
-        { value: 1e9, suffix: 'B' },    // Billion
-        { value: 1e6, suffix: 'M' },    // Million
-        { value: 1e3, suffix: 'K' },    // Thousand
-    ];
+    // For very large numbers (>= 10^100), use scientific notation
+    if (num >= 1e100) {
+        const exp = Math.floor(Math.log10(num));
+        const mantissa = num / Math.pow(10, exp);
+        return sign + mantissa.toFixed(2) + 'e' + exp;
+    }
 
-    // Find the appropriate unit
-    for (const unit of units) {
-        if (num >= unit.value) {
-            const formatted = (num / unit.value).toFixed(decimals);
-            // Remove trailing zeros after decimal point
-            const cleaned = formatted.replace(/\.?0+$/, '');
-            return sign + cleaned + unit.suffix;
+    // Find the appropriate suffix tier (each tier is 10^3)
+    let tier = 0;
+    let scaled = num;
+
+    while (scaled >= 1000 && tier < SUFFIXES.length - 1) {
+        scaled /= 1000;
+        tier++;
+    }
+
+    // Format the number
+    if (tier === 0) {
+        // Under 1000 - show as integer or with decimals if needed
+        if (Number.isInteger(num)) {
+            return sign + num.toString();
         }
+        if (num < 10) {
+            return sign + num.toFixed(decimals).replace(/\.?0+$/, '');
+        }
+        return sign + Math.floor(num).toString();
     }
 
-    // For numbers less than 1000, show as integer if whole, else with decimals
-    if (Number.isInteger(num)) {
-        return sign + num.toString();
+    // Format with suffix
+    const formatted = scaled.toFixed(decimals).replace(/\.?0+$/, '');
+    return sign + formatted + SUFFIXES[tier];
+}
+
+/**
+ * Format coins with dynamic unit (μ₿ → ₿ → K₿ → M₿ etc.)
+ * 1 ₿ = 1,000,000 μ₿
+ *
+ * @param {number} microBitcoin - Amount in μ₿
+ * @param {number} decimals - Decimal places to show
+ * @returns {object} { value: string, unit: string, full: string }
+ */
+export function formatCoins(microBitcoin, decimals = 2) {
+    if (microBitcoin === null || microBitcoin === undefined || isNaN(microBitcoin)) {
+        return { value: '0', unit: 'μ₿', full: '0 μ₿' };
     }
 
-    // For decimal numbers < 1000
-    if (num < 10) {
-        return sign + num.toFixed(decimals).replace(/\.?0+$/, '');
+    const sign = microBitcoin < 0 ? '-' : '';
+    let num = Math.abs(microBitcoin);
+
+    // For very large numbers (>= 10^100), use scientific notation
+    if (num >= 1e100) {
+        const exp = Math.floor(Math.log10(num));
+        const mantissa = num / Math.pow(10, exp);
+        const value = sign + mantissa.toFixed(2) + 'e' + exp;
+        return { value, unit: 'μ₿', full: value + ' μ₿' };
     }
 
-    return sign + Math.floor(num).toString();
+    // Determine base unit: μ₿ (under 1M) or ₿ (1M+)
+    const MICRO_TO_BITCOIN = 1e6;
+
+    if (num < MICRO_TO_BITCOIN) {
+        // Still in μ₿ range
+        if (num < 1000) {
+            const value = sign + (Number.isInteger(num) ? num.toString() : num.toFixed(decimals).replace(/\.?0+$/, ''));
+            return { value, unit: 'μ₿', full: value + ' μ₿' };
+        }
+        // Thousands of μ₿
+        const scaled = num / 1000;
+        const value = sign + scaled.toFixed(decimals).replace(/\.?0+$/, '') + 'K';
+        return { value, unit: 'μ₿', full: value + ' μ₿' };
+    }
+
+    // Convert to ₿
+    num = num / MICRO_TO_BITCOIN;
+
+    // Find the appropriate suffix tier for ₿
+    let tier = 0;
+    let scaled = num;
+
+    // Extended suffixes for ₿ (starts at ₿, then K₿, M₿, B₿, etc.)
+    const BTC_SUFFIXES = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc',
+                         'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc', 'SxDc', 'SpDc', 'OcDc', 'NoDc',
+                         'Vg', 'UVg', 'DVg', 'TVg', 'QaVg', 'QiVg', 'SxVg', 'SpVg', 'OcVg', 'NoVg'];
+
+    while (scaled >= 1000 && tier < BTC_SUFFIXES.length - 1) {
+        scaled /= 1000;
+        tier++;
+    }
+
+    const formatted = scaled.toFixed(decimals).replace(/\.?0+$/, '');
+    const suffix = BTC_SUFFIXES[tier];
+    const value = sign + formatted + suffix;
+    const unit = '₿';
+
+    return { value, unit, full: value + ' ' + unit };
 }
 
 /**
@@ -60,12 +130,12 @@ export function formatCompact(num) {
 
 /**
  * Format coins per second with "/s" suffix
- * @param {number} cps - Coins per second
- * @returns {string} Formatted CPS string
+ * @param {number} cps - Coins per second (in μ₿)
+ * @returns {string} Formatted CPS string with proper unit
  */
 export function formatCPS(cps) {
-    if (cps < 0.1) return '0/s';
-    return formatNumber(cps, 1) + '/s';
+    if (cps < 0.1) return '0 μ₿/s';
+    return formatCoins(cps).full + '/s';
 }
 
 /**

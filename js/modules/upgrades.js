@@ -7,6 +7,7 @@ import * as State from '../state.js';
 import { BOTS, UPGRADES } from '../data/upgrades.js';
 import { playSound } from './sound.js';
 import { spawnParticles } from './particles.js';
+import { formatNumber, formatCoins } from '../utils.js';
 
 // DOM Elements
 let botsListEl;
@@ -98,16 +99,19 @@ export function renderUpgrades() {
  * Render bots list
  */
 function renderBots() {
-    if (!botsListEl) return;
+    const listEl = document.getElementById('bots-list');
+    if (!listEl) return;
 
     const state = State.getState();
 
     // Get all bots as array with unlock info (based on lifetime coins earned)
-    const botsArray = Object.entries(BOTS).map(([id, bot]) => ({
+    const botIds = Object.keys(BOTS);
+    const botsArray = Object.entries(BOTS).map(([id, bot], index) => ({
         id,
         bot,
         isUnlocked: state.lifetimeCoins >= (bot.unlockAt || 0),
-        unlockAt: bot.unlockAt || 0
+        unlockAt: bot.unlockAt || 0,
+        botTier: Math.floor(index / 15) + 1  // 15 bots per tier, tiers 1-10
     }));
 
     // Find first locked bot index
@@ -120,7 +124,7 @@ function renderBots() {
         return i <= firstLockedIndex + 1; // Show next 2 locked
     });
 
-    const botsHtml = visibleBots.map(({ id, bot, isUnlocked }) => {
+    const botsHtml = visibleBots.map(({ id, bot, isUnlocked, botTier }) => {
         const owned = state.bots[id] || 0;
         const cost = calculateBotCost(id, owned);
         const canAfford = state.coins >= cost;
@@ -130,16 +134,18 @@ function renderBots() {
             const lockedIndex = botsArray.filter(b => !b.isUnlocked).findIndex(b => b.id === id);
             const fadeLevel = Math.min(lockedIndex, 2); // Max 3 levels of fade
 
+            const unlockFormatted = formatCoins(bot.unlockAt);
+            const costFormatted = formatCoins(cost);
             return `
-                <div class="upgrade-item locked fade-${fadeLevel}" data-type="bot" data-id="${id}">
+                <div class="upgrade-item locked fade-${fadeLevel} bot-tier-${botTier}" data-type="bot" data-id="${id}">
                     <div class="upgrade-icon locked-icon">🔒</div>
                     <div class="upgrade-info">
                         <div class="upgrade-name">???</div>
-                        <div class="upgrade-desc">Unlock at μ₿${formatNumber(bot.unlockAt)} lifetime</div>
+                        <div class="upgrade-desc">Unlock at ${unlockFormatted.full} lifetime</div>
                     </div>
                     <div class="upgrade-cost">
-                        <span class="cost-icon">μ₿</span>
-                        <span class="cost-value locked-cost">${formatNumber(bot.unlockAt)}</span>
+                        <span class="cost-icon">${costFormatted.unit}</span>
+                        <span class="cost-value locked-cost">${costFormatted.value}</span>
                     </div>
                 </div>
             `;
@@ -149,7 +155,8 @@ function renderBots() {
         const totalCPS = owned > 0 ? bot.cps * owned * (owned + 1) / 2 : 0;
         // Next bot gives: baseCPS * (owned + 1)
         const nextBotCPS = bot.cps * (owned + 1);
-        const cpsDisplay = formatNumber(nextBotCPS, 1);
+        const cpsFormatted = formatCoins(nextBotCPS);
+        const totalCPSFormatted = formatCoins(totalCPS);
 
         // Calculate quantity tier for visual effects
         let quantityTier = 0;
@@ -166,31 +173,32 @@ function renderBots() {
         const nextThreshold = tierThresholds[quantityTier] || 100;
         const tierProgress = quantityTier >= 6 ? 100 : ((owned - currentThreshold) / (nextThreshold - currentThreshold)) * 100;
 
+        const costFormatted = formatCoins(cost);
         return `
-            <div class="upgrade-item ${canAfford ? 'affordable' : ''} quantity-tier-${quantityTier}"
+            <div class="upgrade-item ${canAfford ? 'affordable' : ''} quantity-tier-${quantityTier} bot-tier-${botTier}"
                  data-type="bot" data-id="${id}" data-owned="${owned}">
                 <div class="upgrade-icon">${bot.icon}${owned > 0 ? `<span class="icon-quantity">${owned}</span>` : ''}</div>
                 <div class="upgrade-info">
                     <div class="upgrade-name">${bot.name} ${owned > 0 ? `<span class="owned-badge tier-${quantityTier}">×${owned}</span>` : ''}</div>
                     <div class="upgrade-desc">${bot.description}</div>
-                    ${owned > 0 ? `<div class="current-gen">Generating: <span class="gen-value">+${formatNumber(totalCPS, 1)}/s</span></div>` : ''}
+                    ${owned > 0 ? `<div class="current-gen">Generating: <span class="gen-value">+${totalCPSFormatted.full}/s</span></div>` : ''}
                     ${owned > 0 ? `<div class="quantity-bar"><div class="quantity-fill" style="width: ${tierProgress}%"></div></div>` : ''}
                 </div>
                 <div class="upgrade-right">
                     <div class="buy-gain">
                         <span class="gain-label">BUY FOR</span>
-                        <span class="gain-value">+${cpsDisplay}/s</span>
+                        <span class="gain-value">+${cpsFormatted.full}/s</span>
                     </div>
                     <div class="upgrade-cost ${canAfford ? 'can-afford' : 'cant-afford'}">
-                        <span class="cost-icon">μ₿</span>
-                        <span class="cost-value">${formatNumber(cost)}</span>
+                        <span class="cost-icon">${costFormatted.unit}</span>
+                        <span class="cost-value">${costFormatted.value}</span>
                     </div>
                 </div>
             </div>
         `;
     }).join('');
 
-    botsListEl.innerHTML = botsHtml;
+    listEl.innerHTML = botsHtml;
     // Click handlers use event delegation from initUpgrades()
 }
 
@@ -233,16 +241,17 @@ function renderUpgradesList() {
                     <div class="upgrade-icon locked-icon">🔒</div>
                     <div class="upgrade-info">
                         <div class="upgrade-name">???</div>
-                        <div class="upgrade-desc">Unlock at ${formatNumber(upgrade.unlockAt)} lifetime coins</div>
+                        <div class="upgrade-desc">Unlock at ${formatCoins(upgrade.unlockAt).full} lifetime</div>
                     </div>
                     <div class="upgrade-cost">
-                        <span class="cost-value locked-cost">${formatNumber(upgrade.unlockAt)}</span>
+                        <span class="cost-value locked-cost">${formatCoins(upgrade.unlockAt).full}</span>
                         <span class="cost-label">to unlock</span>
                     </div>
                 </div>
             `;
         }
 
+        const costFormatted = formatCoins(cost);
         return `
             <div class="upgrade-item ${canAfford ? 'affordable' : ''} ${isMaxed ? 'maxed' : ''}"
                  data-type="upgrade" data-id="${id}">
@@ -254,8 +263,8 @@ function renderUpgradesList() {
                 </div>
                 <div class="upgrade-cost ${!isMaxed && canAfford ? 'can-afford' : !isMaxed ? 'cant-afford' : ''}">
                     ${isMaxed ? '<span class="cost-value maxed-text">✓ MAX</span>' : `
-                        <span class="cost-icon">μ₿</span>
-                        <span class="cost-value">${formatNumber(cost)}</span>
+                        <span class="cost-icon">${costFormatted.unit}</span>
+                        <span class="cost-value">${costFormatted.value}</span>
                     `}
                 </div>
             </div>
@@ -269,69 +278,110 @@ function renderUpgradesList() {
 /**
  * Render premium list
  */
+// Tier upgrade names, descriptions, and unique effects
+const TIER_UPGRADES = [
+    { name: 'Beginner Boost', icon: '⭐', description: '+50% Tier 1 output', tier: 1, effect: 'cps' },
+    { name: 'Creator Pack', icon: '🎬', description: '+25% typing coins', tier: 2, effect: 'typing' },
+    { name: 'Specialist Suite', icon: '🔧', description: '+50% Tier 3 output, -10% bot costs', tier: 3, effect: 'cps+discount' },
+    { name: 'Influencer Bundle', icon: '📢', description: '+50% follower gains', tier: 4, effect: 'followers' },
+    { name: 'Viral Package', icon: '🔥', description: '+50% Tier 5 output, 2x combo bonus', tier: 5, effect: 'cps+combo' },
+    { name: 'Elite Upgrade', icon: '💎', description: '+25% all bot output', tier: 6, effect: 'allCps' },
+    { name: 'Power Pack', icon: '⚡', description: '+50% Tier 7 output, +50% offline', tier: 7, effect: 'cps+offline' },
+    { name: 'Premium Suite', icon: '👑', description: 'Golden chars 2x more frequent', tier: 8, effect: 'golden' },
+    { name: 'Legendary Bundle', icon: '🏆', description: '+50% Tier 9 output, +100% impressions', tier: 9, effect: 'cps+impressions' },
+    { name: 'Ultimate Ascension', icon: '🌟', description: '2x ALL multipliers!', tier: 10, effect: 'ultimate' },
+];
+
+// Get mid-tier bot cost for pricing tier upgrades
+function getTierUpgradeCost(tier) {
+    const botIds = Object.keys(BOTS);
+    // Mid-tier bot index: tier 1 = bot 7, tier 2 = bot 22, etc.
+    const midBotIndex = (tier - 1) * 15 + 7;
+    const botId = botIds[midBotIndex];
+    if (!botId) return 1000000; // fallback
+    return BOTS[botId].baseCost;
+}
+
+// Check if tier upgrade is unlocked (need to have unlocked at least one bot from that tier)
+function isTierUnlocked(tier, state) {
+    const botIds = Object.keys(BOTS);
+    const tierStartIndex = (tier - 1) * 15;
+    const firstBotInTier = botIds[tierStartIndex];
+    if (!firstBotInTier) return false;
+    // Unlocked if lifetime coins >= first bot's unlock cost
+    return state.lifetimeCoins >= (BOTS[firstBotInTier].unlockAt || 0);
+}
+
 function renderPremium() {
     if (!premiumListEl) return;
 
     const state = State.getState();
+    const tierUpgrades = state.tierUpgrades || {};
 
-    const premiumItems = [
-        {
-            id: 'xPremium',
-            name: 'X Premium',
-            icon: '✓',
-            description: 'Get verified and unlock premium features',
-            cost: 8000,
-            owned: state.hasXPremium,
-            effect: () => {
-                State.updateState({ hasXPremium: true, verificationTier: 'blue' });
-                State.recalculateDerived();
-            }
-        },
-        {
-            id: 'goldCheck',
-            name: 'Gold Verification',
-            icon: '✓',
-            description: 'Organization badge - 1.5x all bonuses',
-            cost: 100000,
-            owned: state.verificationTier === 'gold' || state.verificationTier === 'gray',
-            requires: state.hasXPremium,
-            effect: () => {
-                State.updateState({ verificationTier: 'gold' });
-                State.recalculateDerived();
-            }
-        },
-        {
-            id: 'grayCheck',
-            name: 'Government Badge',
-            icon: '✓',
-            description: 'Gray check (parody) - 2x all bonuses',
-            cost: 1000000,
-            owned: state.verificationTier === 'gray',
-            requires: state.verificationTier === 'gold',
-            effect: () => {
-                State.updateState({ verificationTier: 'gray' });
-                State.recalculateDerived();
-            }
+    // Find the highest unlocked tier
+    let highestUnlockedTier = 0;
+    for (let t = 1; t <= 10; t++) {
+        if (isTierUnlocked(t, state)) {
+            highestUnlockedTier = t;
         }
-    ];
+    }
+
+    // Build premium items - only show unlocked tiers + next one (hidden preview)
+    const premiumItems = TIER_UPGRADES
+        .filter(upgrade => upgrade.tier <= highestUnlockedTier + 1)
+        .map(upgrade => {
+            const cost = getTierUpgradeCost(upgrade.tier);
+            const isOwned = tierUpgrades[upgrade.tier] || false;
+            const isLocked = !isTierUnlocked(upgrade.tier, state);
+
+            return {
+                id: `tier${upgrade.tier}`,
+                name: upgrade.name,
+                icon: upgrade.icon,
+                description: upgrade.description,
+                cost,
+                owned: isOwned,
+                locked: isLocked,
+                tier: upgrade.tier,
+                effect: () => {
+                    const newTierUpgrades = { ...tierUpgrades, [upgrade.tier]: true };
+                    State.updateState({ tierUpgrades: newTierUpgrades });
+                    State.recalculateDerived();
+                }
+            };
+        });
 
     const premiumHtml = premiumItems.map(item => {
         const canAfford = state.coins >= item.cost;
-        const isLocked = item.requires === false;
-        const isOwned = item.owned;
+        const costFormatted = formatCoins(item.cost);
+
+        if (item.locked) {
+            return `
+                <div class="upgrade-item locked" data-type="premium" data-id="${item.id}">
+                    <div class="upgrade-icon locked-icon">🔒</div>
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">???</div>
+                        <div class="upgrade-desc">Unlock Tier ${item.tier} bots first</div>
+                    </div>
+                    <div class="upgrade-cost">
+                        <span class="cost-value locked-cost">LOCKED</span>
+                    </div>
+                </div>
+            `;
+        }
 
         return `
-            <div class="upgrade-item ${canAfford && !isOwned && !isLocked ? 'affordable' : ''} ${isLocked ? 'locked' : ''} ${isOwned ? 'owned' : ''}"
+            <div class="upgrade-item ${canAfford && !item.owned ? 'affordable' : ''} ${item.owned ? 'owned' : ''} bot-tier-${item.tier}"
                  data-type="premium" data-id="${item.id}">
-                <div class="upgrade-icon" style="color: ${item.id === 'xPremium' ? 'var(--x-premium-blue)' : item.id === 'goldCheck' ? 'var(--x-premium-gold)' : 'var(--x-premium-gray)'}">${item.icon}</div>
+                <div class="upgrade-icon">${item.icon}</div>
                 <div class="upgrade-info">
                     <div class="upgrade-name">${item.name}</div>
                     <div class="upgrade-desc">${item.description}</div>
                 </div>
-                <div class="upgrade-cost ${!isOwned && canAfford && !isLocked ? 'can-afford' : !isOwned ? 'cant-afford' : ''}">
-                    ${isOwned ? '<span class="cost-value" style="color: var(--success-green)">OWNED</span>' : `
-                        <span class="cost-icon">μ₿</span>
-                        <span class="cost-value">${formatNumber(item.cost)}</span>
+                <div class="upgrade-cost ${!item.owned && canAfford ? 'can-afford' : !item.owned ? 'cant-afford' : ''}">
+                    ${item.owned ? '<span class="cost-value" style="color: var(--success-green)">OWNED</span>' : `
+                        <span class="cost-icon">${costFormatted.unit}</span>
+                        <span class="cost-value">${costFormatted.value}</span>
                     `}
                 </div>
             </div>
@@ -355,7 +405,7 @@ function handleBotPurchase(botId) {
     const isUnlocked = state.lifetimeCoins >= (bot.unlockAt || 0);
 
     if (!isUnlocked) {
-        showMessage(`Unlock at ${formatNumber(bot.unlockAt)} lifetime coins!`);
+        showMessage(`Unlock at ${formatCoins(bot.unlockAt).full} lifetime!`);
         return;
     }
 
@@ -401,7 +451,7 @@ function handleUpgradePurchase(upgradeId) {
     const isUnlocked = state.lifetimeCoins >= (upgrade.unlockAt || 0);
 
     if (!isUnlocked) {
-        showMessage(`Unlock at ${formatNumber(upgrade.unlockAt)} lifetime coins!`);
+        showMessage(`Unlock at ${formatCoins(upgrade.unlockAt).full} lifetime!`);
         return;
     }
 
@@ -486,10 +536,57 @@ function getPremiumItems() {
  * Handle premium purchase by ID (for event delegation)
  */
 function handlePremiumPurchaseById(premiumId) {
+    // Check if it's a tier upgrade
+    if (premiumId.startsWith('tier')) {
+        const tier = parseInt(premiumId.replace('tier', ''));
+        handleTierUpgradePurchase(tier);
+        return;
+    }
+
+    // Otherwise use old premium items
     const premiumItems = getPremiumItems();
     const item = premiumItems.find(p => p.id === premiumId);
     if (item) {
         handlePremiumPurchase(item);
+    }
+}
+
+/**
+ * Handle tier upgrade purchase
+ */
+function handleTierUpgradePurchase(tier) {
+    const state = State.getState();
+    const tierUpgrades = state.tierUpgrades || {};
+
+    if (tierUpgrades[tier]) {
+        showMessage('Already owned!');
+        return;
+    }
+
+    if (!isTierUnlocked(tier, state)) {
+        showMessage(`Unlock Tier ${tier} bots first!`);
+        return;
+    }
+
+    const cost = getTierUpgradeCost(tier);
+    if (State.spendCoins(cost)) {
+        const newTierUpgrades = { ...tierUpgrades, [tier]: true };
+        State.updateState({ tierUpgrades: newTierUpgrades });
+        State.recalculateDerived();
+        playSound('premium');
+
+        // Celebration
+        const panel = document.getElementById('premium-list');
+        if (panel) {
+            const rect = panel.getBoundingClientRect();
+            spawnParticles('confetti', rect.left + rect.width / 2, rect.top, 50);
+        }
+
+        renderPremium();
+        showMessage(`Tier ${tier} boost unlocked! +50% output!`);
+    } else {
+        showMessage('Not enough coins!');
+        playSound('error');
     }
 }
 
@@ -548,14 +645,21 @@ function calculateBotCost(botId, owned) {
     const bot = BOTS[botId];
     if (!bot) return Infinity;
 
+    // Get discount from Tier 3 upgrade
+    const state = State.getState();
+    const discount = state.botCostDiscount || 1;
+
     // Exponential scaling with softcap
+    let cost;
     if (owned < 25) {
-        return Math.floor(bot.baseCost * Math.pow(bot.costMult || 1.15, owned));
+        cost = bot.baseCost * Math.pow(bot.costMult || 1.15, owned);
     } else {
         const softcapCost = bot.baseCost * Math.pow(bot.costMult || 1.15, 25);
         const extra = owned - 25;
-        return Math.floor(softcapCost * Math.pow(1.05, extra));
+        cost = softcapCost * Math.pow(1.05, extra);
     }
+
+    return Math.floor(cost * discount);
 }
 
 /**
@@ -667,47 +771,6 @@ function showMessage(message) {
     if (eventText) {
         eventText.textContent = message;
     }
-}
-
-/**
- * Format number for display - handles floating point precision
- */
-function formatNumber(num, decimals = 1) {
-    if (num === null || num === undefined || isNaN(num)) return '0';
-
-    const sign = num < 0 ? '-' : '';
-    num = Math.abs(num);
-
-    // Units for each power of 1000
-    const units = [
-        { value: 1e15, suffix: 'Q' },   // Quadrillion
-        { value: 1e12, suffix: 'T' },   // Trillion
-        { value: 1e9, suffix: 'B' },    // Billion
-        { value: 1e6, suffix: 'M' },    // Million
-        { value: 1e3, suffix: 'K' },    // Thousand
-    ];
-
-    // Find the appropriate unit
-    for (const unit of units) {
-        if (num >= unit.value) {
-            const formatted = (num / unit.value).toFixed(decimals);
-            // Remove trailing zeros after decimal point
-            const cleaned = formatted.replace(/\.?0+$/, '');
-            return sign + cleaned + unit.suffix;
-        }
-    }
-
-    // For numbers less than 1000
-    if (Number.isInteger(num)) {
-        return sign + num.toString();
-    }
-
-    // For decimal numbers < 1000
-    if (num < 10) {
-        return sign + num.toFixed(decimals).replace(/\.?0+$/, '');
-    }
-
-    return sign + Math.floor(num).toString();
 }
 
 export { renderBots, renderUpgradesList, renderPremium, calculateBotCost };
