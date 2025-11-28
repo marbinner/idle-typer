@@ -7,6 +7,7 @@ import * as State from '../state.js';
 import { ACHIEVEMENTS, CATEGORIES } from '../data/achievements.js';
 import { spawnParticles, screenFlash } from './particles.js';
 import { playSound } from './sound.js';
+import { escapeHtml } from '../utils.js';
 
 // Track which achievements have been shown as notifications
 let shownNotifications = new Set();
@@ -98,11 +99,11 @@ function showAchievementUnlock(achievementId) {
     const notification = document.createElement('div');
     notification.className = 'achievement-notification animate-slide-in-bottom';
     notification.style.bottom = (100 + offset) + 'px';
-    notification.innerHTML = '<div class="achievement-notification-icon">' + achievement.icon + '</div>' +
+    notification.innerHTML = '<div class="achievement-notification-icon">' + escapeHtml(achievement.icon) + '</div>' +
         '<div class="achievement-notification-content">' +
             '<div class="achievement-notification-title">Achievement Unlocked!</div>' +
-            '<div class="achievement-notification-name">' + achievement.name + '</div>' +
-            '<div class="achievement-notification-desc">' + achievement.description + '</div>' +
+            '<div class="achievement-notification-name">' + escapeHtml(achievement.name) + '</div>' +
+            '<div class="achievement-notification-desc">' + escapeHtml(achievement.description) + '</div>' +
         '</div>';
 
     document.body.appendChild(notification);
@@ -184,10 +185,10 @@ export function showAchievementsModal() {
             const statusClass = a.isUnlocked ? 'unlocked' : 'locked';
 
             achievementsHtml += '<div class="achievement-item ' + statusClass + '">' +
-                '<div class="achievement-icon">' + icon + '</div>' +
+                '<div class="achievement-icon">' + escapeHtml(icon) + '</div>' +
                 '<div class="achievement-info">' +
-                    '<div class="achievement-name">' + name + '</div>' +
-                    '<div class="achievement-desc">' + desc + '</div>' +
+                    '<div class="achievement-name">' + escapeHtml(name) + '</div>' +
+                    '<div class="achievement-desc">' + escapeHtml(desc) + '</div>' +
                 '</div>' +
                 checkmark +
             '</div>';
@@ -195,8 +196,8 @@ export function showAchievementsModal() {
 
         categoriesHtml += '<div class="achievement-category">' +
             '<div class="achievement-category-header">' +
-                '<span class="category-icon">' + category.icon + '</span>' +
-                '<span class="category-name">' + category.name + '</span>' +
+                '<span class="category-icon">' + escapeHtml(category.icon) + '</span>' +
+                '<span class="category-name">' + escapeHtml(category.name) + '</span>' +
                 '<span class="category-count">' + unlockedCount + '/' + totalCount + '</span>' +
             '</div>' +
             '<div class="achievement-list">' +

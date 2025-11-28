@@ -25,9 +25,22 @@ let snapshotInterval = null;
 let currentStatsOverlayHandler = null;
 
 /**
+ * Cleanup stats system (clear intervals)
+ */
+export function cleanupStats() {
+    if (snapshotInterval) {
+        clearInterval(snapshotInterval);
+        snapshotInterval = null;
+    }
+}
+
+/**
  * Initialize stats tracking
  */
 export function initStats() {
+    // Clear any existing interval to prevent duplicates on re-init
+    cleanupStats();
+
     // Start periodic snapshots
     snapshotInterval = setInterval(takeSnapshot, SNAPSHOT_INTERVAL);
 

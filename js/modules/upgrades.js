@@ -174,7 +174,9 @@ function renderBots() {
         const tierThresholds = [1, 5, 10, 25, 50, 100];
         const currentThreshold = quantityTier > 0 ? tierThresholds[quantityTier - 1] : 0;
         const nextThreshold = tierThresholds[quantityTier] || 100;
-        const tierProgress = quantityTier >= 6 ? 100 : ((owned - currentThreshold) / (nextThreshold - currentThreshold)) * 100;
+        // Guard against division by zero (defensive programming)
+        const tierDiff = nextThreshold - currentThreshold;
+        const tierProgress = quantityTier >= 6 ? 100 : (tierDiff > 0 ? ((owned - currentThreshold) / tierDiff) * 100 : 0);
 
         const costFormatted = formatCoins(cost);
         return `
@@ -541,7 +543,7 @@ function getPremiumItems() {
 function handlePremiumPurchaseById(premiumId) {
     // Check if it's a tier upgrade
     if (premiumId.startsWith('tier')) {
-        const tier = parseInt(premiumId.replace('tier', ''));
+        const tier = parseInt(premiumId.replace('tier', ''), 10);
         handleTierUpgradePurchase(tier);
         return;
     }

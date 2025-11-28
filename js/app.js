@@ -17,6 +17,7 @@ import { tick } from './modules/idle.js';
 import { initAchievements } from './modules/achievements.js';
 import { initEvents } from './modules/events.js';
 import { initStats } from './modules/stats.js';
+import { initBickering } from './modules/bickering.js';
 
 // Game configuration
 const CONFIG = {
@@ -143,6 +144,10 @@ async function init() {
         initStats();
         console.log('Stats system ready');
 
+        // Initialize bickering challenge system
+        initBickering();
+        console.log('Bickering system ready');
+
         // Set up auto-save interval
         setInterval(() => {
             autoSave();
@@ -202,6 +207,8 @@ function handleBeforeUnload() {
  * Calculate progress made while tab was hidden
  */
 function calculateOfflineProgress() {
+    // Ensure derived values like coinsPerSecond are fresh before calculation
+    State.recalculateDerived();
     const state = State.getState();
     const now = Date.now();
     const offlineTime = now - state.lastTickTime;

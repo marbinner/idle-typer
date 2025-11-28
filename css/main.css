@@ -3446,3 +3446,844 @@ body.bonus-mode-active #big-coin-value {
     background: linear-gradient(135deg, rgba(255, 0, 255, 0.15) 0%, rgba(255, 0, 255, 0.05) 100%);
     border-left: 3px solid rgba(255, 0, 255, 0.6);
 }
+
+/* ==================== Bickering Challenge ==================== */
+.bickering-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: var(--z-modal);
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-lg);
+    animation: bickering-fadeIn 0.3s ease;
+}
+
+.bickering-overlay.active {
+    display: flex;
+}
+
+@keyframes bickering-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.bickering-modal {
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow:
+        0 25px 80px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 0 60px rgba(29, 155, 240, 0.15);
+    animation: bickering-modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bickering-modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.bickering-header {
+    padding: 6px 8px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    text-align: center;
+}
+
+.bickering-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.bickering-icon {
+    font-size: 20px;
+    animation: bickering-shake 0.4s ease-in-out infinite;
+}
+
+@keyframes bickering-shake {
+    0%, 100% { transform: rotate(-10deg) scale(1); }
+    50% { transform: rotate(10deg) scale(1.15); }
+}
+
+.bickering-subtitle {
+    margin-top: 2px;
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.bickering-close {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.bickering-close:hover {
+    color: var(--text-primary);
+    background: rgba(244, 33, 46, 0.15);
+}
+
+.bickering-thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+    display: block;
+    background: var(--bg-primary);
+}
+
+/* Thread connector line */
+.bickering-thread::before {
+    display: none;
+}
+
+.bickering-tweet {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    position: relative;
+    animation: bickering-tweetSlideIn 0.3s ease;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.bickering-tweet:last-child {
+    border-bottom: none;
+}
+
+/* Opponent tweet entrance - dramatic slam in */
+.opponent-tweet {
+    animation: bickering-opponentSlam 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bickering-opponentSlam {
+    0% {
+        opacity: 0;
+        transform: translateX(-20px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* Player reply entrance - slide up ready to fight */
+.player-tweet.typing {
+    animation: bickering-playerReady 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bickering-playerReady {
+    0% {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bickering-tweetSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Thread connector between tweets */
+.tweet-connector {
+    position: absolute;
+    left: 13px;
+    top: -1px;
+    width: 2px;
+    height: 10px;
+    background: var(--border-color);
+}
+
+.tweet-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    border: 2px solid transparent;
+    position: relative;
+    z-index: 1;
+}
+
+.opponent-tweet .tweet-avatar {
+    background: var(--bg-secondary);
+    border-color: var(--error-red);
+    box-shadow: 0 0 8px rgba(244, 33, 46, 0.3);
+}
+
+.player-tweet .tweet-avatar {
+    background: var(--bg-secondary);
+    border-color: var(--x-blue);
+    box-shadow: 0 0 8px rgba(29, 155, 240, 0.3);
+}
+
+.tweet-content {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.tweet-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.tweet-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.tweet-handle {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.tweet-text {
+    font-size: 17px;
+    color: var(--text-primary);
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Opponent tweet styling */
+.opponent-tweet .tweet-text {
+    color: var(--text-primary);
+}
+
+/* Opponent typing animation */
+.opponent-tweet.typing-active {
+    background: rgba(244, 33, 46, 0.05);
+    border-radius: var(--radius-sm);
+    padding: 4px 6px;
+    margin: 2px 0;
+}
+
+.typing-indicator {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: rgba(244, 33, 46, 0.15);
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    margin-left: auto;
+    animation: typing-pulse 1s ease-in-out infinite;
+}
+
+@keyframes typing-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.typing-cursor {
+    color: var(--error-red);
+    animation: cursor-blink 0.5s ease-in-out infinite;
+    font-weight: 400;
+}
+
+@keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Player tweet states */
+.player-tweet.typing {
+    background: rgba(29, 155, 240, 0.05);
+    border-radius: var(--radius-lg);
+    padding: 8px;
+    margin: 4px 0;
+    border: 1px solid rgba(29, 155, 240, 0.3);
+}
+
+.player-tweet.typing .tweet-content {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
+.player-tweet.typing .tweet-header {
+    justify-content: flex-start;
+}
+
+.player-tweet.completed {
+    background: rgba(0, 186, 124, 0.08);
+    border-radius: var(--radius-sm);
+    padding: 4px 6px;
+    margin: 2px 0;
+    border: 1px solid rgba(0, 186, 124, 0.2);
+}
+
+.player-tweet.completed .tweet-avatar {
+    border-color: var(--success-green);
+    box-shadow: 0 0 8px rgba(0, 186, 124, 0.3);
+}
+
+/* Typing area - left aligned text display */
+.typing-area {
+    font-size: 17px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+    text-align: left;
+    width: 100%;
+    display: block;
+}
+
+/* Word containers prevent mid-word line breaks */
+.typing-area .word {
+    display: inline;
+    white-space: nowrap;
+}
+
+/* Bickering typing characters - match main panel exactly */
+.bicker-char {
+    display: inline;
+    transition: all 0.05s ease;
+    color: var(--text-secondary);
+}
+
+.bicker-char.typed {
+    color: var(--x-blue);
+}
+
+.bicker-char.current {
+    color: var(--text-primary);
+    background: rgba(29, 155, 240, 0.3);
+    border-radius: 2px;
+    padding: 0 2px;
+    margin: 0 -2px;
+    animation: bicker-cursor 1s ease-in-out infinite;
+}
+
+@keyframes bicker-cursor {
+    0%, 100% { background: rgba(29, 155, 240, 0.3); }
+    50% { background: rgba(29, 155, 240, 0.5); }
+}
+
+.bicker-char.error {
+    color: var(--error-red);
+    background: rgba(244, 33, 46, 0.2);
+    border-radius: 2px;
+}
+
+.bicker-char.shake {
+    animation: bicker-charShake 0.2s ease;
+}
+
+@keyframes bicker-charShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+/* === JUICE: Timer and Combo HUD === */
+.bickering-hud {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+
+/* Timer progress bar */
+.bickering-timer-bar {
+    width: 100%;
+    height: 8px;
+    background: #333;
+    border-radius: 4px;
+    margin-top: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.timer-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    min-height: 8px;
+    background: #1d9bf0 !important;
+    background-color: #1d9bf0 !important;
+    border-radius: 4px;
+    transition: width 0.1s linear, background 0.3s ease;
+    display: block;
+    z-index: 1;
+}
+
+/* Ensure timer fill gets width from inline style */
+#timer-bar-fill {
+    background: #1d9bf0 !important;
+}
+
+.timer-bar-text {
+    position: absolute;
+    right: 0;
+    top: -18px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.bickering-timer-bar.urgent .timer-bar-fill {
+    background: linear-gradient(90deg, #ffad00, #ff8c00);
+    animation: timer-bar-pulse 0.5s ease-in-out infinite;
+}
+
+.bickering-timer-bar.urgent .timer-bar-text {
+    color: #ffad00;
+}
+
+.bickering-timer-bar.critical .timer-bar-fill {
+    background: linear-gradient(90deg, #f4212e, #cc0000);
+    animation: timer-bar-critical 0.3s ease-in-out infinite;
+}
+
+.bickering-timer-bar.critical .timer-bar-text {
+    color: #f4212e;
+}
+
+@keyframes timer-bar-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(255, 173, 0, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 173, 0, 0.8); }
+}
+
+@keyframes timer-bar-critical {
+    0%, 100% { box-shadow: 0 0 8px rgba(244, 33, 46, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(244, 33, 46, 1); }
+}
+
+.bickering-combo {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    min-width: 28px;
+    text-align: center;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.15s ease;
+}
+
+.bickering-combo.active {
+    opacity: 1;
+    transform: scale(1);
+    background: linear-gradient(135deg, rgba(29, 155, 240, 0.2), rgba(29, 155, 240, 0.1));
+    color: var(--x-blue);
+    border: 1px solid rgba(29, 155, 240, 0.3);
+}
+
+.bickering-combo.hot {
+    background: linear-gradient(135deg, rgba(255, 173, 0, 0.3), rgba(255, 140, 0, 0.2));
+    color: #ffad00;
+    border-color: rgba(255, 173, 0, 0.5);
+    animation: combo-hot 0.4s ease-in-out infinite;
+}
+
+.bickering-combo.fire {
+    background: linear-gradient(135deg, rgba(244, 33, 46, 0.4), rgba(255, 173, 0, 0.4));
+    color: #ff6b35;
+    border-color: rgba(255, 100, 50, 0.6);
+    animation: combo-fire 0.2s ease-in-out infinite;
+    text-shadow: 0 0 8px rgba(255, 107, 53, 0.5);
+    box-shadow: 0 0 10px rgba(255, 107, 53, 0.4);
+}
+
+@keyframes combo-hot {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+@keyframes combo-fire {
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    50% { transform: scale(1.12) rotate(2deg); }
+}
+
+/* Reply counter - stylish pill */
+.reply-counter {
+    font-size: 10px;
+    font-weight: 800;
+    color: white;
+    background: linear-gradient(135deg, var(--x-blue), #0a84ff);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 8px rgba(29, 155, 240, 0.4);
+    animation: none;
+}
+
+/* === JUICE: Screen Shake === */
+.bickering-modal.shake {
+    animation: modal-shake 0.3s ease;
+}
+
+@keyframes modal-shake {
+    0%, 100% { transform: translateX(0) scale(1); }
+    10% { transform: translateX(-8px) scale(1); }
+    20% { transform: translateX(8px) scale(1); }
+    30% { transform: translateX(-6px) scale(1); }
+    40% { transform: translateX(6px) scale(1); }
+    50% { transform: translateX(-4px) scale(1); }
+    60% { transform: translateX(4px) scale(1); }
+    70% { transform: translateX(-2px) scale(1); }
+    80% { transform: translateX(2px) scale(1); }
+    90% { transform: translateX(-1px) scale(1); }
+}
+
+/* === JUICE: Urgency States === */
+.bickering-modal.urgent {
+    box-shadow: 0 0 30px rgba(255, 173, 0, 0.3);
+}
+
+.bickering-modal.urgent .player-tweet.typing {
+    border-color: rgba(255, 173, 0, 0.4);
+    background: rgba(255, 173, 0, 0.08);
+}
+
+.bickering-modal.critical {
+    box-shadow: 0 0 40px rgba(244, 33, 46, 0.4);
+    animation: modal-critical-pulse 0.5s ease-in-out infinite;
+}
+
+.bickering-modal.critical .player-tweet.typing {
+    border-color: rgba(244, 33, 46, 0.5);
+    background: rgba(244, 33, 46, 0.1);
+    animation: tweet-critical 0.3s ease-in-out infinite;
+}
+
+@keyframes modal-critical-pulse {
+    0%, 100% { box-shadow: 0 0 40px rgba(244, 33, 46, 0.3); }
+    50% { box-shadow: 0 0 60px rgba(244, 33, 46, 0.5); }
+}
+
+@keyframes tweet-critical {
+    0%, 100% { border-color: rgba(244, 33, 46, 0.5); }
+    50% { border-color: rgba(244, 33, 46, 0.8); }
+}
+
+.bickering-footer {
+    padding: 4px 8px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    background: var(--bg-secondary);
+}
+
+.bickering-skip-btn {
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.bickering-skip-btn:hover {
+    color: var(--error-red);
+    border-color: var(--error-red);
+    background: rgba(244, 33, 46, 0.1);
+}
+
+/* Victory UI */
+.bickering-victory {
+    text-align: center;
+    padding: 12px;
+    background: rgba(0, 186, 124, 0.1);
+    border-radius: var(--radius-md);
+    margin: 8px 0 0 0;
+    border: 1px solid rgba(0, 186, 124, 0.25);
+    animation: bickering-victoryPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bickering-victoryPop {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    60% {
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.victory-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--success-green);
+    margin-bottom: 2px;
+    text-shadow: 0 0 20px rgba(0, 186, 124, 0.5);
+}
+
+.victory-subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.victory-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    gap: 4px;
+    margin-bottom: 10px;
+    padding: 6px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.victory-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 4px;
+}
+
+.victory-stat .stat-value {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.victory-stat .stat-label {
+    font-size: 8px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Highlight special stats */
+.victory-stat.coins .stat-value {
+    color: #ffd700;
+}
+
+.victory-stat.followers .stat-value {
+    color: var(--x-blue);
+}
+
+.victory-stat.combo .stat-value {
+    color: #ff6b35;
+}
+
+.bickering-done-btn {
+    padding: 8px 20px;
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: white;
+    background: var(--success-green);
+    border: none;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.bickering-done-btn:hover {
+    background: var(--success-green-dark);
+    transform: scale(1.03);
+    box-shadow: 0 4px 20px rgba(0, 186, 124, 0.4);
+}
+
+/* === DEFEAT UI === */
+.bickering-defeat {
+    text-align: center;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(244, 33, 46, 0.15), rgba(200, 0, 0, 0.1));
+    border-radius: var(--radius-md);
+    margin: 8px 0 0 0;
+    border: 1px solid rgba(244, 33, 46, 0.35);
+    animation: bickering-defeatShake 0.6s ease;
+}
+
+@keyframes bickering-defeatShake {
+    0% { transform: translateX(0); opacity: 0; }
+    10% { transform: translateX(-10px); opacity: 1; }
+    20% { transform: translateX(10px); }
+    30% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    50% { transform: translateX(-5px); }
+    60% { transform: translateX(5px); }
+    70% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+    90% { transform: translateX(-1px); }
+    100% { transform: translateX(0); }
+}
+
+.defeat-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--error-red);
+    margin-bottom: 4px;
+    text-shadow: 0 0 20px rgba(244, 33, 46, 0.5);
+    animation: defeat-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes defeat-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.defeat-subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-style: italic;
+}
+
+.defeat-stats {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+}
+
+.defeat-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.defeat-stat .stat-value {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--error-red);
+}
+
+.defeat-stat .stat-label {
+    font-size: 8px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.defeat-btn {
+    background: linear-gradient(135deg, #666, #444) !important;
+    color: var(--text-muted) !important;
+    box-shadow: none !important;
+}
+
+.defeat-btn:hover {
+    background: linear-gradient(135deg, #555, #333) !important;
+    transform: scale(1.02);
+}
+
+/* Responsive adjustments for bickering */
+@media (max-width: 480px) {
+    .bickering-modal {
+        max-height: 95vh;
+        border-radius: var(--radius-md);
+    }
+
+    .bickering-header {
+        padding: 4px 6px;
+    }
+
+    .bickering-title {
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .bickering-thread {
+        padding: 2px 4px;
+    }
+
+    .bickering-tweet {
+        gap: 4px;
+        padding: 2px 0;
+    }
+
+    .tweet-avatar {
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
+    }
+
+    .tweet-name {
+        font-size: 10px;
+    }
+
+    .tweet-text,
+    .typing-area {
+        font-size: var(--font-size-md);
+        line-height: 1.25;
+    }
+
+    .player-tweet.typing,
+    .player-tweet.completed {
+        padding: 3px 4px;
+        margin: 1px 0;
+    }
+
+    .victory-stats {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .victory-stat .stat-value {
+        font-size: var(--font-size-xs);
+    }
+}

@@ -15,6 +15,7 @@ import {
     BALLOON_CONFIG,
     VIRAL_CONFIG
 } from '../config.js';
+import { checkBickeringTrigger, isBickeringActive } from './bickering.js';
 
 // DOM Elements
 let postTextEl;
@@ -277,7 +278,18 @@ export function initTyping() {
     document.removeEventListener('keydown', handleKeyDown);
     document.addEventListener('keydown', handleKeyDown);
 
+    // Listen for bickering challenge end to load new post (remove first to prevent duplicates)
+    window.removeEventListener('bickering-ended', handleBickeringEnded);
+    window.addEventListener('bickering-ended', handleBickeringEnded);
+
     // Note: loadNewPost() is called by app.js after checking for saved typing state
+}
+
+/**
+ * Handle bickering challenge end event
+ */
+function handleBickeringEnded() {
+    loadNewPost();
 }
 
 /**
@@ -393,8 +405,8 @@ function renderPost() {
                 } else if (charIndex === typedIndex) {
                     className += ' current';
                 }
-                // Golden: either specific index or all (-2 means all golden)
-                if (charIndex === goldenCharIndex || (goldenCharIndex === -2 && token[i] !== ' ')) {
+                // Golden: specific index only for whitespace (don't mark spaces as golden in all-golden mode)
+                if (charIndex === goldenCharIndex) {
                     className += ' golden';
                 }
                 html += `<span class="${className}" data-index="${charIndex}">&nbsp;</span>`;
@@ -435,6 +447,9 @@ function renderPost() {
  * Handle keydown events
  */
 function handleKeyDown(event) {
+    // Ignore keystrokes when bickering challenge is active
+    if (isBickeringActive()) return;
+
     // Ignore if modifier keys are pressed (except shift)
     if (event.ctrlKey || event.altKey || event.metaKey) return;
 
@@ -872,9 +887,13 @@ function completePost() {
     updatePostProgress();
     updateRankDisplay();
 
-    // Load next post after brief delay
+    // Load next post after brief delay (unless bickering challenge triggers)
     setTimeout(() => {
-        loadNewPost();
+        // Check if bickering challenge should trigger
+        const bickeringTriggered = checkBickeringTrigger();
+        if (!bickeringTriggered) {
+            loadNewPost();
+        }
     }, wpmResult.isPersonalBest ? 1500 : 500);
 }
 

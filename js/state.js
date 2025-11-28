@@ -89,6 +89,9 @@ const initialState = {
     xp: 0,                // Experience points (updated from lifetimePosts)
     heat: 0,              // Current heat level (0-100)
 
+    // Bickering challenge stats
+    bickeringWins: 0,
+
     // Prestige
     prestigeCount: 0,
     permanentBonuses: {},
@@ -263,7 +266,9 @@ export function recalculateDerived() {
 
     // Calculate follower multiplier with continuous scaling (no hard cap)
     // Uses sqrt scaling for smooth continuous growth
-    const followerMult = 1 + Math.sqrt(Math.max(0, followers)) / FOLLOWER_CONFIG.sqrtDivisor;
+    // Guard against division by zero (defensive programming)
+    const sqrtDivisor = FOLLOWER_CONFIG.sqrtDivisor || 30;
+    const followerMult = 1 + Math.sqrt(Math.max(0, followers)) / sqrtDivisor;
 
     // Calculate coins per second from bots
     // Each bot gives linearly more CPS: 1st=1x, 2nd=2x, 3rd=3x, etc.

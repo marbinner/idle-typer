@@ -6,6 +6,7 @@
 import * as State from '../state.js';
 import { playSound } from './sound.js';
 import { spawnParticles, screenFlash } from './particles.js';
+import { escapeHtml } from '../utils.js';
 
 // Event definitions
 const EVENTS = {
@@ -92,9 +93,40 @@ const FLOATING_BONUS_DURATION = 15000; // Bonus stays visible for 15 seconds
 const BONUS_MODE_DURATION = 120000; // 2 minutes of 5x bonus
 
 /**
+ * Cleanup events system (clear intervals)
+ */
+export function cleanupEvents() {
+    if (eventCheckInterval) {
+        clearInterval(eventCheckInterval);
+        eventCheckInterval = null;
+    }
+    if (floatingBonusInterval) {
+        clearInterval(floatingBonusInterval);
+        floatingBonusInterval = null;
+    }
+    if (bonusModeTimerInterval) {
+        clearInterval(bonusModeTimerInterval);
+        bonusModeTimerInterval = null;
+    }
+    // Clear floating bonus timeout if active
+    if (floatingBonusTimeout) {
+        clearTimeout(floatingBonusTimeout);
+        floatingBonusTimeout = null;
+    }
+    // Cancel floating bonus animation
+    if (floatingBonusAnimationId) {
+        cancelAnimationFrame(floatingBonusAnimationId);
+        floatingBonusAnimationId = null;
+    }
+}
+
+/**
  * Initialize the events system
  */
 export function initEvents() {
+    // Clear any existing intervals to prevent duplicates on re-init
+    cleanupEvents();
+
     // Check for random events every 15 seconds
     eventCheckInterval = setInterval(checkForRandomEvent, 15000);
 
@@ -250,10 +282,10 @@ function showEventNotification(event) {
     const notification = document.createElement('div');
     notification.className = 'event-notification animate-slide-in-top';
     notification.innerHTML =
-        '<div class="event-notification-icon">' + event.icon + '</div>' +
+        '<div class="event-notification-icon">' + escapeHtml(event.icon) + '</div>' +
         '<div class="event-notification-content">' +
-            '<div class="event-notification-title">' + event.name + '</div>' +
-            '<div class="event-notification-desc">' + event.description + '</div>' +
+            '<div class="event-notification-title">' + escapeHtml(event.name) + '</div>' +
+            '<div class="event-notification-desc">' + escapeHtml(event.description) + '</div>' +
         '</div>';
 
     document.body.appendChild(notification);
@@ -509,7 +541,7 @@ function showBonusModeNotification(bonusName) {
     notification.innerHTML = `
         <div class="bonus-mode-notification-icon">🎉</div>
         <div class="bonus-mode-notification-content">
-            <div class="bonus-mode-notification-title">${bonusName} ACTIVATED!</div>
+            <div class="bonus-mode-notification-title">${escapeHtml(bonusName)} ACTIVATED!</div>
             <div class="bonus-mode-notification-desc">5x TYPING BONUS FOR 2 MINUTES!</div>
         </div>
     `;
