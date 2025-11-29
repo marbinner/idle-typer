@@ -241,7 +241,7 @@ function getSaveData() {
         version: SAVE_VERSION,
         timestamp: Date.now(),
         state,
-        postHistory: postHistory.slice(-MAX_HISTORY_POSTS), // Only keep last N posts for smaller saves
+        postHistory: (postHistory || []).slice(-MAX_HISTORY_POSTS), // Only keep last N posts for smaller saves
         balloonState,
         typingState,
         statsHistory
@@ -375,8 +375,17 @@ export function importSave(jsonString) {
             statsHistory: migratedData.statsHistory || saveData.statsHistory || null
         };
 
-        localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
-        console.log('Saved to localStorage successfully');
+        try {
+            localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
+            console.log('Saved to localStorage successfully');
+        } catch (storageError) {
+            if (storageError.name === 'QuotaExceededError') {
+                showSaveNotification('Import failed: Storage full!');
+            } else {
+                showSaveNotification('Import failed: ' + storageError.message);
+            }
+            throw storageError;
+        }
 
         showSaveNotification('Save imported! Refreshing...');
 
