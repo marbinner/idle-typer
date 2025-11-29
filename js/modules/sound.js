@@ -23,7 +23,9 @@ const SOUNDS = {
     premium: { type: 'synth', frequency: [500, 700, 900, 1100, 1300], duration: 0.4, wave: 'sine' },
     viral: { type: 'synth', frequency: [300, 400, 500, 600, 700, 800], duration: 0.5, wave: 'sine' },
     achievement: { type: 'synth', frequency: [600, 800, 1000], duration: 0.3, wave: 'triangle' },
-    kaching: { type: 'custom' } // Special kaching sound for balloon pop
+    kaching: { type: 'custom' }, // Special kaching sound for balloon pop
+    monsterHit: { type: 'custom' }, // Slashing impact sound
+    monsterDeath: { type: 'custom' } // Death explosion sound
 };
 
 /**
@@ -381,5 +383,256 @@ export function playKachingSound() {
         coinOsc.start(coinStart);
         coinOsc.stop(coinStart + 0.12);
     });
+}
+
+/**
+ * Play satisfying SLASH/HIT sound for monster attacks
+ * Inspired by Clicker Heroes impact sounds
+ */
+export function playMonsterHitSound() {
+    const state = State.getState();
+    if (!state.soundEnabled) return;
+
+    if (!audioContext) {
+        initAudioContext();
+        if (!audioContext) return;
+    }
+
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
+    const volume = state.volume * 0.5;
+    const now = audioContext.currentTime;
+
+    // Create master gain
+    const gainNode = audioContext.createGain();
+    gainNode.connect(masterGain);
+    gainNode.gain.value = volume;
+
+    // SLASH sound - quick descending noise burst
+    const slashDuration = 0.08;
+
+    // White noise for the "whoosh" of the slash
+    const bufferSize = audioContext.sampleRate * slashDuration;
+    const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+    }
+
+    const noiseSource = audioContext.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+
+    // High-pass filter for sharp slash sound
+    const highpass = audioContext.createBiquadFilter();
+    highpass.type = 'highpass';
+    highpass.frequency.value = 2000;
+    highpass.Q.value = 1;
+
+    // Bandpass for that "swoosh" character
+    const bandpass = audioContext.createBiquadFilter();
+    bandpass.type = 'bandpass';
+    bandpass.frequency.setValueAtTime(4000, now);
+    bandpass.frequency.exponentialRampToValueAtTime(800, now + slashDuration);
+    bandpass.Q.value = 2;
+
+    const noiseGain = audioContext.createGain();
+    noiseGain.gain.setValueAtTime(0.8, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + slashDuration);
+
+    noiseSource.connect(highpass);
+    highpass.connect(bandpass);
+    bandpass.connect(noiseGain);
+    noiseGain.connect(gainNode);
+    noiseSource.start(now);
+    noiseSource.stop(now + slashDuration);
+
+    // IMPACT thud - low frequency punch
+    const impactOsc = audioContext.createOscillator();
+    impactOsc.type = 'sine';
+    impactOsc.frequency.setValueAtTime(150, now);
+    impactOsc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+
+    const impactGain = audioContext.createGain();
+    impactGain.gain.setValueAtTime(0.6, now);
+    impactGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+    impactOsc.connect(impactGain);
+    impactGain.connect(gainNode);
+    impactOsc.start(now);
+    impactOsc.stop(now + 0.12);
+
+    // Add a sharp "crack" for satisfying hit
+    const crackOsc = audioContext.createOscillator();
+    crackOsc.type = 'square';
+    crackOsc.frequency.setValueAtTime(800, now);
+    crackOsc.frequency.exponentialRampToValueAtTime(200, now + 0.03);
+
+    const crackGain = audioContext.createGain();
+    crackGain.gain.setValueAtTime(0.4, now);
+    crackGain.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+
+    crackOsc.connect(crackGain);
+    crackGain.connect(gainNode);
+    crackOsc.start(now);
+    crackOsc.stop(now + 0.05);
+}
+
+/**
+ * Play monster death explosion sound - super satisfying SQUISH!
+ */
+export function playMonsterDeathSound() {
+    const state = State.getState();
+    if (!state.soundEnabled) return;
+
+    if (!audioContext) {
+        initAudioContext();
+        if (!audioContext) return;
+    }
+
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+
+    const volume = state.volume * 0.7;
+    const now = audioContext.currentTime;
+
+    const gainNode = audioContext.createGain();
+    gainNode.connect(masterGain);
+    gainNode.gain.value = volume;
+
+    // SQUISH sound - wet, satisfying pop
+    const squishOsc = audioContext.createOscillator();
+    squishOsc.type = 'sine';
+    squishOsc.frequency.setValueAtTime(400, now);
+    squishOsc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+
+    const squishGain = audioContext.createGain();
+    squishGain.gain.setValueAtTime(1, now);
+    squishGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+    squishOsc.connect(squishGain);
+    squishGain.connect(gainNode);
+    squishOsc.start(now);
+    squishOsc.stop(now + 0.2);
+
+    // Pop/burst sound - higher pitch
+    const popOsc = audioContext.createOscillator();
+    popOsc.type = 'triangle';
+    popOsc.frequency.setValueAtTime(600, now);
+    popOsc.frequency.exponentialRampToValueAtTime(100, now + 0.08);
+
+    const popGain = audioContext.createGain();
+    popGain.gain.setValueAtTime(0.8, now);
+    popGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+    popOsc.connect(popGain);
+    popGain.connect(gainNode);
+    popOsc.start(now);
+    popOsc.stop(now + 0.12);
+
+    // Splatter noise - wet explosion
+    const bufferSize = audioContext.sampleRate * 0.25;
+    const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        // More aggressive decay for splatter effect
+        const decay = Math.pow(1 - i / bufferSize, 1.5);
+        output[i] = (Math.random() * 2 - 1) * decay;
+    }
+
+    const noiseSource = audioContext.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+
+    // Low-pass for wet, blobby sound
+    const wetFilter = audioContext.createBiquadFilter();
+    wetFilter.type = 'lowpass';
+    wetFilter.frequency.setValueAtTime(3000, now);
+    wetFilter.frequency.exponentialRampToValueAtTime(500, now + 0.2);
+    wetFilter.Q.value = 2;
+
+    const noiseGain = audioContext.createGain();
+    noiseGain.gain.setValueAtTime(0.6, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+    noiseSource.connect(wetFilter);
+    wetFilter.connect(noiseGain);
+    noiseGain.connect(gainNode);
+    noiseSource.start(now);
+    noiseSource.stop(now + 0.25);
+
+    // EXPLOSION boom underneath
+    const boomOsc = audioContext.createOscillator();
+    boomOsc.type = 'sine';
+    boomOsc.frequency.setValueAtTime(120, now + 0.02);
+    boomOsc.frequency.exponentialRampToValueAtTime(25, now + 0.25);
+
+    const boomGain = audioContext.createGain();
+    boomGain.gain.setValueAtTime(0.7, now + 0.02);
+    boomGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+    boomOsc.connect(boomGain);
+    boomGain.connect(gainNode);
+    boomOsc.start(now + 0.02);
+    boomOsc.stop(now + 0.3);
+
+    // Victory fanfare - ascending chime
+    const chimeFreqs = [600, 800, 1000, 1200, 1500];
+    chimeFreqs.forEach((freq, i) => {
+        const osc = audioContext.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+
+        const env = audioContext.createGain();
+        env.connect(gainNode);
+
+        const noteStart = now + 0.08 + i * 0.025;
+        env.gain.setValueAtTime(0, noteStart);
+        env.gain.linearRampToValueAtTime(0.35, noteStart + 0.01);
+        env.gain.exponentialRampToValueAtTime(0.01, noteStart + 0.25);
+
+        osc.connect(env);
+        osc.start(noteStart);
+        osc.stop(noteStart + 0.3);
+    });
+
+    // Coin explosion sounds - lots of coins!
+    for (let i = 0; i < 8; i++) {
+        const coinOsc = audioContext.createOscillator();
+        coinOsc.type = 'triangle';
+        coinOsc.frequency.value = 1800 + Math.random() * 1500;
+
+        const coinGain = audioContext.createGain();
+        coinGain.connect(gainNode);
+
+        const coinStart = now + 0.1 + i * 0.04;
+        coinGain.gain.setValueAtTime(0, coinStart);
+        coinGain.gain.linearRampToValueAtTime(0.25, coinStart + 0.008);
+        coinGain.gain.exponentialRampToValueAtTime(0.01, coinStart + 0.1);
+
+        coinOsc.connect(coinGain);
+        coinOsc.start(coinStart);
+        coinOsc.stop(coinStart + 0.12);
+    }
+
+    // Extra sparkle/shimmer
+    for (let i = 0; i < 4; i++) {
+        const sparkleOsc = audioContext.createOscillator();
+        sparkleOsc.type = 'sine';
+        sparkleOsc.frequency.value = 3000 + Math.random() * 2000;
+
+        const sparkleEnv = audioContext.createGain();
+        sparkleEnv.connect(gainNode);
+
+        const sparkleStart = now + 0.2 + i * 0.04;
+        sparkleEnv.gain.setValueAtTime(0, sparkleStart);
+        sparkleEnv.gain.linearRampToValueAtTime(0.15, sparkleStart + 0.01);
+        sparkleEnv.gain.exponentialRampToValueAtTime(0.01, sparkleStart + 0.12);
+
+        sparkleOsc.connect(sparkleEnv);
+        sparkleOsc.start(sparkleStart);
+        sparkleOsc.stop(sparkleStart + 0.15);
+    }
 }
 

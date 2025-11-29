@@ -5,8 +5,8 @@
  */
 
 import * as State from '../state.js';
-import { spawnParticles, spawnFloatingNumber } from './particles.js';
-import { playSound } from './sound.js';
+import { spawnParticles, spawnFloatingNumber, screenShake } from './particles.js';
+import { playSound, playMonsterHitSound, playMonsterDeathSound } from './sound.js';
 import { formatCoins } from '../utils.js';
 
 // Monster types with their properties
@@ -170,11 +170,23 @@ function hitMonster(monster) {
     const damage = 1;
     monster.hp -= damage;
 
-    // Hit animation
+    // Play satisfying slash sound
+    playMonsterHitSound();
+
+    // Hit animation - more intense!
     monster.element.classList.add('monster-hit');
     setTimeout(() => {
         monster.element?.classList.remove('monster-hit');
+    }, 150);
+
+    // Add slam effect class for extra juice
+    monster.element.classList.add('monster-slammed');
+    setTimeout(() => {
+        monster.element?.classList.remove('monster-slammed');
     }, 100);
+
+    // Slight screen shake for impact feel
+    screenShake(3, 100);
 
     // Update HP bar
     const hpFill = monster.element.querySelector('.monster-hp-fill');
@@ -190,15 +202,18 @@ function hitMonster(monster) {
         }
     }
 
-    // Spawn hit particles
+    // Spawn hit particles - more dramatic!
     const rect = monster.element.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    spawnParticles('keystroke', centerX, centerY, 3);
-    spawnFloatingNumber('-1', centerX + (Math.random() - 0.5) * 40, centerY - 20, 'error');
+    // Slash effect particles
+    spawnParticles('keystroke', centerX, centerY, 8);
 
-    playSound('keystroke');
+    // Random offset for damage number
+    const offsetX = (Math.random() - 0.5) * 60;
+    const offsetY = -20 - Math.random() * 30;
+    spawnFloatingNumber('-1', centerX + offsetX, centerY + offsetY, 'error');
 
     // Check if dead
     if (monster.hp <= 0) {
@@ -216,39 +231,43 @@ function killMonster(monster) {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
+    // Play epic death sound
+    playMonsterDeathSound();
+
+    // Big screen shake for death
+    screenShake(8, 200);
+
     // Death animation
     monster.element.classList.add('monster-death');
 
-    // Spawn lots of particles
-    spawnParticles('confetti', centerX, centerY, 30);
+    // Spawn lots of particles - explosion!
+    spawnParticles('confetti', centerX, centerY, 50);
 
     // Spawn coin particles in a burst
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 12; i++) {
         setTimeout(() => {
-            const angle = (Math.PI * 2 / 8) * i;
-            const distance = 30 + Math.random() * 50;
+            const angle = (Math.PI * 2 / 12) * i;
+            const distance = 40 + Math.random() * 60;
             const x = centerX + Math.cos(angle) * distance;
             const y = centerY + Math.sin(angle) * distance - 20;
             spawnFloatingNumber('🪙', x, y, 'xcoins');
-        }, i * 30);
+        }, i * 25);
     }
 
-    // Show total coin reward
+    // Show total coin reward with delay
     setTimeout(() => {
         const formatted = formatCoins(monster.coins);
-        spawnFloatingNumber(`+${formatted.full}`, centerX, centerY - 40, 'xcoins');
-    }, 250);
+        spawnFloatingNumber(`+${formatted.full}`, centerX, centerY - 50, 'xcoins');
+    }, 300);
 
     // Add coins to player
     State.addCoins(monster.coins, 'monster');
-
-    playSound('purchase');
 
     // Remove from active list and DOM
     setTimeout(() => {
         monster.element?.remove();
         activeMonsters = activeMonsters.filter(m => m.id !== monster.id);
-    }, 500);
+    }, 600);
 }
 
 /**
