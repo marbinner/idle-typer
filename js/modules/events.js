@@ -78,6 +78,7 @@ const EVENTS = {
 // Active events
 let activeEvents = [];
 let eventCheckInterval = null;
+let eventTimeouts = new Map(); // Track event ending timeouts for cleanup
 let lastEventTime = 0;
 const MIN_EVENT_INTERVAL = 60000; // Minimum 1 minute between events
 
@@ -118,6 +119,12 @@ export function cleanupEvents() {
         cancelAnimationFrame(floatingBonusAnimationId);
         floatingBonusAnimationId = null;
     }
+    // Clear all event ending timeouts
+    for (const timeoutId of eventTimeouts.values()) {
+        clearTimeout(timeoutId);
+    }
+    eventTimeouts.clear();
+    activeEvents = [];
 }
 
 /**
@@ -216,11 +223,13 @@ function activateEvent(event) {
     // Update state with active event effects
     applyActiveEventEffects();
 
-    // Set timeout to end event
+    // Set timeout to end event (store for cleanup)
     if (event.duration > 0) {
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
+            eventTimeouts.delete(event.id);
             endEvent(event.id);
         }, event.duration);
+        eventTimeouts.set(event.id, timeoutId);
     }
 
     // Update event ticker
