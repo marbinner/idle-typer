@@ -27,7 +27,7 @@ const ALGORITHM_CONFIG = {
 
     // Pity system: after X consecutive losses, force a win
     pityThreshold: 5,
-    pityMinTier: 3, // At least 2x on pity
+    pityMinTier: 3, // Tier 3 (1x) or 4 (2x) - guarantees at least break-even
 
     // Streak breaker: max consecutive total losses before guaranteed profit
     maxLossStreak: 7,
@@ -36,9 +36,11 @@ const ALGORITHM_CONFIG = {
     luckyRollChance: 0.02,
     luckyMinTier: 5,
 
-    // Base probabilities for normal rolls (should sum to 1)
+    // Base probabilities for normal rolls (must sum to 1)
     // Weighted towards lower tiers but with hope
+    // [rug, small loss, break even, 2x, 5x, 10x, 25x, 50x, 100x]
     baseProbabilities: [0.30, 0.28, 0.18, 0.12, 0.07, 0.03, 0.015, 0.004, 0.001]
+    // Sum: 0.30 + 0.28 + 0.18 + 0.12 + 0.07 + 0.03 + 0.015 + 0.004 + 0.001 = 1.0
 };
 
 export const CRYPTO_TRADE = {
