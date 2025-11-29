@@ -2222,6 +2222,29 @@
     font-size: var(--font-size-2xl);
 }
 
+.floating-number.error {
+    color: var(--error-red);
+    font-size: var(--font-size-xl);
+    text-shadow: 0 0 10px var(--error-red);
+}
+
+.floating-number.rainbow {
+    font-size: var(--font-size-2xl);
+    font-weight: bold;
+    animation: rainbow-text 0.5s linear infinite;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+}
+
+@keyframes rainbow-text {
+    0% { color: #ff0000; }
+    17% { color: #ff8800; }
+    33% { color: #ffff00; }
+    50% { color: #00ff00; }
+    67% { color: #0088ff; }
+    83% { color: #8800ff; }
+    100% { color: #ff0000; }
+}
+
 /* ==================== Modal ==================== */
 #modal-overlay {
     position: fixed;

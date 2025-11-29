@@ -251,7 +251,11 @@ function notifySubscribers(oldState, newState) {
  * Recalculate derived values based on current state
  * Called after significant changes (upgrades, bots, etc.)
  */
+// CPS milestones for celebration
+const CPS_MILESTONES = [1, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000];
+
 export function recalculateDerived() {
+    const oldCPS = state.coinsPerSecond || 0;
     const { bots, upgrades, followers, verificationTier, prestigeCount, permanentBonuses, tierUpgrades } = state;
 
     // Base values
@@ -385,6 +389,16 @@ export function recalculateDerived() {
         offlineBonus,
         goldenChanceMultiplier
     }, true);
+
+    // Check for CPS milestone crossings
+    for (const milestone of CPS_MILESTONES) {
+        if (oldCPS < milestone && finalCPS >= milestone) {
+            window.dispatchEvent(new CustomEvent('cps-milestone', {
+                detail: { milestone, cps: finalCPS }
+            }));
+            break; // Only one milestone at a time
+        }
+    }
 }
 
 /**
@@ -413,6 +427,9 @@ export function addCoins(amount, source = 'typing') {
     }));
 }
 
+// Follower milestones for celebration
+const FOLLOWER_MILESTONES = [100, 500, 1000, 5000, 10000, 25000, 50000, 100000, 500000, 1000000];
+
 /**
  * Add followers (passive multiplier currency)
  */
@@ -421,9 +438,20 @@ export function addFollowers(amount, source = 'typing') {
     const bonus = state.followerGainBonus || 1;
     const boostedAmount = Math.floor(amount * bonus);
 
+    const oldFollowers = state.followers;
     const newFollowers = state.followers + boostedAmount;
     updateState({ followers: newFollowers });
     recalculateDerived(); // Recalc since followers affect multiplier
+
+    // Check for milestone crossings
+    for (const milestone of FOLLOWER_MILESTONES) {
+        if (oldFollowers < milestone && newFollowers >= milestone) {
+            window.dispatchEvent(new CustomEvent('follower-milestone', {
+                detail: { milestone, total: newFollowers }
+            }));
+            break; // Only one milestone at a time
+        }
+    }
 
     // Emit event for UI feedback
     window.dispatchEvent(new CustomEvent('followers-gained', {

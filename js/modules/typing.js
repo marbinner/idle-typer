@@ -6,7 +6,7 @@
 import * as State from '../state.js';
 import { POSTS } from '../data/posts.js';
 import { playSound, playAnticipationKeystroke, playCompletionClimax, playKachingSound } from './sound.js';
-import { spawnParticles, spawnFloatingNumber } from './particles.js';
+import { spawnParticles, spawnFloatingNumber, screenShake, screenFlash } from './particles.js';
 import { formatNumber, formatCoins } from '../utils.js';
 import {
     TYPING_CONFIG,
@@ -66,6 +66,9 @@ let frenzyDecayInterval = null;
 let keystrokesSinceCrit = 0;
 let critStreak = 0;
 let hasGottenFirstCrit = false;
+
+// Rank tracking for rank-up celebration
+let previousRankIndex = -1;
 
 // Constants
 const MAX_HISTORY_POSTS = 6;
@@ -310,7 +313,99 @@ export function initTyping() {
     window.removeEventListener('bickering-ended', handleBickeringEnded);
     window.addEventListener('bickering-ended', handleBickeringEnded);
 
+    // Listen for follower milestones
+    window.removeEventListener('follower-milestone', handleFollowerMilestone);
+    window.addEventListener('follower-milestone', handleFollowerMilestone);
+
+    // Listen for CPS milestones
+    window.removeEventListener('cps-milestone', handleCPSMilestone);
+    window.addEventListener('cps-milestone', handleCPSMilestone);
+
     // Note: loadNewPost() is called by app.js after checking for saved typing state
+}
+
+/**
+ * Handle follower milestone celebrations
+ */
+function handleFollowerMilestone(event) {
+    const { milestone, total } = event.detail;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    // Format milestone for display
+    const milestoneText = milestone >= 1000000 ? `${milestone / 1000000}M`
+        : milestone >= 1000 ? `${milestone / 1000}K`
+        : milestone.toString();
+
+    // Scale celebration based on milestone size
+    const isBig = milestone >= 10000;
+    const isMassive = milestone >= 100000;
+
+    // Particles
+    const particleCount = isMassive ? 100 : isBig ? 60 : 40;
+    spawnParticles('confetti', centerX, centerY, particleCount);
+    if (isBig) {
+        setTimeout(() => spawnParticles('confetti', centerX - 100, centerY, 30), 100);
+        setTimeout(() => spawnParticles('confetti', centerX + 100, centerY, 30), 200);
+    }
+
+    // Screen effects
+    screenShake(isMassive ? 12 : isBig ? 8 : 5, 500);
+    screenFlash('gold');
+
+    // Floating text
+    const textType = isMassive ? 'rainbow' : 'viral';
+    spawnFloatingNumber(`${milestoneText} FOLLOWERS!`, centerX, centerY - 30, textType);
+
+    // Sound
+    playSound('premium');
+    if (isBig) {
+        setTimeout(() => playSound('viral'), 200);
+    }
+
+    // Notification
+    showNotification(`🎉 ${milestoneText} Followers! Your influence grows!`, 'perfect');
+}
+
+/**
+ * Handle CPS milestone celebrations
+ */
+function handleCPSMilestone(event) {
+    const { milestone, cps } = event.detail;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    // Format milestone for display
+    const milestoneText = milestone >= 1000 ? `${milestone / 1000}K` : milestone.toString();
+
+    // Scale celebration based on milestone size
+    const isBig = milestone >= 1000;
+    const isMassive = milestone >= 10000;
+
+    // Particles
+    const particleCount = isMassive ? 80 : isBig ? 50 : 30;
+    spawnParticles('confetti', centerX, centerY, particleCount);
+    if (isBig) {
+        setTimeout(() => spawnParticles('purchase', centerX, centerY, 20), 100);
+    }
+
+    // Screen effects
+    screenShake(isMassive ? 10 : isBig ? 7 : 4, 400);
+    screenFlash('green');
+
+    // Floating text
+    const textType = isMassive ? 'rainbow' : 'viral';
+    spawnFloatingNumber(`${milestoneText} CPS!`, centerX, centerY - 30, textType);
+    spawnFloatingNumber('💰 PASSIVE INCOME!', centerX, centerY + 20, 'xcoins');
+
+    // Sound
+    playSound('upgrade');
+    if (isBig) {
+        setTimeout(() => playSound('achievement'), 200);
+    }
+
+    // Notification
+    showNotification(`💰 ${milestoneText} Coins/Second! Your bots are working!`, 'perfect');
 }
 
 /**
@@ -781,8 +876,22 @@ function celebrateComboMilestone(combo) {
 
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
-    spawnParticles('confetti', centerX, centerY, combo >= 100 ? 40 : 20);
-    spawnFloatingNumber(combo + ' COMBO!', centerX, centerY + 100, 'viral');
+
+    // Scale effects with combo level
+    const particleCount = combo >= 500 ? 80 : combo >= 200 ? 60 : combo >= 100 ? 40 : 20;
+    const shakeIntensity = combo >= 500 ? 12 : combo >= 200 ? 8 : combo >= 100 ? 6 : 4;
+
+    spawnParticles('confetti', centerX, centerY, particleCount);
+    screenShake(shakeIntensity, 400);
+    screenFlash(combo >= 200 ? 'gold' : 'blue');
+
+    // Multi-burst for big milestones
+    if (combo >= 100) {
+        setTimeout(() => spawnParticles('confetti', centerX - 100, centerY, 20), 100);
+        setTimeout(() => spawnParticles('confetti', centerX + 100, centerY, 20), 200);
+    }
+
+    spawnFloatingNumber(combo + ' COMBO!', centerX, centerY + 100, combo >= 200 ? 'rainbow' : 'viral');
 
     showNotification(combo + ' Combo! +' + formatCoins(bonusCoins).full, 'perfect');
 }
@@ -792,6 +901,8 @@ function celebrateComboMilestone(combo) {
  */
 function handleIncorrectChar() {
     const charEl = charElementCache.get(typedIndex);
+    const state = State.getState();
+    const brokenCombo = state.combo;
 
     // Show error state
     if (charEl) {
@@ -812,11 +923,31 @@ function handleIncorrectChar() {
     // Play error sound
     playSound('error');
 
-    // Screen shake for error
-    document.body.classList.add('animate-shake');
-    setTimeout(() => {
-        document.body.classList.remove('animate-shake');
-    }, 400);
+    // Combo break feedback - scale with lost combo
+    if (brokenCombo >= 10) {
+        const rect = charEl ? charEl.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2 };
+        const centerX = rect.left + (charEl ? charEl.offsetWidth / 2 : 0);
+        const centerY = rect.top;
+
+        // Red particles burst
+        spawnParticles('keystroke', centerX, centerY, Math.min(brokenCombo / 5, 20));
+
+        // Show combo broken message for significant combos
+        if (brokenCombo >= 25) {
+            spawnFloatingNumber(`${brokenCombo} COMBO BROKEN!`, centerX, centerY - 30, 'error');
+            screenFlash('coral');
+        }
+
+        // Stronger shake for bigger combo loss
+        const shakeIntensity = Math.min(3 + brokenCombo / 20, 10);
+        screenShake(shakeIntensity, 300);
+    } else {
+        // Basic screen shake for error
+        document.body.classList.add('animate-shake');
+        setTimeout(() => {
+            document.body.classList.remove('animate-shake');
+        }, 400);
+    }
 
     // Update combo display
     updateComboDisplay();
@@ -1028,22 +1159,40 @@ function completePost() {
         spawnFloatingNumber(viralResult.name, centerX, centerY + 170, 'viral');
     }
 
-    // Show particles
+    // Show particles and screen effects based on completion quality
     if (wpmResult.isPersonalBest) {
+        // Personal best - maximum celebration
         spawnParticles('viral', centerX, centerY, 100);
+        screenShake(12, 500);
+        screenFlash('gold');
+        setTimeout(() => spawnParticles('confetti', centerX - 100, centerY, 40), 100);
+        setTimeout(() => spawnParticles('confetti', centerX + 100, centerY, 40), 200);
     } else if (viralResult) {
+        // Viral post - tiered celebration based on viral level
         spawnParticles('confetti', centerX, centerY, viralResult.particles);
+        const shakeIntensity = viralResult.particles >= 60 ? 10 : viralResult.particles >= 30 ? 7 : 4;
+        screenShake(shakeIntensity, 400);
+        screenFlash(viralResult.particles >= 60 ? 'gold' : 'coral');
     } else if (wpmBonusName) {
+        // Speed bonus - good celebration
         spawnParticles('confetti', centerX, centerY, 35);
+        screenShake(5, 300);
+        screenFlash('blue');
     } else if (isPerfect) {
+        // Perfect post - medium celebration
         spawnParticles('confetti', centerX, centerY, 25);
+        screenShake(3, 200);
     } else {
+        // Normal completion - subtle celebration
         spawnParticles('confetti', centerX, centerY, 15);
     }
 
-    // Fire burst if completed while blazing
+    // Fire burst if completed while blazing - extra dramatic
     if (heatValue >= 80) {
         spawnParticles('fireburst', centerX, centerY, 30);
+        if (!wpmResult.isPersonalBest && !viralResult) {
+            screenShake(4, 250);
+        }
     }
 
     // Add to history
@@ -1916,15 +2065,23 @@ function updateRankDisplay() {
 
     // Find current rank
     let currentRank = RANKS[0];
+    let currentRankIndex = 0;
     let nextRank = RANKS[1];
 
     for (let i = RANKS.length - 1; i >= 0; i--) {
         if (xp >= RANKS[i].minXP) {
             currentRank = RANKS[i];
+            currentRankIndex = i;
             nextRank = RANKS[i + 1] || null;
             break;
         }
     }
+
+    // Check for rank-up celebration
+    if (previousRankIndex >= 0 && currentRankIndex > previousRankIndex) {
+        celebrateRankUp(currentRank, currentRankIndex);
+    }
+    previousRankIndex = currentRankIndex;
 
     // Update display elements
     const rankIcon = document.getElementById('rank-icon');
@@ -1949,6 +2106,53 @@ function updateRankDisplay() {
     }
 }
 
+/**
+ * Celebrate reaching a new rank
+ */
+function celebrateRankUp(rank, rankIndex) {
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    // Scale celebration based on rank tier
+    const isHighRank = rankIndex >= 8;  // Legend and above
+    const isMidRank = rankIndex >= 5;   // Dedicated and above
+
+    // Massive particle explosion
+    const particleCount = isHighRank ? 100 : isMidRank ? 60 : 40;
+    spawnParticles('confetti', centerX, centerY, particleCount);
+
+    // Multi-burst for higher ranks
+    if (isMidRank) {
+        setTimeout(() => spawnParticles('confetti', centerX - 150, centerY - 50, 30), 100);
+        setTimeout(() => spawnParticles('confetti', centerX + 150, centerY - 50, 30), 200);
+    }
+    if (isHighRank) {
+        setTimeout(() => spawnParticles('confetti', centerX, centerY - 100, 40), 150);
+        setTimeout(() => spawnParticles('confetti', centerX - 100, centerY + 50, 25), 250);
+        setTimeout(() => spawnParticles('confetti', centerX + 100, centerY + 50, 25), 300);
+    }
+
+    // Screen effects
+    screenShake(isHighRank ? 15 : isMidRank ? 10 : 6, 500);
+    screenFlash('gold');
+
+    // Epic floating text
+    const textType = isHighRank ? 'rainbow' : 'viral';
+    spawnFloatingNumber(`${rank.icon} RANK UP!`, centerX, centerY - 50, textType);
+    setTimeout(() => {
+        spawnFloatingNumber(rank.name.toUpperCase(), centerX, centerY + 30, textType);
+    }, 200);
+
+    // Sound
+    playSound('premium');
+    if (isHighRank) {
+        setTimeout(() => playSound('viral'), 300);
+    }
+
+    // Notification
+    showNotification(`${rank.icon} Rank Up! You are now ${rank.name}!`, 'perfect');
+}
+
 // =============================================================================
 // FRENZY MODE FUNCTIONS
 // =============================================================================
@@ -1967,16 +2171,29 @@ function activateFrenzy() {
         frenzyActive: true
     });
 
-    // Visual explosion
+    // MASSIVE visual explosion
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
-    spawnParticles('viral', centerX, centerY, 80);
-    spawnFloatingNumber('🔥 FRENZY MODE! 🔥', centerX, centerY, 'viral');
 
-    // Sound
+    // Multi-burst particle explosion
+    spawnParticles('viral', centerX, centerY, 100);
+    setTimeout(() => spawnParticles('confetti', centerX - 150, centerY, 40), 50);
+    setTimeout(() => spawnParticles('confetti', centerX + 150, centerY, 40), 100);
+    setTimeout(() => spawnParticles('fireburst', centerX, centerY, 50), 150);
+
+    // Screen effects
+    screenShake(15, 600);
+    screenFlash('coral');
+
+    // Epic floating text
+    spawnFloatingNumber('🔥 FRENZY MODE! 🔥', centerX, centerY - 50, 'rainbow');
+    setTimeout(() => spawnFloatingNumber('3x EVERYTHING!', centerX, centerY + 30, 'viral'), 200);
+
+    // Sound cascade
     playSound('achievement');
-    setTimeout(() => playSound('viral'), 200);
-    setTimeout(() => playSound('premium'), 400);
+    setTimeout(() => playSound('viral'), 150);
+    setTimeout(() => playSound('premium'), 300);
+    setTimeout(() => playSound('viral'), 450);
 
     // Add visual effects to body
     document.body.classList.add('frenzy-active');
