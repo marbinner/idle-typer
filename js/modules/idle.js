@@ -7,6 +7,7 @@ import * as State from '../state.js';
 import { BOTS } from '../data/upgrades.js';
 import { MISC_CONFIG } from '../config.js';
 import { spawnFloatingNumber, spawnParticles } from './particles.js';
+import { formatCoins } from '../utils.js';
 
 // Accumulator for fractional values
 let coinAccumulator = 0;
@@ -65,8 +66,9 @@ export function tick(deltaTime) {
             const x = rect.left + rect.width / 2;
             const y = rect.top;
 
-            // Show accumulated amount
-            spawnFloatingNumber(`+${Math.floor(visualFeedbackAccumulator)}`, x, y, 'idle');
+            // Show accumulated amount with proper unit
+            const formatted = formatCoins(Math.floor(visualFeedbackAccumulator));
+            spawnFloatingNumber(`+${formatted.full}`, x, y, 'idle');
         }
 
         visualFeedbackAccumulator = 0;
