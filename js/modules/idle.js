@@ -6,10 +6,15 @@
 import * as State from '../state.js';
 import { BOTS } from '../data/upgrades.js';
 import { MISC_CONFIG } from '../config.js';
+import { spawnFloatingNumber, spawnParticles } from './particles.js';
 
 // Accumulator for fractional values
 let coinAccumulator = 0;
 let impressionAccumulator = 0;
+
+// Visual feedback accumulator
+let visualFeedbackAccumulator = 0;
+const VISUAL_FEEDBACK_THRESHOLD = 5; // Show visual every N coins earned
 
 /**
  * Reset accumulators (call on game reset)
@@ -17,6 +22,7 @@ let impressionAccumulator = 0;
 export function resetAccumulators() {
     coinAccumulator = 0;
     impressionAccumulator = 0;
+    visualFeedbackAccumulator = 0;
 }
 
 /**
@@ -39,6 +45,28 @@ export function tick(deltaTime) {
 
         if (wholeCoins > 0) {
             State.addCoins(wholeCoins, 'idle');
+
+            // Accumulate for visual feedback
+            visualFeedbackAccumulator += wholeCoins;
+
+            // Show occasional floating coin from the CPS display
+            if (visualFeedbackAccumulator >= VISUAL_FEEDBACK_THRESHOLD) {
+                const cpsEl = document.getElementById('coin-per-sec');
+                if (cpsEl) {
+                    const rect = cpsEl.getBoundingClientRect();
+                    const x = rect.left + rect.width / 2 + (Math.random() - 0.5) * 40;
+                    const y = rect.top + rect.height / 2;
+
+                    // Small floating +coins text
+                    spawnFloatingNumber(`+${Math.floor(visualFeedbackAccumulator)}`, x, y, 'idle');
+
+                    // Occasional tiny particle burst
+                    if (Math.random() < 0.3) {
+                        spawnParticles('keystroke', x, y, 3);
+                    }
+                }
+                visualFeedbackAccumulator = 0;
+            }
         }
     }
 

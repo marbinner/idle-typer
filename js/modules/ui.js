@@ -158,11 +158,17 @@ export function updateUI() {
     // Update big CPS display with dynamic unit based on current coin scale
     if (bigCpsValueEl) {
         const cps = state.coinsPerSecond || 0;
+        const cpsContainer = document.getElementById('coin-per-sec');
+
         if (cps > 0) {
             const formatted = formatCoinsUtil(cps);
             bigCpsValueEl.textContent = `+${formatted.value}`;
+            // Add earning glow effect when passively earning
+            if (cpsContainer) cpsContainer.classList.add('earning');
         } else {
             bigCpsValueEl.textContent = '+0';
+            // Remove earning glow when not earning
+            if (cpsContainer) cpsContainer.classList.remove('earning');
         }
     }
 

@@ -883,6 +883,36 @@
     opacity: 0.7;
 }
 
+/* Idle income active indicator */
+#coin-per-sec.earning {
+    animation: idle-earning-pulse 2s ease-in-out infinite;
+}
+
+@keyframes idle-earning-pulse {
+    0%, 100% {
+        opacity: 0.8;
+        text-shadow: 0 0 5px rgba(0, 214, 143, 0.3);
+    }
+    50% {
+        opacity: 1;
+        text-shadow: 0 0 15px rgba(0, 214, 143, 0.6), 0 0 25px rgba(0, 214, 143, 0.3);
+    }
+}
+
+#coin-per-sec.earning #big-cps-value {
+    animation: cps-value-glow 2s ease-in-out infinite;
+}
+
+@keyframes cps-value-glow {
+    0%, 100% {
+        color: var(--success-green);
+    }
+    50% {
+        color: #00ffaa;
+        text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+    }
+}
+
 /* Notification Container - positioned to the left to avoid covering BTC number */
 #notification-container {
     position: absolute;
@@ -2226,6 +2256,13 @@
     color: var(--error-red);
     font-size: var(--font-size-xl);
     text-shadow: 0 0 10px var(--error-red);
+}
+
+.floating-number.idle {
+    color: var(--success-green);
+    font-size: var(--font-size-sm);
+    opacity: 0.7;
+    text-shadow: 0 0 5px rgba(0, 214, 143, 0.5);
 }
 
 .floating-number.rainbow {
