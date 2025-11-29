@@ -62,6 +62,11 @@ let frenzyEndTime = 0;
 let frenzyCooldownEnd = 0;
 let frenzyDecayInterval = null;
 
+// Critical hit state
+let keystrokesSinceCrit = 0;
+let critStreak = 0;
+let hasGottenFirstCrit = false;
+
 // Constants
 const MAX_HISTORY_POSTS = 6;
 
@@ -596,26 +601,71 @@ function handleCorrectChar() {
     }
 
     // ===== CRITICAL HIT SYSTEM =====
-    // Random chance for big bonus on keystroke
+    // Engagement-optimized crit system with tiers, streaks, and pity
     if (state.totalPosts >= CRIT_CONFIG.unlockAtPosts) {
-        // Calculate crit chance with combo bonus
+        keystrokesSinceCrit++;
+
+        // Calculate crit chance with all modifiers
         const comboBonus = Math.min(
             Math.floor(state.combo / 50) * CRIT_CONFIG.comboBonusPer50,
             CRIT_CONFIG.maxComboBonus
         );
-        // Add frenzy bonus if active
         const frenzyBonus = frenzyActive ? FRENZY_CONFIG.critChanceBonus : 0;
-        const critChance = CRIT_CONFIG.baseChance + comboBonus + frenzyBonus;
 
-        if (Math.random() < critChance) {
-            // CRITICAL HIT!
-            const critMultiplier = CRIT_CONFIG.minMultiplier +
-                Math.random() * (CRIT_CONFIG.maxMultiplier - CRIT_CONFIG.minMultiplier);
-            // Scale with CPS for better late-game rewards
+        // Pity system: build bonus after dry streak
+        let pityBonus = 0;
+        if (keystrokesSinceCrit > CRIT_CONFIG.pityStartAfter) {
+            const pityStacks = keystrokesSinceCrit - CRIT_CONFIG.pityStartAfter;
+            pityBonus = Math.min(pityStacks * CRIT_CONFIG.pityBonusPerKey, CRIT_CONFIG.pityMaxBonus);
+        }
+
+        // First crit guarantee: hook new players
+        const keystrokesAfterUnlock = state.keystrokesAfterCritUnlock || 0;
+        const forceFirstCrit = !hasGottenFirstCrit && keystrokesAfterUnlock >= CRIT_CONFIG.firstCritWithin;
+
+        // Pity guarantee after long dry streak
+        const forcePityCrit = keystrokesSinceCrit >= CRIT_CONFIG.pityGuaranteeAfter;
+
+        const critChance = CRIT_CONFIG.baseChance + comboBonus + frenzyBonus + pityBonus;
+        const isCrit = forceFirstCrit || forcePityCrit || Math.random() < critChance;
+
+        // Track keystrokes after unlock for first crit system
+        if (!hasGottenFirstCrit) {
+            State.updateState({ keystrokesAfterCritUnlock: keystrokesAfterUnlock + 1 });
+        }
+
+        if (isCrit) {
+            // Determine crit tier
+            let critTier = 'normal';
+            let minMult = CRIT_CONFIG.normalMinMult;
+            let maxMult = CRIT_CONFIG.normalMaxMult;
+
+            const tierRoll = Math.random();
+            if (tierRoll < CRIT_CONFIG.ultraCritChance) {
+                critTier = 'ultra';
+                minMult = CRIT_CONFIG.ultraMinMult;
+                maxMult = CRIT_CONFIG.ultraMaxMult;
+            } else if (tierRoll < CRIT_CONFIG.ultraCritChance + CRIT_CONFIG.megaCritChance) {
+                critTier = 'mega';
+                minMult = CRIT_CONFIG.megaMinMult;
+                maxMult = CRIT_CONFIG.megaMaxMult;
+            }
+
+            // Calculate multiplier with streak bonus
+            const streakBonus = Math.min(critStreak * CRIT_CONFIG.streakMultBonus, CRIT_CONFIG.maxStreakBonus);
+            let critMultiplier = minMult + Math.random() * (maxMult - minMult) + streakBonus;
+
+            // First crit bonus
+            if (!hasGottenFirstCrit) {
+                critMultiplier = Math.max(critMultiplier, CRIT_CONFIG.firstCritMinMult);
+                hasGottenFirstCrit = true;
+            }
+
+            // Calculate reward
             const baseReward = Math.max(CRIT_CONFIG.minReward, state.coinsPerSecond * CRIT_CONFIG.cpsSeconds);
             let critReward = Math.floor(baseReward * critMultiplier);
 
-            // Apply frenzy multiplier if active
+            // Apply frenzy multiplier
             if (frenzyActive) {
                 critReward = Math.floor(critReward * FRENZY_CONFIG.coinMultiplier);
             }
@@ -623,17 +673,41 @@ function handleCorrectChar() {
             State.addCoins(critReward, 'crit');
             State.updateState({ criticalHits: (state.criticalHits || 0) + 1 });
 
-            // Visual feedback
+            // Update crit tracking
+            critStreak++;
+            keystrokesSinceCrit = 0;
+
+            // Tiered visual feedback
             if (charEl) {
                 const rect = charEl.getBoundingClientRect();
-                spawnParticles('confetti', rect.left + rect.width / 2, rect.top, 15);
-                spawnFloatingNumber(`CRIT! +${critReward}`, rect.left, rect.top - 40, 'viral');
-            }
-            playSound('premium', { pitch: 1.4 + Math.random() * 0.2 });
+                const centerX = rect.left + rect.width / 2;
 
-            // Add crit animation to character
-            if (charEl) {
-                charEl.classList.add('crit-hit');
+                if (critTier === 'ultra') {
+                    // ULTRA CRIT - maximum celebration
+                    spawnParticles('confetti', centerX, rect.top, 50);
+                    spawnParticles('confetti', centerX - 50, rect.top, 25);
+                    spawnParticles('confetti', centerX + 50, rect.top, 25);
+                    spawnFloatingNumber(`💎 ULTRA CRIT! +${formatCoins(critReward).full}`, rect.left - 30, rect.top - 60, 'rainbow');
+                    playSound('premium', { pitch: 1.8, volume: 1.2 });
+                    charEl.classList.add('crit-hit', 'ultra-crit');
+                } else if (critTier === 'mega') {
+                    // MEGA CRIT - big celebration
+                    spawnParticles('confetti', centerX, rect.top, 30);
+                    spawnFloatingNumber(`⚡ MEGA CRIT! +${formatCoins(critReward).full}`, rect.left - 20, rect.top - 50, 'viral');
+                    playSound('premium', { pitch: 1.6, volume: 1.0 });
+                    charEl.classList.add('crit-hit', 'mega-crit');
+                } else {
+                    // Normal crit
+                    spawnParticles('confetti', centerX, rect.top, 15);
+                    spawnFloatingNumber(`CRIT! +${formatCoins(critReward).full}`, rect.left, rect.top - 40, 'viral');
+                    playSound('premium', { pitch: 1.4 + Math.random() * 0.2 });
+                    charEl.classList.add('crit-hit');
+                }
+            }
+        } else {
+            // No crit - decay streak
+            if (critStreak > 0) {
+                critStreak = Math.max(0, critStreak - 0.1); // Slow decay
             }
         }
     }

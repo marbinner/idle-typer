@@ -241,23 +241,49 @@ export const OFFLINE_CONFIG = {
 // =============================================================================
 
 export const CRIT_CONFIG = {
-    // Base chance for a critical hit (0-1)
-    baseChance: 0.025,  // 2.5% base chance (reduced)
-
-    // Multiplier range for critical hits
-    minMultiplier: 3,
-    maxMultiplier: 8,
-
-    // Unlock after this many posts
+    // === UNLOCK ===
     unlockAtPosts: 15,
 
-    // Crit reward scales with CPS: max(minReward, CPS * cpsSeconds)
-    cpsSeconds: 2,      // 2 seconds of passive income per crit
-    minReward: 5,       // Minimum crit reward
+    // === BASE MECHANICS ===
+    baseChance: 0.03,           // 3% base chance
+    cpsSeconds: 2,              // 2 seconds of CPS base reward
+    minReward: 5,               // Minimum reward
 
-    // Crit chance increases with combo (bonus per 50 combo)
-    comboBonusPer50: 0.015,  // +1.5% per 50 combo
-    maxComboBonus: 0.075     // Cap at +7.5% bonus (total max ~10% with combo)
+    // === CRIT TIERS ===
+    // Normal crit (most common)
+    normalMinMult: 2,
+    normalMaxMult: 5,
+
+    // Mega crit (8% of crits)
+    megaCritChance: 0.08,
+    megaMinMult: 8,
+    megaMaxMult: 15,
+
+    // Ultra crit - jackpot! (1% of crits)
+    ultraCritChance: 0.01,
+    ultraMinMult: 25,
+    ultraMaxMult: 50,
+
+    // === COMBO SCALING ===
+    comboBonusPer50: 0.02,      // +2% per 50 combo
+    maxComboBonus: 0.10,        // Cap at +10%
+
+    // === CRIT STREAK ===
+    // Consecutive crits power up the next one
+    streakMultBonus: 0.5,       // +0.5x per consecutive crit
+    maxStreakBonus: 2,          // Max +2x from streak
+
+    // === PITY SYSTEM ===
+    // Prevents frustrating dry streaks
+    pityStartAfter: 40,         // Start pity after 40 keystrokes without crit
+    pityBonusPerKey: 0.003,     // +0.3% per keystroke
+    pityMaxBonus: 0.12,         // Max +12% bonus
+    pityGuaranteeAfter: 80,     // Guaranteed crit after 80 keystrokes
+
+    // === FIRST CRIT HOOK ===
+    // Make first crit memorable
+    firstCritWithin: 25,        // Guarantee first crit within 25 keystrokes after unlock
+    firstCritMinMult: 5         // First crit is at least 5x
 };
 
 // =============================================================================

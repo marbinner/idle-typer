@@ -27,6 +27,10 @@
     --error-red: #FF6B6B;
     --crit-cyan: #00F5FF;
     --crit-cyan-dark: #00D4E8;
+    --crit-mega: #FF00FF;
+    --crit-mega-dark: #CC00CC;
+    --crit-ultra: #FFD700;
+    --crit-ultra-glow: #FFA500;
 
     /* Background - Lighter and more colorful */
     --bg-primary: #0f1419;
