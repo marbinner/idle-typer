@@ -616,9 +616,19 @@ function handleCorrectChar() {
     // Update heat meter - calibrated to user's average WPM
     const now = Date.now();
     keystrokeTimes.push(now);
-    // Filter to new array (avoid mutation issues during rapid typing)
+    // Remove old timestamps efficiently - splice from start instead of filter
     const cutoff = now - 2000;
-    keystrokeTimes = keystrokeTimes.filter(t => t > cutoff); // Keep last 2 seconds for smoother calculation
+    let removeCount = 0;
+    while (removeCount < keystrokeTimes.length && keystrokeTimes[removeCount] <= cutoff) {
+        removeCount++;
+    }
+    if (removeCount > 0) {
+        keystrokeTimes.splice(0, removeCount);
+    }
+    // Safety cap to prevent unbounded growth (max ~200 keystrokes in 2 seconds)
+    if (keystrokeTimes.length > 200) {
+        keystrokeTimes.splice(0, keystrokeTimes.length - 200);
+    }
 
     // Calculate current WPM from recent keystrokes (chars per minute / 5 = WPM)
     const recentChars = keystrokeTimes.length;

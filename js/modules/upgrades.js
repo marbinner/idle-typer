@@ -20,6 +20,9 @@ let isInitialized = false;
 // Prevent race conditions in purchase flow
 let tierUpgradePurchasing = false;
 
+// Throttle affordability updates
+let affordabilityUpdateScheduled = false;
+
 /**
  * Initialize the upgrades system
  */
@@ -63,9 +66,14 @@ export function initUpgrades() {
             });
         }
 
-        // Subscribe to state changes for affordability updates
+        // Subscribe to state changes for affordability updates (throttled)
         State.subscribe(() => {
-            updateAffordability();
+            if (affordabilityUpdateScheduled) return;
+            affordabilityUpdateScheduled = true;
+            requestAnimationFrame(() => {
+                updateAffordability();
+                affordabilityUpdateScheduled = false;
+            });
         });
 
         isInitialized = true;

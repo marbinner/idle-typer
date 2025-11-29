@@ -94,10 +94,11 @@ export function updateParticles(deltaTime) {
         // Update life
         p.life -= deltaTime;
 
-        // Remove dead particles
+        // Remove dead particles - swap with last for O(1) removal
         if (p.life <= 0) {
-            particles.splice(i, 1);
             returnParticle(p);
+            particles[i] = particles[particles.length - 1];
+            particles.pop();
             continue;
         }
 
@@ -203,11 +204,10 @@ function drawStar(ctx, cx, cy, outerRadius, innerRadius, points, color) {
 export function spawnParticles(type, x, y, count = 10) {
     // Cap particle count to prevent performance issues
     if (particles.length >= MAX_PARTICLES) {
-        // Remove oldest particles to make room
+        // Remove oldest particles to make room - batch splice is faster than multiple shift()
         const toRemove = Math.min(count, particles.length - MAX_PARTICLES + count);
-        for (let i = 0; i < toRemove; i++) {
-            returnParticle(particles.shift());
-        }
+        const removed = particles.splice(0, toRemove);
+        removed.forEach(p => returnParticle(p));
     }
     // Limit spawn count based on available space
     count = Math.min(count, MAX_PARTICLES - particles.length + 10);

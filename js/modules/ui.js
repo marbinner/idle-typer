@@ -662,14 +662,19 @@ export function initPFPSelector() {
     pfpSelectorInitialized = true;
 
     let pfpModal = null;
+    let pfpCloseHandler = null; // Track close handler to prevent leaks
 
     avatar.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        // Toggle modal
+        // Toggle modal - clean up handler when closing
         if (pfpModal) {
             pfpModal.remove();
             pfpModal = null;
+            if (pfpCloseHandler) {
+                document.removeEventListener('click', pfpCloseHandler);
+                pfpCloseHandler = null;
+            }
             return;
         }
 
@@ -702,21 +707,30 @@ export function initPFPSelector() {
 
                 pfpModal.remove();
                 pfpModal = null;
+                // Clean up close handler
+                if (pfpCloseHandler) {
+                    document.removeEventListener('click', pfpCloseHandler);
+                    pfpCloseHandler = null;
+                }
             });
             pfpModal.appendChild(option);
         });
 
         document.body.appendChild(pfpModal);
 
-        // Close on outside click
-        const closeHandler = (e) => {
+        // Close on outside click - remove old handler first
+        if (pfpCloseHandler) {
+            document.removeEventListener('click', pfpCloseHandler);
+        }
+        pfpCloseHandler = (e) => {
             if (pfpModal && !pfpModal.contains(e.target) && e.target !== avatar) {
                 pfpModal.remove();
                 pfpModal = null;
-                document.removeEventListener('click', closeHandler);
+                document.removeEventListener('click', pfpCloseHandler);
+                pfpCloseHandler = null;
             }
         };
-        setTimeout(() => document.addEventListener('click', closeHandler), 0);
+        setTimeout(() => document.addEventListener('click', pfpCloseHandler), 0);
     });
 }
 

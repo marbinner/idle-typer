@@ -102,6 +102,7 @@ let tickerInterval = null;
 let eventTextEl = null;
 let currentNewsIndex = 0;
 let newsQueue = [];
+const MAX_NEWS_QUEUE = 20; // Prevent unbounded growth
 
 /**
  * Initialize the news ticker
@@ -163,6 +164,8 @@ function handleStateChange() {
  * Queue a news item of a specific type
  */
 function queueNews(type) {
+    // Prevent unbounded queue growth
+    if (newsQueue.length >= MAX_NEWS_QUEUE) return;
     const templates = NEWS_TEMPLATES[type] || NEWS_TEMPLATES.general;
     const template = templates[Math.floor(Math.random() * templates.length)];
     newsQueue.push(template);

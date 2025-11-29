@@ -147,6 +147,11 @@ function playSynthSound(sound, options = {}) {
         oscillator.connect(envelope);
         oscillator.start(noteStart);
         oscillator.stop(noteEnd + 0.1);
+        // Clean up after oscillator ends to prevent memory leaks
+        oscillator.onended = () => {
+            oscillator.disconnect();
+            envelope.disconnect();
+        };
     });
 }
 
@@ -315,6 +320,7 @@ export function playKachingSound() {
     kaOsc1.connect(kaGain);
     kaOsc1.start(now);
     kaOsc1.stop(now + 0.1);
+    kaOsc1.onended = () => { kaOsc1.disconnect(); };
 
     const kaOsc2 = audioContext.createOscillator();
     kaOsc2.type = 'triangle';
@@ -322,6 +328,7 @@ export function playKachingSound() {
     kaOsc2.connect(kaGain);
     kaOsc2.start(now);
     kaOsc2.stop(now + 0.08);
+    kaOsc2.onended = () => { kaOsc2.disconnect(); kaGain.disconnect(); };
 
     // "-CHING!" part - bright, shimmery coin sound
     const chingStart = now + 0.08;
@@ -343,6 +350,7 @@ export function playKachingSound() {
         osc.connect(env);
         osc.start(noteStart);
         osc.stop(noteStart + 0.5);
+        osc.onended = () => { osc.disconnect(); env.disconnect(); };
     });
 
     // Add some shimmer/sparkle effect
@@ -362,6 +370,7 @@ export function playKachingSound() {
         sparkleOsc.connect(sparkleEnv);
         sparkleOsc.start(sparkleStart);
         sparkleOsc.stop(sparkleStart + 0.2);
+        sparkleOsc.onended = () => { sparkleOsc.disconnect(); sparkleEnv.disconnect(); };
     }
 
     // Coin drop/clink sounds
@@ -382,6 +391,7 @@ export function playKachingSound() {
         coinOsc.connect(coinEnv);
         coinOsc.start(coinStart);
         coinOsc.stop(coinStart + 0.12);
+        coinOsc.onended = () => { coinOsc.disconnect(); coinEnv.disconnect(); };
     });
 }
 
@@ -447,6 +457,10 @@ export function playMonsterHitSound() {
     noiseGain.connect(gainNode);
     noiseSource.start(now);
     noiseSource.stop(now + slashDuration);
+    noiseSource.onended = () => {
+        noiseSource.disconnect(); highpass.disconnect();
+        bandpass.disconnect(); noiseGain.disconnect();
+    };
 
     // IMPACT thud - low frequency punch
     const impactOsc = audioContext.createOscillator();
@@ -462,6 +476,7 @@ export function playMonsterHitSound() {
     impactGain.connect(gainNode);
     impactOsc.start(now);
     impactOsc.stop(now + 0.12);
+    impactOsc.onended = () => { impactOsc.disconnect(); impactGain.disconnect(); };
 
     // Add a sharp "crack" for satisfying hit
     const crackOsc = audioContext.createOscillator();
@@ -477,6 +492,7 @@ export function playMonsterHitSound() {
     crackGain.connect(gainNode);
     crackOsc.start(now);
     crackOsc.stop(now + 0.05);
+    crackOsc.onended = () => { crackOsc.disconnect(); crackGain.disconnect(); };
 }
 
 /**
@@ -516,6 +532,7 @@ export function playMonsterDeathSound() {
     squishGain.connect(gainNode);
     squishOsc.start(now);
     squishOsc.stop(now + 0.2);
+    squishOsc.onended = () => { squishOsc.disconnect(); squishGain.disconnect(); };
 
     // Pop/burst sound - higher pitch
     const popOsc = audioContext.createOscillator();
@@ -531,6 +548,7 @@ export function playMonsterDeathSound() {
     popGain.connect(gainNode);
     popOsc.start(now);
     popOsc.stop(now + 0.12);
+    popOsc.onended = () => { popOsc.disconnect(); popGain.disconnect(); };
 
     // Splatter noise - wet explosion
     const bufferSize = audioContext.sampleRate * 0.25;
@@ -561,6 +579,9 @@ export function playMonsterDeathSound() {
     noiseGain.connect(gainNode);
     noiseSource.start(now);
     noiseSource.stop(now + 0.25);
+    noiseSource.onended = () => {
+        noiseSource.disconnect(); wetFilter.disconnect(); noiseGain.disconnect();
+    };
 
     // EXPLOSION boom underneath
     const boomOsc = audioContext.createOscillator();
@@ -576,6 +597,7 @@ export function playMonsterDeathSound() {
     boomGain.connect(gainNode);
     boomOsc.start(now + 0.02);
     boomOsc.stop(now + 0.3);
+    boomOsc.onended = () => { boomOsc.disconnect(); boomGain.disconnect(); };
 
     // Victory fanfare - ascending chime
     const chimeFreqs = [600, 800, 1000, 1200, 1500];
@@ -595,6 +617,7 @@ export function playMonsterDeathSound() {
         osc.connect(env);
         osc.start(noteStart);
         osc.stop(noteStart + 0.3);
+        osc.onended = () => { osc.disconnect(); env.disconnect(); };
     });
 
     // Coin explosion sounds - lots of coins!
@@ -614,6 +637,7 @@ export function playMonsterDeathSound() {
         coinOsc.connect(coinGain);
         coinOsc.start(coinStart);
         coinOsc.stop(coinStart + 0.12);
+        coinOsc.onended = () => { coinOsc.disconnect(); coinGain.disconnect(); };
     }
 
     // Extra sparkle/shimmer
@@ -633,6 +657,7 @@ export function playMonsterDeathSound() {
         sparkleOsc.connect(sparkleEnv);
         sparkleOsc.start(sparkleStart);
         sparkleOsc.stop(sparkleStart + 0.15);
+        sparkleOsc.onended = () => { sparkleOsc.disconnect(); sparkleEnv.disconnect(); };
     }
 }
 
