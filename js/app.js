@@ -19,6 +19,7 @@ import { initEvents } from './modules/events.js';
 import { initStats } from './modules/stats.js';
 import { initBickering } from './modules/bickering.js';
 import { initGambling } from './modules/gambling.js';
+import { initMonsters, tick as monsterTick } from './modules/monsters.js';
 
 // Game configuration
 const CONFIG = {
@@ -51,6 +52,9 @@ function gameLoop(currentTime) {
     while (accumulator >= CONFIG.tickRate) {
         // Update idle income
         tick(CONFIG.tickRate / 1000);
+
+        // Update monster spawns and timeouts
+        monsterTick(CONFIG.tickRate / 1000);
 
         // Update game time
         const state = State.getState();
@@ -161,6 +165,10 @@ async function init() {
         // Initialize gambling/casino system
         initGambling();
         console.log('Gambling system ready');
+
+        // Initialize monster mini-game
+        initMonsters();
+        console.log('Monster system ready');
 
         // Set up auto-save interval (clear any existing interval first)
         if (autoSaveIntervalId) {
