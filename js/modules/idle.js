@@ -12,11 +12,11 @@ import { spawnFloatingNumber, spawnParticles } from './particles.js';
 let coinAccumulator = 0;
 let impressionAccumulator = 0;
 
-// Visual feedback - time-based to avoid spam
+// Visual feedback - time-based to sync with coin bumps
 let visualFeedbackAccumulator = 0;
 let lastVisualFeedbackTime = 0;
-const VISUAL_FEEDBACK_INTERVAL = 3000; // Show visual every 3 seconds max
-const MIN_COINS_TO_SHOW = 10; // Don't show if less than 10 coins accumulated
+const VISUAL_FEEDBACK_INTERVAL = 1500; // Show visual every 1.5 seconds
+const MIN_COINS_TO_SHOW = 1; // Show as long as we earned something
 
 /**
  * Reset accumulators (call on game reset)
