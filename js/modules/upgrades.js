@@ -14,6 +14,11 @@ let botsListEl;
 let upgradesListEl;
 let premiumListEl;
 
+// Tab indicator elements (cached for performance)
+let botsIndicatorEl;
+let upgradesIndicatorEl;
+let premiumIndicatorEl;
+
 // Track if already initialized
 let isInitialized = false;
 
@@ -31,6 +36,11 @@ export function initUpgrades() {
     botsListEl = document.getElementById('bots-list');
     upgradesListEl = document.getElementById('upgrades-list');
     premiumListEl = document.getElementById('premium-list');
+
+    // Cache tab indicator elements
+    botsIndicatorEl = document.getElementById('bots-indicator');
+    upgradesIndicatorEl = document.getElementById('upgrades-indicator');
+    premiumIndicatorEl = document.getElementById('premium-indicator');
 
     // Only set up listeners once (prevent duplication on re-init)
     if (!isInitialized) {
@@ -793,14 +803,10 @@ function updateAffordability() {
         }
     }
 
-    // Update tab indicators
-    const botsIndicator = document.getElementById('bots-indicator');
-    const upgradesIndicator = document.getElementById('upgrades-indicator');
-    const premiumIndicator = document.getElementById('premium-indicator');
-
-    if (botsIndicator) botsIndicator.classList.toggle('has-affordable', hasAffordableBot);
-    if (upgradesIndicator) upgradesIndicator.classList.toggle('has-affordable', hasAffordableUpgrade);
-    if (premiumIndicator) premiumIndicator.classList.toggle('has-affordable', hasAffordablePremium);
+    // Update tab indicators (using cached elements)
+    if (botsIndicatorEl) botsIndicatorEl.classList.toggle('has-affordable', hasAffordableBot);
+    if (upgradesIndicatorEl) upgradesIndicatorEl.classList.toggle('has-affordable', hasAffordableUpgrade);
+    if (premiumIndicatorEl) premiumIndicatorEl.classList.toggle('has-affordable', hasAffordablePremium);
 }
 
 /**
