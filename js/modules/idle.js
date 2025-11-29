@@ -63,7 +63,7 @@ export function tick(deltaTime) {
         const cpsEl = document.getElementById('coin-per-sec');
         if (cpsEl) {
             const rect = cpsEl.getBoundingClientRect();
-            const x = rect.right + 20; // Offset right to avoid overlapping bitcoin number
+            const x = rect.right + 60; // Offset right to avoid overlapping bitcoin number
             const y = rect.top;
 
             // Show accumulated amount with proper unit
