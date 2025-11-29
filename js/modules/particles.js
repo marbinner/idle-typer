@@ -445,6 +445,91 @@ function updateFloatingNumbers(deltaTime) {
 }
 
 /**
+ * Spawn screen-wide celebration effect
+ * @param {string} type - 'purchase', 'milestone', 'viral', 'rankup'
+ */
+export function spawnScreenCelebration(type = 'purchase') {
+    const colors = {
+        purchase: ['#00FF87', '#00D4FF', '#9B59FF'],
+        milestone: ['#FFE500', '#FF6B00', '#FF1493'],
+        viral: ['#FF1493', '#FF00FF', '#00FFFF'],
+        rankup: ['#FFE500', '#FF1493', '#9B59FF', '#00D4FF']
+    };
+
+    const selectedColors = colors[type] || colors.purchase;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    // Spawn particles from center outward
+    const count = type === 'rankup' ? 60 : 30;
+    for (let i = 0; i < count; i++) {
+        const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+        const speed = 200 + Math.random() * 300;
+        const color = selectedColors[Math.floor(Math.random() * selectedColors.length)];
+
+        particles.push(getParticle({
+            x: centerX,
+            y: centerY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1.5,
+            maxLife: 1.5,
+            size: 6 + Math.random() * 8,
+            color: color,
+            alpha: 1,
+            type: 'confetti',
+            gravity: 100,
+            friction: 0.97,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 10
+        }));
+    }
+
+    // Add screen flash
+    const flash = document.createElement('div');
+    flash.className = `screen-flash ${type === 'viral' ? 'pink' : type === 'rankup' ? 'purple' : 'green'}`;
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 300);
+
+    // Spawn edge sparkles
+    spawnEdgeSparkles(selectedColors);
+}
+
+/**
+ * Spawn sparkles along screen edges
+ */
+function spawnEdgeSparkles(colors) {
+    const edges = [
+        { x: 0, y: Math.random() * window.innerHeight },
+        { x: window.innerWidth, y: Math.random() * window.innerHeight },
+        { x: Math.random() * window.innerWidth, y: 0 },
+        { x: Math.random() * window.innerWidth, y: window.innerHeight }
+    ];
+
+    edges.forEach(edge => {
+        for (let i = 0; i < 5; i++) {
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            particles.push(getParticle({
+                x: edge.x + (Math.random() - 0.5) * 100,
+                y: edge.y + (Math.random() - 0.5) * 100,
+                vx: (Math.random() - 0.5) * 200,
+                vy: (Math.random() - 0.5) * 200,
+                life: 1,
+                maxLife: 1,
+                size: 4 + Math.random() * 4,
+                color: color,
+                alpha: 1,
+                type: 'confetti',
+                gravity: 50,
+                friction: 0.98,
+                rotation: 0,
+                rotationSpeed: (Math.random() - 0.5) * 8
+            }));
+        }
+    });
+}
+
+/**
  * Get a particle from the pool or create new
  */
 function getParticle(props) {

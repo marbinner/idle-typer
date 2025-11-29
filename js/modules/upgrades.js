@@ -417,6 +417,8 @@ function handleBotPurchase(botId) {
     if (State.purchaseBot(botId, cost)) {
         playSound('purchase');
 
+        const newCount = (state.bots[botId] || 0) + 1;
+
         // Visual feedback
         const item = document.querySelector(`[data-type="bot"][data-id="${botId}"]`);
         if (item) {
@@ -424,7 +426,24 @@ function handleBotPurchase(botId) {
             setTimeout(() => item.classList.remove('animate-squish'), 400);
 
             const rect = item.getBoundingClientRect();
-            spawnParticles('purchase', rect.left + rect.width / 2, rect.top + rect.height / 2, 10);
+            spawnParticles('purchase', rect.left + rect.width / 2, rect.top + rect.height / 2, 15);
+
+            // First time buying this bot - extra celebration!
+            if (newCount === 1) {
+                import('./particles.js').then(module => {
+                    module.spawnScreenCelebration('purchase');
+                });
+            }
+        }
+
+        // Milestone celebrations for total bots
+        const totalBots = Object.values(State.getState().bots || {}).reduce((sum, c) => sum + c, 0);
+        const milestones = [10, 25, 50, 100, 200, 500];
+        if (milestones.includes(totalBots)) {
+            import('./particles.js').then(module => {
+                module.spawnScreenCelebration('milestone');
+            });
+            showMessage(`${totalBots} bots milestone!`);
         }
 
         // Re-render to update counts and costs
