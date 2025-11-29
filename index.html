@@ -164,6 +164,17 @@
                     <div id="balloon-count"><span id="post-progress-count">0</span>/10</div>
                 </div>
 
+                <!-- Frenzy Meter (unlocks at 40 posts) -->
+                <div id="frenzy-container" style="display: none;">
+                    <div id="frenzy-bar">
+                        <div id="frenzy-fill"></div>
+                    </div>
+                    <div id="frenzy-info">
+                        <span id="frenzy-label">Frenzy</span>
+                        <span id="frenzy-timer"></span>
+                    </div>
+                </div>
+
                 <!-- Stats bar below compose -->
                 <div id="typing-stats">
                     <!-- WPM and Accuracy on main line -->
@@ -226,6 +237,11 @@
                         <span class="tab-label">Premium</span>
                         <span class="tab-indicator" id="premium-indicator"></span>
                     </button>
+                    <button class="tab" data-tab="market">
+                        <span class="tab-icon">📈</span>
+                        <span class="tab-label">Market</span>
+                        <span class="tab-indicator" id="market-indicator"></span>
+                    </button>
                 </div>
 
                 <div id="tab-content">
@@ -247,6 +263,26 @@
                     <div class="tab-pane" id="premium-tab">
                         <div id="premium-list">
                             <!-- Premium items will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Market Tab -->
+                    <div class="tab-pane" id="market-tab">
+                        <!-- Daily Spin Wheel -->
+                        <div id="spin-wheel-section">
+                            <div id="spin-wheel-header">
+                                <span class="spin-icon">🎰</span>
+                                <span class="spin-title">Daily Wheel</span>
+                            </div>
+                            <button id="spin-wheel-btn" class="spin-btn">
+                                <span class="btn-icon">🎡</span>
+                                <span class="btn-text">FREE SPIN!</span>
+                            </button>
+                            <div id="spin-cost-info"></div>
+                        </div>
+
+                        <div id="market-list">
+                            <!-- Crypto trades will be rendered here -->
                         </div>
                     </div>
                 </div>
@@ -298,6 +334,6 @@
     </div>
 
     <!-- Scripts -->
-    <script type="module" src="js/app.js?v=12"></script>
+    <script type="module" src="js/app.js?v=23"></script>
 </body>
 </html>

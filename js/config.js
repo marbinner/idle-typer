@@ -124,14 +124,13 @@ export const GOLDEN_CONFIG = {
     // Minimum posts before golden chars can appear
     unlockAtPosts: 30,
 
-    // Single golden character reward (multiplier of coinsPerPost)
-    singleMultiplier: 3,
-    singleMinimum: 30,
+    // Single golden character reward: max(minReward, CPS * cpsSeconds)
+    singleCpsSeconds: 1.5,  // 1.5 seconds of passive income
+    singleMinimum: 20,
 
-    // All-golden event reward per character (should be meaningful but less than single golden)
-    // At 1.0x, a 100-char post gives 100x coinsPerPost total during golden hour
-    allGoldenMultiplier: 1.0,
-    allGoldenMinimum: 5
+    // All-golden event reward per character: max(minReward, CPS * cpsSeconds)
+    allGoldenCpsSeconds: 0.5,  // 0.5 seconds of passive income per char
+    allGoldenMinimum: 3
 };
 
 // =============================================================================
@@ -147,16 +146,16 @@ export const BALLOON_CONFIG = {
     popThresholdMax: 12,
 
     // Coin reward: max(minimumCoins, CPS * cpsSeconds) * bonusMultiplier
-    cpsSeconds: 25,
+    cpsSeconds: 30,      // 30 seconds of passive income
     minimumCoins: 50,
 
     // Bonus multiplier grows with lifetime posts
     // multiplier = 1 + floor(lifetimePosts / postsPerBonus) * bonusPerTier
     postsPerBonus: 100,
-    bonusPerTier: 0.2,
+    bonusPerTier: 0.25,  // +25% per 100 posts
 
-    // Follower reward: max(minimum, sqrt(followers) * multiplier) * bonusMultiplier
-    followerMultiplier: 0.5,
+    // Follower reward: baseAmount + sqrt(followers) * scale
+    followerScale: 0.1,  // 10% of sqrt(followers)
     followerMinimum: 5
 };
 
@@ -235,6 +234,77 @@ export const OFFLINE_CONFIG = {
 
     // Efficiency multiplier for offline earnings
     efficiency: 0.5  // 50%
+};
+
+// =============================================================================
+// CRITICAL HIT SYSTEM
+// =============================================================================
+
+export const CRIT_CONFIG = {
+    // Base chance for a critical hit (0-1)
+    baseChance: 0.025,  // 2.5% base chance (reduced)
+
+    // Multiplier range for critical hits
+    minMultiplier: 3,
+    maxMultiplier: 8,
+
+    // Unlock after this many posts
+    unlockAtPosts: 15,
+
+    // Crit reward scales with CPS: max(minReward, CPS * cpsSeconds)
+    cpsSeconds: 2,      // 2 seconds of passive income per crit
+    minReward: 5,       // Minimum crit reward
+
+    // Crit chance increases with combo (bonus per 50 combo)
+    comboBonusPer50: 0.015,  // +1.5% per 50 combo
+    maxComboBonus: 0.075     // Cap at +7.5% bonus (total max ~10% with combo)
+};
+
+// =============================================================================
+// FRENZY MODE SYSTEM
+// =============================================================================
+
+export const FRENZY_CONFIG = {
+    // Unlock after this many posts
+    unlockAtPosts: 40,
+
+    // Meter settings
+    maxMeter: 100,
+    meterGainPerChar: 1.5,      // Gain per character typed
+    meterDecayPerSecond: 5,     // Decay when not typing
+
+    // Frenzy duration and bonuses
+    duration: 15000,            // 15 seconds of frenzy
+    coinMultiplier: 3,          // 3x coins during frenzy
+    followerMultiplier: 2,      // 2x followers during frenzy
+    critChanceBonus: 0.15,      // +15% crit chance during frenzy
+
+    // Cooldown after frenzy ends before meter can build again
+    cooldown: 10000             // 10 second cooldown
+};
+
+// =============================================================================
+// DAILY SPIN WHEEL
+// =============================================================================
+
+export const SPIN_CONFIG = {
+    // Cooldown between spins (1 hour in milliseconds)
+    spinCooldownMs: 60 * 60 * 1000,
+
+    // Prizes scale with CPS (seconds of passive income)
+    // Follower prizes scale with sqrt of current followers
+    prizes: [
+        { label: 'Nice Coins', weight: 20, type: 'coins', cpsSeconds: 30, minCoins: 50, icon: '🪙' },
+        { label: 'Good Coins', weight: 18, type: 'coins', cpsSeconds: 60, minCoins: 100, icon: '💰' },
+        { label: 'Great Coins', weight: 12, type: 'coins', cpsSeconds: 120, minCoins: 200, icon: '💎' },
+        { label: 'Some Followers', weight: 15, type: 'followers', baseAmount: 10, followerScale: 0.05, icon: '👤' },
+        { label: 'Many Followers', weight: 8, type: 'followers', baseAmount: 25, followerScale: 0.1, icon: '👥' },
+        { label: '2x Next Post', weight: 12, type: 'buff', buff: 'nextPost2x', icon: '⚡' },
+        { label: '5x Next Post', weight: 5, type: 'buff', buff: 'nextPost5x', icon: '🔥' },
+        { label: 'Instant Frenzy', weight: 6, type: 'buff', buff: 'instantFrenzy', icon: '🌪️' },
+        { label: 'HUGE COINS', weight: 3, type: 'coins', cpsSeconds: 300, minCoins: 500, icon: '💵' },
+        { label: 'MEGA JACKPOT', weight: 1, type: 'coins', cpsSeconds: 600, minCoins: 1000, icon: '🎰' }
+    ]
 };
 
 // =============================================================================

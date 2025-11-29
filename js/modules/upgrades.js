@@ -741,30 +741,30 @@ function updateAffordability() {
         }
     });
 
-    // Check premium affordability
-    const premiumItems = [
-        { id: 'xPremium', cost: 8000, owned: state.hasXPremium, requires: true },
-        { id: 'goldCheck', cost: 100000, owned: state.verificationTier === 'gold' || state.verificationTier === 'gray', requires: state.hasXPremium },
-        { id: 'grayCheck', cost: 1000000, owned: state.verificationTier === 'gray', requires: state.verificationTier === 'gold' }
-    ];
+    // Check tier upgrade affordability
+    const tierUpgrades = state.tierUpgrades || {};
+    for (let tier = 1; tier <= 10; tier++) {
+        const isOwned = tierUpgrades[tier] || false;
+        const isLocked = !isTierUnlocked(tier, state);
+        if (isOwned || isLocked) continue;
 
-    premiumItems.forEach(item => {
-        const canAfford = !item.owned && item.requires && state.coins >= item.cost;
+        const cost = getTierUpgradeCost(tier);
+        const canAfford = state.coins >= cost;
         if (canAfford) {
             hasAffordablePremium = true;
         }
 
-        // Update premium item affordability in DOM
-        const itemEl = document.querySelector(`[data-type="premium"][data-id="${item.id}"]`);
+        // Update tier upgrade affordability in DOM
+        const itemEl = document.querySelector(`[data-type="premium"][data-id="tier${tier}"]`);
         if (itemEl) {
             itemEl.classList.toggle('affordable', canAfford);
             const costEl = itemEl.querySelector('.upgrade-cost');
-            if (costEl && !item.owned) {
+            if (costEl) {
                 costEl.classList.toggle('can-afford', canAfford);
                 costEl.classList.toggle('cant-afford', !canAfford);
             }
         }
-    });
+    }
 
     // Update tab indicators
     const botsIndicator = document.getElementById('bots-indicator');

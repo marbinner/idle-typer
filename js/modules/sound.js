@@ -14,7 +14,7 @@ const soundBuffers = new Map();
 
 // Sound definitions (will generate programmatically)
 const SOUNDS = {
-    keystroke: { type: 'synth', frequency: 800, duration: 0.05, wave: 'square' },
+    keystroke: { type: 'synth', frequency: 800, duration: 0.05, wave: 'square', volume: 0.12 },
     error: { type: 'synth', frequency: 200, duration: 0.1, wave: 'sawtooth' },
     complete: { type: 'synth', frequency: [400, 600, 800], duration: 0.15, wave: 'sine' },
     perfect: { type: 'synth', frequency: [500, 700, 900, 1100], duration: 0.2, wave: 'sine' },
@@ -104,7 +104,9 @@ function playSynthSound(sound, options = {}) {
     // Create gain node for this sound
     const gainNode = audioContext.createGain();
     gainNode.connect(masterGain);
-    gainNode.gain.value = volume * 0.3; // Base volume reduction
+    // Apply sound-specific volume if defined, otherwise use base reduction
+    const soundVolume = sound.volume !== undefined ? sound.volume : 0.3;
+    gainNode.gain.value = volume * soundVolume;
 
     // Handle pitch variation
     let pitchMult = 1;

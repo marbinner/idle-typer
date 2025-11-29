@@ -18,6 +18,7 @@ import { initAchievements } from './modules/achievements.js';
 import { initEvents } from './modules/events.js';
 import { initStats } from './modules/stats.js';
 import { initBickering } from './modules/bickering.js';
+import { initGambling } from './modules/gambling.js';
 
 // Game configuration
 const CONFIG = {
@@ -30,6 +31,8 @@ const CONFIG = {
 let lastTime = 0;
 let accumulator = 0;
 let isRunning = false;
+let isInitialized = false;
+let autoSaveIntervalId = null;
 
 /**
  * Main game loop using requestAnimationFrame
@@ -91,6 +94,13 @@ function stopGameLoop() {
  * Initialize all game systems
  */
 async function init() {
+    // Prevent multiple initialization
+    if (isInitialized) {
+        console.warn('Game already initialized, skipping...');
+        return;
+    }
+    isInitialized = true;
+
     console.log('Initializing Idle Typer...');
 
     try {
@@ -148,8 +158,15 @@ async function init() {
         initBickering();
         console.log('Bickering system ready');
 
-        // Set up auto-save interval
-        setInterval(() => {
+        // Initialize gambling/casino system
+        initGambling();
+        console.log('Gambling system ready');
+
+        // Set up auto-save interval (clear any existing interval first)
+        if (autoSaveIntervalId) {
+            clearInterval(autoSaveIntervalId);
+        }
+        autoSaveIntervalId = setInterval(() => {
             autoSave();
         }, CONFIG.autoSaveInterval);
 
@@ -166,6 +183,22 @@ async function init() {
         startGameLoop();
 
         console.log('Idle Typer initialized successfully!');
+
+        // Expose cheat functions for testing
+        window.cheat = {
+            coins: (amount = 100000) => {
+                State.addCoins(amount, 'cheat');
+                console.log(`Added ${amount} coins`);
+            },
+            followers: (amount = 1000) => {
+                State.addFollowers(amount, 'cheat');
+                console.log(`Added ${amount} followers`);
+            },
+            reset: () => {
+                State.resetGame();
+                location.reload();
+            }
+        };
 
         // Show welcome message
         showWelcomeMessage();

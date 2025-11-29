@@ -336,7 +336,13 @@ export function importSave(jsonString) {
             console.log('JSON parse failed, trying Base64...', parseError.message);
             // Maybe it's the old Base64 format - try to decode
             try {
-                const decoded = decodeURIComponent(escape(atob(jsonString)));
+                // Decode Base64 to UTF-8 without deprecated escape() function
+                const binaryString = atob(jsonString);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                const decoded = new TextDecoder('utf-8').decode(bytes);
                 saveData = JSON.parse(decoded);
             } catch {
                 throw new Error('Could not parse save data - not valid JSON or Base64');

@@ -50,6 +50,9 @@ let followersGainedHandler = null;
 // Track modal overlay handler for cleanup (prevent accumulation)
 let currentOverlayHandler = null;
 
+// Track if PFP selector has been initialized
+let pfpSelectorInitialized = false;
+
 /**
  * Set up UI event listeners
  */
@@ -321,7 +324,13 @@ function showSettingsModal() {
 
             console.log('Loading save file:', file.name, 'size:', file.size);
             try {
-                const text = await file.text();
+                // Use file.text() if available, otherwise fall back to FileReader for older browsers
+                const text = await (file.text ? file.text() : new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(reader.error);
+                    reader.readAsText(file);
+                }));
                 console.log('File content read, length:', text.length);
                 console.log('First 100 chars:', text.substring(0, 100));
 
@@ -547,6 +556,10 @@ export function initPFPSelector() {
     // Load saved PFP
     const savedPFP = localStorage.getItem('playerPFP') || '🤡';
     avatar.textContent = savedPFP;
+
+    // Prevent adding duplicate event listeners
+    if (pfpSelectorInitialized) return;
+    pfpSelectorInitialized = true;
 
     let pfpModal = null;
 

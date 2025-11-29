@@ -13,9 +13,12 @@ import {
     COMBO_CONFIG,
     GOLDEN_CONFIG,
     BALLOON_CONFIG,
-    VIRAL_CONFIG
+    VIRAL_CONFIG,
+    CRIT_CONFIG,
+    FRENZY_CONFIG
 } from '../config.js';
 import { checkBickeringTrigger, isBickeringActive } from './bickering.js';
+import { isGamblingActive } from './gambling.js';
 
 // DOM Elements
 let postTextEl;
@@ -52,6 +55,13 @@ let engagementGrowthInterval = null; // For periodic engagement growth
 // Adaptive heat calibration
 let baselineWpm = 40; // Starting baseline, will adapt to user
 
+// Frenzy mode state
+let frenzyMeter = 0;
+let frenzyActive = false;
+let frenzyEndTime = 0;
+let frenzyCooldownEnd = 0;
+let frenzyDecayInterval = null;
+
 // Constants
 const MAX_HISTORY_POSTS = 6;
 
@@ -77,6 +87,11 @@ const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * 15.5; // r=15.5 from SVG
 
 // History storage (last 20 posts)
 let postHistory = [];
+
+// Balloon pop state
+let balloonPopping = false;
+let balloonPopThreshold = 0; // Will be set on init via resetBalloonState()
+let balloonCycleStart = 0;
 
 /**
  * Get post history for saving
@@ -243,6 +258,11 @@ export function initTyping() {
 
     // Note: updatePostProgress() is called after balloon state is loaded in app.js
 
+    // Initialize balloon pop threshold if not already set (fresh game)
+    if (balloonPopThreshold === 0) {
+        resetBalloonState();
+    }
+
     // Initialize rank display
     updateRankDisplay();
 
@@ -267,6 +287,9 @@ export function initTyping() {
 
     // Engagement growth interval disabled for performance
     // (was running every 2s and iterating all posts, causing lag)
+
+    // Initialize frenzy meter decay
+    initFrenzyDecay();
 
     // Initialize progress ring
     if (progressCircleEl) {
@@ -450,6 +473,9 @@ function handleKeyDown(event) {
     // Ignore keystrokes when bickering challenge is active
     if (isBickeringActive()) return;
 
+    // Ignore keystrokes when loot box overlay is active
+    if (isGamblingActive()) return;
+
     // Ignore if modifier keys are pressed (except shift)
     if (event.ctrlKey || event.altKey || event.metaKey) return;
 
@@ -534,18 +560,13 @@ function handleCorrectChar() {
     State.incrementCombo();
     hasError = false;
 
-    // Play sound with pitch based on combo
-    const pitchBonus = Math.min(state.combo * 0.01, 0.5);
-
     // Golden character bonus!
     if (isGoldenChar) {
-        // Scales with coinsPerPost to stay relevant throughout progression
-        // Minimum ensures golden chars feel rewarding even in early game
+        // Scales with CPS to stay relevant throughout progression
         const isAllGolden = goldenCharIndex === -2;
-        const multiplier = isAllGolden ? GOLDEN_CONFIG.allGoldenMultiplier : GOLDEN_CONFIG.singleMultiplier;
+        const cpsSeconds = isAllGolden ? GOLDEN_CONFIG.allGoldenCpsSeconds : GOLDEN_CONFIG.singleCpsSeconds;
         const minimum = isAllGolden ? GOLDEN_CONFIG.allGoldenMinimum : GOLDEN_CONFIG.singleMinimum;
-        const scaledBonus = state.coinsPerPost * multiplier;
-        const bonusCoins = Math.floor(Math.max(scaledBonus, minimum));
+        const bonusCoins = Math.floor(Math.max(state.coinsPerSecond * cpsSeconds, minimum));
         State.addCoins(bonusCoins, 'golden');
 
         // Track golden chars hit for achievements
@@ -572,6 +593,61 @@ function handleCorrectChar() {
         // Play anticipation sound that builds with progress
         const progress = typedIndex / currentPost.text.length;
         playAnticipationKeystroke(progress);
+    }
+
+    // ===== CRITICAL HIT SYSTEM =====
+    // Random chance for big bonus on keystroke
+    if (state.totalPosts >= CRIT_CONFIG.unlockAtPosts) {
+        // Calculate crit chance with combo bonus
+        const comboBonus = Math.min(
+            Math.floor(state.combo / 50) * CRIT_CONFIG.comboBonusPer50,
+            CRIT_CONFIG.maxComboBonus
+        );
+        // Add frenzy bonus if active
+        const frenzyBonus = frenzyActive ? FRENZY_CONFIG.critChanceBonus : 0;
+        const critChance = CRIT_CONFIG.baseChance + comboBonus + frenzyBonus;
+
+        if (Math.random() < critChance) {
+            // CRITICAL HIT!
+            const critMultiplier = CRIT_CONFIG.minMultiplier +
+                Math.random() * (CRIT_CONFIG.maxMultiplier - CRIT_CONFIG.minMultiplier);
+            // Scale with CPS for better late-game rewards
+            const baseReward = Math.max(CRIT_CONFIG.minReward, state.coinsPerSecond * CRIT_CONFIG.cpsSeconds);
+            let critReward = Math.floor(baseReward * critMultiplier);
+
+            // Apply frenzy multiplier if active
+            if (frenzyActive) {
+                critReward = Math.floor(critReward * FRENZY_CONFIG.coinMultiplier);
+            }
+
+            State.addCoins(critReward, 'crit');
+            State.updateState({ criticalHits: (state.criticalHits || 0) + 1 });
+
+            // Visual feedback
+            if (charEl) {
+                const rect = charEl.getBoundingClientRect();
+                spawnParticles('confetti', rect.left + rect.width / 2, rect.top, 15);
+                spawnFloatingNumber(`CRIT! +${critReward}`, rect.left, rect.top - 40, 'viral');
+            }
+            playSound('premium', { pitch: 1.4 + Math.random() * 0.2 });
+
+            // Add crit animation to character
+            if (charEl) {
+                charEl.classList.add('crit-hit');
+            }
+        }
+    }
+
+    // ===== FRENZY METER SYSTEM =====
+    // Build frenzy meter while typing
+    if (state.totalPosts >= FRENZY_CONFIG.unlockAtPosts && !frenzyActive && Date.now() > frenzyCooldownEnd) {
+        frenzyMeter = Math.min(FRENZY_CONFIG.maxMeter, frenzyMeter + FRENZY_CONFIG.meterGainPerChar);
+        updateFrenzyMeter();
+
+        // Check if frenzy should activate
+        if (frenzyMeter >= FRENZY_CONFIG.maxMeter) {
+            activateFrenzy();
+        }
     }
 
     // Small particle burst at character position (non-golden) - reduced for performance
@@ -786,6 +862,22 @@ function completePost() {
     if (currentPost.category) {
         coinReward *= currentPost.coinMult || 1;
         impressionReward *= currentPost.impressionMult || 1;
+    }
+
+    // Frenzy mode bonus!
+    if (frenzyActive) {
+        coinReward *= FRENZY_CONFIG.coinMultiplier;
+        followerReward *= FRENZY_CONFIG.followerMultiplier;
+    }
+
+    // Spin wheel buff (2x or 5x next post)
+    const postMultiplier = state.nextPostMultiplier || 1;
+    if (postMultiplier > 1) {
+        coinReward *= postMultiplier;
+        followerReward *= postMultiplier;
+        // Clear the buff after use
+        State.updateState({ nextPostMultiplier: 1 });
+        showNotification(`${postMultiplier}x POST BONUS APPLIED!`, 'perfect');
     }
 
     // Final rounding
@@ -1010,36 +1102,64 @@ function calculateCurrentAccuracy() {
 }
 
 /**
- * Check if post goes viral - unlocks at 50 posts
+ * Check if post goes viral - uses VIRAL_CONFIG for all values
  */
 function checkViral() {
     const state = State.getState();
 
-    // Viral posts unlock at 50 posts
-    if (state.totalPosts < 50) {
+    // Viral posts unlock at configured post count
+    if (state.totalPosts < VIRAL_CONFIG.unlockAtPosts) {
         return null;
     }
 
     const random = Math.random();
 
-    // Pity system: increase chance based on posts without viral
-    const postsSinceViral = state.lifetimePosts % 50; // Reset every 50
-    const pityBonus = postsSinceViral * 0.005; // +0.5% per post
+    // Pity system: increase chance based on posts since last viral
+    const postsSinceViral = state.postsSinceViral || 0;
+    const pityBonus = postsSinceViral * VIRAL_CONFIG.pityBonusPerPost;
 
     // Check viral tiers (from highest to lowest)
-    if (random < 0.001 + pityBonus * 0.1) {
-        return { name: 'MAIN CHARACTER', multiplier: 100, impressionMult: 500, particles: 100 };
+    const tiers = VIRAL_CONFIG.tiers;
+
+    if (random < tiers.mainCharacter.baseChance + pityBonus * tiers.mainCharacter.pityMultiplier) {
+        State.updateState({ postsSinceViral: 0 });
+        return {
+            name: tiers.mainCharacter.name,
+            multiplier: tiers.mainCharacter.coinMultiplier,
+            impressionMult: tiers.mainCharacter.impressionMultiplier,
+            particles: tiers.mainCharacter.particles
+        };
     }
-    if (random < 0.005 + pityBonus * 0.5) {
-        return { name: 'SUPER VIRAL', multiplier: 50, impressionMult: 200, particles: 60 };
+    if (random < tiers.superViral.baseChance + pityBonus * tiers.superViral.pityMultiplier) {
+        State.updateState({ postsSinceViral: 0 });
+        return {
+            name: tiers.superViral.name,
+            multiplier: tiers.superViral.coinMultiplier,
+            impressionMult: tiers.superViral.impressionMultiplier,
+            particles: tiers.superViral.particles
+        };
     }
-    if (random < 0.03 + pityBonus) {
-        return { name: 'VIRAL', multiplier: 10, impressionMult: 50, particles: 30 };
+    if (random < tiers.viral.baseChance + pityBonus * tiers.viral.pityMultiplier) {
+        State.updateState({ postsSinceViral: 0 });
+        return {
+            name: tiers.viral.name,
+            multiplier: tiers.viral.coinMultiplier,
+            impressionMult: tiers.viral.impressionMultiplier,
+            particles: tiers.viral.particles
+        };
     }
-    if (random < 0.10 + pityBonus * 2) {
-        return { name: 'Mini-viral', multiplier: 2, impressionMult: 5, particles: 15 };
+    if (random < tiers.miniViral.baseChance + pityBonus * tiers.miniViral.pityMultiplier) {
+        State.updateState({ postsSinceViral: 0 });
+        return {
+            name: tiers.miniViral.name,
+            multiplier: tiers.miniViral.coinMultiplier,
+            impressionMult: tiers.miniViral.impressionMultiplier,
+            particles: tiers.miniViral.particles
+        };
     }
 
+    // No viral - increment pity counter
+    State.updateState({ postsSinceViral: postsSinceViral + 1 });
     return null;
 }
 
@@ -1436,15 +1556,6 @@ function getTimeAgo(timestamp) {
     return Math.floor(seconds / 86400) + 'd';
 }
 
-// Track if balloon is currently popping (prevent double-pop)
-let balloonPopping = false;
-
-// Random balloon pop threshold (8-12 posts)
-let balloonPopThreshold = Math.floor(Math.random() * 5) + 8; // 8-12
-
-// Track when current balloon cycle started (so it always starts small)
-let balloonCycleStart = 0;
-
 /**
  * Update inflating balloon (random 8-12 posts = auto-pop bonus)
  * Balloon unlocks at 20 posts, always starts small and grows until it pops
@@ -1631,7 +1742,7 @@ function popBalloon() {
     // Follower bonus scales with sqrt of followers for diminishing but continuous returns
     const bonusFollowers = Math.floor(Math.max(
         BALLOON_CONFIG.followerMinimum,
-        Math.sqrt(state.followers) * BALLOON_CONFIG.followerMultiplier
+        Math.sqrt(state.followers) * BALLOON_CONFIG.followerScale
     ) * bonusMultiplier);
 
     // Award bonus
@@ -1762,5 +1873,175 @@ function updateRankDisplay() {
         rankProgressFill.style.width = '100%';
         rankXp.textContent = `${xp} XP (MAX)`;
     }
+}
+
+// =============================================================================
+// FRENZY MODE FUNCTIONS
+// =============================================================================
+
+/**
+ * Activate frenzy mode - 3x everything for a limited time!
+ */
+function activateFrenzy() {
+    frenzyActive = true;
+    frenzyEndTime = Date.now() + FRENZY_CONFIG.duration;
+    frenzyMeter = 0;
+
+    const state = State.getState();
+    State.updateState({
+        frenzyActivations: (state.frenzyActivations || 0) + 1,
+        frenzyActive: true
+    });
+
+    // Visual explosion
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    spawnParticles('viral', centerX, centerY, 80);
+    spawnFloatingNumber('🔥 FRENZY MODE! 🔥', centerX, centerY, 'viral');
+
+    // Sound
+    playSound('achievement');
+    setTimeout(() => playSound('viral'), 200);
+    setTimeout(() => playSound('premium'), 400);
+
+    // Add visual effects to body
+    document.body.classList.add('frenzy-active');
+
+    // Show notification
+    showNotification('🔥 FRENZY MODE ACTIVATED! 3x EVERYTHING!', 'perfect');
+
+    // Update UI
+    updateFrenzyMeter();
+
+    // Set up timer to end frenzy
+    setTimeout(() => {
+        endFrenzy();
+    }, FRENZY_CONFIG.duration);
+}
+
+/**
+ * End frenzy mode
+ */
+function endFrenzy() {
+    frenzyActive = false;
+    frenzyMeter = 0;
+    frenzyCooldownEnd = Date.now() + FRENZY_CONFIG.cooldown;
+
+    State.updateState({ frenzyActive: false });
+
+    // Remove visual effects
+    document.body.classList.remove('frenzy-active');
+
+    // Update UI
+    updateFrenzyMeter();
+
+    showNotification('Frenzy ended! Cooldown: 10s', 'normal');
+}
+
+/**
+ * Trigger frenzy externally (for spin wheel buff)
+ */
+export function triggerFrenzy() {
+    if (!frenzyActive) {
+        activateFrenzy();
+    }
+}
+
+/**
+ * Check if frenzy is currently active
+ */
+export function isFrenzyActive() {
+    return frenzyActive;
+}
+
+/**
+ * Get frenzy multiplier (for use in other modules)
+ */
+export function getFrenzyMultiplier() {
+    return frenzyActive ? FRENZY_CONFIG.coinMultiplier : 1;
+}
+
+/**
+ * Update frenzy meter UI
+ */
+function updateFrenzyMeter() {
+    const state = State.getState();
+
+    // Only show after unlock
+    const frenzyContainer = document.getElementById('frenzy-container');
+    if (!frenzyContainer) return;
+
+    if (state.totalPosts < FRENZY_CONFIG.unlockAtPosts) {
+        frenzyContainer.style.display = 'none';
+        return;
+    }
+    frenzyContainer.style.display = '';
+
+    const frenzyFill = document.getElementById('frenzy-fill');
+    const frenzyLabel = document.getElementById('frenzy-label');
+    const frenzyTimer = document.getElementById('frenzy-timer');
+
+    if (frenzyActive) {
+        // Show timer during frenzy
+        const remaining = Math.max(0, frenzyEndTime - Date.now());
+        const seconds = Math.ceil(remaining / 1000);
+
+        if (frenzyFill) {
+            frenzyFill.style.width = (remaining / FRENZY_CONFIG.duration * 100) + '%';
+            frenzyFill.classList.add('active');
+        }
+        if (frenzyLabel) frenzyLabel.textContent = 'FRENZY!';
+        if (frenzyTimer) frenzyTimer.textContent = seconds + 's';
+
+        // Continue updating timer
+        if (remaining > 0) {
+            setTimeout(updateFrenzyMeter, 100);
+        }
+    } else if (Date.now() < frenzyCooldownEnd) {
+        // Show cooldown
+        const remaining = Math.max(0, frenzyCooldownEnd - Date.now());
+        const seconds = Math.ceil(remaining / 1000);
+
+        if (frenzyFill) {
+            frenzyFill.style.width = '0%';
+            frenzyFill.classList.remove('active');
+            frenzyFill.classList.add('cooldown');
+        }
+        if (frenzyLabel) frenzyLabel.textContent = 'Cooldown';
+        if (frenzyTimer) frenzyTimer.textContent = seconds + 's';
+
+        // Continue updating
+        if (remaining > 0) {
+            setTimeout(updateFrenzyMeter, 100);
+        } else {
+            if (frenzyFill) frenzyFill.classList.remove('cooldown');
+        }
+    } else {
+        // Normal meter display
+        if (frenzyFill) {
+            frenzyFill.style.width = (frenzyMeter / FRENZY_CONFIG.maxMeter * 100) + '%';
+            frenzyFill.classList.remove('active', 'cooldown');
+        }
+        if (frenzyLabel) frenzyLabel.textContent = 'Frenzy';
+        if (frenzyTimer) frenzyTimer.textContent = '';
+    }
+}
+
+/**
+ * Initialize frenzy decay interval
+ */
+function initFrenzyDecay() {
+    if (frenzyDecayInterval) clearInterval(frenzyDecayInterval);
+
+    frenzyDecayInterval = setInterval(() => {
+        const state = State.getState();
+        if (state.totalPosts < FRENZY_CONFIG.unlockAtPosts) return;
+
+        // Decay meter when not typing (and not in frenzy/cooldown)
+        if (!frenzyActive && Date.now() > frenzyCooldownEnd && frenzyMeter > 0) {
+            frenzyMeter = Math.max(0, frenzyMeter - FRENZY_CONFIG.meterDecayPerSecond / 10);
+            updateFrenzyMeter();
+        }
+    }, 100);
 }
 

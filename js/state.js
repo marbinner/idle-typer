@@ -68,6 +68,10 @@ const initialState = {
     impressionsPerPost: 10,
     globalMultiplier: 1,      // Combined multiplier from all sources
     botCostDiscount: 1,       // Bot cost discount from Tier 3 upgrade (1 = no discount)
+    followerGainBonus: 1,     // Follower gain bonus from Tier 4 upgrade
+    comboBonus: 1,            // Combo bonus from Tier 5 upgrade
+    offlineBonus: 1,          // Offline earnings bonus from Tier 7 upgrade
+    goldenChanceMultiplier: 1, // Golden char chance from Tier 8 upgrade
 
     // Achievements unlocked
     achievements: [],
@@ -76,6 +80,7 @@ const initialState = {
     // Achievement tracking stats
     totalPosts: 0,
     viralPosts: 0,
+    postsSinceViral: 0,    // Pity timer for viral posts
     mainCharacterPosts: 0,
     bestCombo: 0,
     totalCharsTyped: 0,
@@ -91,6 +96,26 @@ const initialState = {
 
     // Bickering challenge stats
     bickeringWins: 0,
+    bickeringLosses: 0,
+    bickeringSkips: 0,
+
+    // Gambling/Market stats
+    lootBoxesOpened: 0,
+    gamblingProfit: 0,         // Net profit/loss from gambling
+    biggestWin: 0,             // Largest single win
+    consecutiveLosses: 0,      // Trades where multiplier < 1 (for pity timer)
+    lossStreak: 0,             // Consecutive rug pulls (multiplier = 0)
+
+    // Critical Hit stats
+    criticalHits: 0,           // Total critical hits landed
+
+    // Frenzy Mode stats
+    frenzyActivations: 0,      // Times frenzy was activated
+    frenzyActive: false,       // Is frenzy currently active
+
+    // Spin Wheel
+    lastSpinTime: null,        // Timestamp of last spin (hourly cooldown)
+    nextPostMultiplier: 1,     // Buff from spin wheel (2x or 5x next post)
 
     // Prestige
     prestigeCount: 0,
@@ -320,7 +345,7 @@ export function recalculateDerived() {
     }
 
     // Apply permanent bonuses
-    if (permanentBonuses.multiplier) {
+    if (permanentBonuses?.multiplier) {
         totalMultiplier *= permanentBonuses.multiplier;
     }
 
@@ -509,7 +534,8 @@ export function resetState(keepPermanent = false) {
 
     state = { ...initialState, ...permanentData };
     recalculateDerived();
-    notifySubscribers(state, state);
+    // Pass empty object as oldState so key-specific subscribers are triggered
+    notifySubscribers({}, state);
 }
 
 /**
@@ -529,7 +555,8 @@ export function loadState(savedState) {
         upgrades: mergedUpgrades
     };
     recalculateDerived();
-    notifySubscribers(state, state);
+    // Pass empty object as oldState so key-specific subscribers are triggered
+    notifySubscribers({}, state);
 }
 
 /**

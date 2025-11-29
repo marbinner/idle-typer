@@ -69,6 +69,7 @@ const CHALLENGE_COOLDOWN = 60000; // 60 seconds between challenges
 
 // Track if keyboard listener is registered to prevent orphaned listeners
 let keyboardListenerRegistered = false;
+let endScreenListenerRegistered = false;
 
 // Trigger settings
 const TRIGGER_CHANCE = 0.08; // 8% chance after each post
@@ -85,15 +86,17 @@ export function initBickering() {
         return;
     }
 
-    // Set up close button handler
+    // Set up close button handler (remove first to prevent duplicates on re-init)
     const closeBtn = overlayEl.querySelector('.bickering-close');
     if (closeBtn) {
+        closeBtn.removeEventListener('click', handleSkipChallenge);
         closeBtn.addEventListener('click', handleSkipChallenge);
     }
 
-    // Set up skip button handler
+    // Set up skip button handler (remove first to prevent duplicates on re-init)
     const skipBtn = overlayEl.querySelector('.bickering-skip-btn');
     if (skipBtn) {
+        skipBtn.removeEventListener('click', handleSkipChallenge);
         skipBtn.addEventListener('click', handleSkipChallenge);
     }
 
@@ -817,11 +820,12 @@ function completeChallenge() {
 
     // Calculate rewards based on performance
     const baseReward = state.coinsPerPost * 5; // 5x normal post reward
-    const difficultyMultiplier = {
-        'easy': 1,
-        'medium': 1.5,
-        'hard': 2
-    }[currentConversation.difficulty] || 1;
+    const difficultyMultipliers = { 'easy': 1, 'medium': 1.5, 'hard': 2 };
+    const difficulty = currentConversation.difficulty;
+    if (!(difficulty in difficultyMultipliers)) {
+        console.warn(`Bickering: Unknown difficulty "${difficulty}" for conversation ${currentConversation.id}, defaulting to 1x`);
+    }
+    const difficultyMultiplier = difficultyMultipliers[difficulty] || 1;
 
     // Accuracy bonus (fewer errors = more coins)
     const totalChars = currentConversation.exchanges.reduce((sum, e) => sum + e.playerReply.length, 0);
@@ -932,8 +936,11 @@ function showVictoryUI(coins, followers, accuracy, time) {
         doneBtn.addEventListener('click', endChallenge);
     }
 
-    // Add keyboard listener to dismiss with Enter, Space, or Escape
-    document.addEventListener('keydown', handleEndScreenKeyDown);
+    // Add keyboard listener to dismiss with Enter, Space, or Escape (if not already registered)
+    if (!endScreenListenerRegistered) {
+        endScreenListenerRegistered = true;
+        document.addEventListener('keydown', handleEndScreenKeyDown);
+    }
 }
 
 /**
@@ -941,6 +948,12 @@ function showVictoryUI(coins, followers, accuracy, time) {
  */
 function showDefeatUI() {
     if (!threadContainerEl || !currentConversation) return;
+
+    // Track loss in state
+    const state = State.getState();
+    State.updateState({
+        bickeringLosses: (state.bickeringLosses || 0) + 1
+    });
 
     // Stop keyboard input (only if registered)
     if (keyboardListenerRegistered) {
@@ -1012,8 +1025,11 @@ function showDefeatUI() {
         doneBtn.addEventListener('click', endChallenge);
     }
 
-    // Add keyboard listener to dismiss with Enter, Space, or Escape
-    document.addEventListener('keydown', handleEndScreenKeyDown);
+    // Add keyboard listener to dismiss with Enter, Space, or Escape (if not already registered)
+    if (!endScreenListenerRegistered) {
+        endScreenListenerRegistered = true;
+        document.addEventListener('keydown', handleEndScreenKeyDown);
+    }
 
     console.log('Bickering challenge lost - timed out!');
 }
@@ -1025,6 +1041,7 @@ function handleEndScreenKeyDown(event) {
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Escape') {
         event.preventDefault();
         document.removeEventListener('keydown', handleEndScreenKeyDown);
+        endScreenListenerRegistered = false;
         endChallenge();
     }
 }
@@ -1035,7 +1052,12 @@ function handleEndScreenKeyDown(event) {
 function handleSkipChallenge() {
     if (!isActive) return;
 
-    // Small penalty for skipping - no rewards
+    // Track skip in state
+    const state = State.getState();
+    State.updateState({
+        bickeringSkips: (state.bickeringSkips || 0) + 1
+    });
+
     console.log('Bickering challenge skipped');
 
     endChallenge();
@@ -1045,6 +1067,9 @@ function handleSkipChallenge() {
  * End the challenge and clean up
  */
 function endChallenge() {
+    // Guard against double-execution (can happen if button click + keyboard both fire)
+    if (!isActive) return;
+
     isActive = false;
     currentConversation = null;
     currentExchange = 0;
@@ -1076,7 +1101,10 @@ function endChallenge() {
         document.removeEventListener('keydown', handleBickeringKeyDown);
         keyboardListenerRegistered = false;
     }
-    document.removeEventListener('keydown', handleEndScreenKeyDown);
+    if (endScreenListenerRegistered) {
+        document.removeEventListener('keydown', handleEndScreenKeyDown);
+        endScreenListenerRegistered = false;
+    }
 
     // Hide overlay
     hideOverlay();
