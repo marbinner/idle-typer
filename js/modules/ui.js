@@ -238,43 +238,38 @@ function updateBotArmyDisplay(state) {
         return;
     }
 
-    // Build bot icons (limit display to avoid performance issues)
-    const maxDisplay = 50;
-    let displayed = 0;
-
-    // Get all owned bots and their icons
+    // Get all owned bot types with counts
     const ownedBots = [];
     Object.entries(state.bots || {}).forEach(([botId, count]) => {
         if (count > 0 && BOTS[botId]) {
-            for (let i = 0; i < count && displayed < maxDisplay; i++) {
-                ownedBots.push({
-                    id: botId,
-                    icon: BOTS[botId].icon,
-                    name: BOTS[botId].name,
-                    delay: displayed * 0.1
-                });
-                displayed++;
-            }
+            ownedBots.push({
+                id: botId,
+                icon: BOTS[botId].icon,
+                name: BOTS[botId].name,
+                count: count
+            });
         }
     });
 
-    // Create bot icons with staggered animation
+    // Create bot entries with emoji + count format
     ownedBots.forEach((bot, index) => {
+        const entryEl = document.createElement('div');
+        entryEl.className = 'bot-army-entry';
+        entryEl.title = `${bot.name} x${bot.count}`;
+        entryEl.style.animationDelay = `${(index * 0.1) % 1.5}s`;
+
         const iconEl = document.createElement('span');
         iconEl.className = 'bot-army-icon';
         iconEl.textContent = bot.icon;
-        iconEl.title = bot.name;
-        iconEl.style.animationDelay = `${(index * 0.15) % 2}s`;
-        botArmyGridEl.appendChild(iconEl);
-    });
 
-    // Add overflow indicator if needed
-    if (totalBots > maxDisplay) {
-        const overflowEl = document.createElement('span');
-        overflowEl.className = 'bot-army-overflow';
-        overflowEl.textContent = `+${totalBots - maxDisplay}`;
-        botArmyGridEl.appendChild(overflowEl);
-    }
+        const countEl = document.createElement('span');
+        countEl.className = 'bot-army-count';
+        countEl.textContent = `x${bot.count}`;
+
+        entryEl.appendChild(iconEl);
+        entryEl.appendChild(countEl);
+        botArmyGridEl.appendChild(entryEl);
+    });
 }
 
 /**
