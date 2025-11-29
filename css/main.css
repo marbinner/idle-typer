@@ -273,6 +273,16 @@
     font-style: italic;
 }
 
+.bot-army-overflow {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    color: var(--candy-pink);
+    background: rgba(255, 20, 147, 0.2);
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    text-shadow: 0 0 5px var(--candy-pink);
+}
+
 #bot-army-cps {
     display: flex;
     justify-content: center;

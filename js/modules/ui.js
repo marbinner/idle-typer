@@ -7,6 +7,7 @@ import * as State from '../state.js';
 import { formatNumber, formatFull, formatCoins as formatCoinsUtil, escapeHtml } from '../utils.js';
 import { setResetting } from '../state.js';
 import { getPostHistory, loadNewPost } from './typing.js';
+import { BOTS } from '../data/upgrades.js';
 
 // DOM Elements cache
 let followersCountEl;
@@ -14,6 +15,9 @@ let followerMultEl;
 let bigCoinValueEl;
 let bigCpsValueEl;
 let bigCoinIconEl;
+let botArmyGridEl;
+let totalBotsCountEl;
+let botArmyCpsValueEl;
 
 // Animation state for smooth number transitions
 let displayedCoins = 0;
@@ -30,6 +34,9 @@ export function initUI() {
     bigCoinValueEl = document.getElementById('big-coin-value');
     bigCpsValueEl = document.getElementById('big-cps-value');
     bigCoinIconEl = document.getElementById('big-coin-icon');
+    botArmyGridEl = document.getElementById('bot-army-grid');
+    totalBotsCountEl = document.getElementById('total-bots-count');
+    botArmyCpsValueEl = document.getElementById('bot-army-cps-value');
 
     // Set up event listeners
     setupEventListeners();
@@ -185,6 +192,89 @@ export function updateUI() {
 
     // Update verification badge
     updateVerificationBadge(state.verificationTier);
+
+    // Update bot army display
+    updateBotArmyDisplay(state);
+}
+
+/**
+ * Update bot army visual display
+ */
+let lastBotCount = -1;
+function updateBotArmyDisplay(state) {
+    if (!botArmyGridEl) return;
+
+    // Count total bots
+    const totalBots = Object.values(state.bots || {}).reduce((sum, count) => sum + count, 0);
+
+    // Update total count
+    if (totalBotsCountEl) {
+        totalBotsCountEl.textContent = totalBots;
+    }
+
+    // Update CPS display
+    if (botArmyCpsValueEl) {
+        const cps = state.coinsPerSecond || 0;
+        if (cps > 0) {
+            const formatted = formatCoinsUtil(cps);
+            botArmyCpsValueEl.textContent = `+${formatted.full}/sec`;
+        } else {
+            botArmyCpsValueEl.textContent = '+0/sec';
+        }
+    }
+
+    // Only rebuild grid if bot count changed
+    if (totalBots === lastBotCount) return;
+    lastBotCount = totalBots;
+
+    // Clear existing icons
+    botArmyGridEl.innerHTML = '';
+
+    if (totalBots === 0) {
+        const emptyEl = document.createElement('div');
+        emptyEl.className = 'bot-army-empty';
+        emptyEl.textContent = 'Buy bots to start earning!';
+        botArmyGridEl.appendChild(emptyEl);
+        return;
+    }
+
+    // Build bot icons (limit display to avoid performance issues)
+    const maxDisplay = 50;
+    let displayed = 0;
+
+    // Get all owned bots and their icons
+    const ownedBots = [];
+    Object.entries(state.bots || {}).forEach(([botId, count]) => {
+        if (count > 0 && BOTS[botId]) {
+            for (let i = 0; i < count && displayed < maxDisplay; i++) {
+                ownedBots.push({
+                    id: botId,
+                    icon: BOTS[botId].icon,
+                    name: BOTS[botId].name,
+                    delay: displayed * 0.1
+                });
+                displayed++;
+            }
+        }
+    });
+
+    // Create bot icons with staggered animation
+    ownedBots.forEach((bot, index) => {
+        const iconEl = document.createElement('span');
+        iconEl.className = 'bot-army-icon';
+        iconEl.textContent = bot.icon;
+        iconEl.title = bot.name;
+        iconEl.style.animationDelay = `${(index * 0.15) % 2}s`;
+        botArmyGridEl.appendChild(iconEl);
+    });
+
+    // Add overflow indicator if needed
+    if (totalBots > maxDisplay) {
+        const overflowEl = document.createElement('span');
+        overflowEl.className = 'bot-army-overflow';
+        overflowEl.textContent = `+${totalBots - maxDisplay}`;
+        botArmyGridEl.appendChild(overflowEl);
+    }
 }
 
 /**
