@@ -1,3 +1,302 @@
+/* ==================== Animated Background Effects ==================== */
+#bg-effects {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+/* Floating candy orbs */
+.bg-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.4;
+    animation: orb-float 20s ease-in-out infinite;
+}
+
+.orb-1 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, var(--candy-pink), transparent 70%);
+    top: 10%;
+    left: 5%;
+    animation-delay: 0s;
+    animation-duration: 25s;
+}
+
+.orb-2 {
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, var(--candy-blue), transparent 70%);
+    top: 60%;
+    right: 10%;
+    animation-delay: -5s;
+    animation-duration: 22s;
+}
+
+.orb-3 {
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, var(--candy-purple), transparent 70%);
+    bottom: 20%;
+    left: 30%;
+    animation-delay: -10s;
+    animation-duration: 28s;
+}
+
+.orb-4 {
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, var(--candy-green), transparent 70%);
+    top: 30%;
+    right: 25%;
+    animation-delay: -15s;
+    animation-duration: 24s;
+}
+
+.orb-5 {
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, var(--candy-yellow), transparent 70%);
+    bottom: 10%;
+    right: 5%;
+    animation-delay: -8s;
+    animation-duration: 26s;
+}
+
+.orb-6 {
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(circle, var(--candy-orange), transparent 70%);
+    top: 5%;
+    right: 40%;
+    animation-delay: -12s;
+    animation-duration: 30s;
+}
+
+@keyframes orb-float {
+    0%, 100% {
+        transform: translate(0, 0) scale(1);
+    }
+    25% {
+        transform: translate(30px, -40px) scale(1.1);
+    }
+    50% {
+        transform: translate(-20px, 20px) scale(0.95);
+    }
+    75% {
+        transform: translate(40px, 30px) scale(1.05);
+    }
+}
+
+/* Sparkle stars */
+.sparkle-star {
+    position: absolute;
+    color: var(--candy-yellow);
+    font-size: 20px;
+    opacity: 0;
+    animation: star-twinkle 3s ease-in-out infinite;
+    text-shadow: 0 0 10px var(--candy-yellow), 0 0 20px var(--candy-yellow);
+}
+
+.star-1 { top: 15%; left: 10%; animation-delay: 0s; }
+.star-2 { top: 25%; right: 15%; animation-delay: 0.5s; color: var(--candy-cyan); text-shadow: 0 0 10px var(--candy-cyan); }
+.star-3 { top: 45%; left: 5%; animation-delay: 1s; }
+.star-4 { top: 70%; right: 8%; animation-delay: 1.5s; color: var(--candy-pink); text-shadow: 0 0 10px var(--candy-pink); }
+.star-5 { bottom: 25%; left: 15%; animation-delay: 2s; color: var(--candy-green); text-shadow: 0 0 10px var(--candy-green); }
+.star-6 { bottom: 15%; right: 20%; animation-delay: 2.5s; }
+.star-7 { top: 8%; left: 40%; animation-delay: 0.8s; color: var(--candy-purple); text-shadow: 0 0 10px var(--candy-purple); }
+.star-8 { bottom: 35%; right: 35%; animation-delay: 1.8s; color: var(--candy-orange); text-shadow: 0 0 10px var(--candy-orange); }
+
+@keyframes star-twinkle {
+    0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+}
+
+/* Aurora waves */
+.aurora {
+    position: absolute;
+    width: 200%;
+    height: 300px;
+    opacity: 0.15;
+    filter: blur(80px);
+    animation: aurora-wave 15s ease-in-out infinite;
+}
+
+.aurora-1 {
+    top: -100px;
+    left: -50%;
+    background: linear-gradient(90deg, var(--candy-pink), var(--candy-purple), var(--candy-blue), var(--candy-cyan));
+    animation-duration: 20s;
+}
+
+.aurora-2 {
+    bottom: -100px;
+    left: -50%;
+    background: linear-gradient(90deg, var(--candy-green), var(--candy-yellow), var(--candy-orange), var(--candy-pink));
+    animation-delay: -7s;
+    animation-duration: 25s;
+}
+
+.aurora-3 {
+    top: 40%;
+    left: -50%;
+    background: linear-gradient(90deg, var(--candy-blue), var(--candy-purple), var(--candy-magenta));
+    animation-delay: -12s;
+    animation-duration: 22s;
+    height: 200px;
+    opacity: 0.1;
+}
+
+@keyframes aurora-wave {
+    0%, 100% { transform: translateX(0) skewY(-2deg); }
+    50% { transform: translateX(25%) skewY(2deg); }
+}
+
+/* Corner decorations */
+.corner-decor {
+    position: fixed;
+    width: 80px;
+    height: 80px;
+    z-index: 1;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.corner-tl { top: 60px; left: 10px; }
+.corner-tr { top: 60px; right: 10px; }
+.corner-bl { bottom: 50px; left: 10px; }
+.corner-br { bottom: 50px; right: 10px; }
+
+.corner-candy {
+    font-size: 32px;
+    animation: corner-bounce 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+}
+
+.corner-tl .corner-candy { animation-delay: 0s; }
+.corner-tr .corner-candy { animation-delay: 0.5s; }
+.corner-bl .corner-candy { animation-delay: 1s; }
+.corner-br .corner-candy { animation-delay: 1.5s; }
+
+@keyframes corner-bounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-8px) rotate(-10deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(-5px) rotate(10deg); }
+}
+
+.corner-sparkle {
+    position: absolute;
+    font-size: 16px;
+    animation: sparkle-orbit 4s linear infinite;
+}
+
+@keyframes sparkle-orbit {
+    0% { transform: rotate(0deg) translateX(25px) rotate(0deg); opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { transform: rotate(360deg) translateX(25px) rotate(-360deg); opacity: 1; }
+}
+
+/* ==================== Bot Army Display ==================== */
+#bot-army-display {
+    padding: var(--spacing-md);
+    background:
+        linear-gradient(180deg, rgba(155, 89, 255, 0.15) 0%, transparent 100%),
+        rgba(10, 10, 26, 0.8);
+    border-bottom: 2px solid rgba(155, 89, 255, 0.3);
+    min-height: 120px;
+}
+
+.bot-army-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.bot-army-title {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--candy-purple);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#total-bots-count {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-lg);
+    font-weight: 800;
+    color: var(--candy-cyan);
+    text-shadow: 0 0 10px var(--candy-cyan);
+}
+
+#bot-army-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 50px;
+    justify-content: center;
+    align-items: center;
+}
+
+.bot-army-icon {
+    font-size: 20px;
+    animation: bot-idle 2s ease-in-out infinite;
+    filter: drop-shadow(0 0 5px rgba(155, 89, 255, 0.5));
+    cursor: default;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bot-army-icon:hover {
+    transform: scale(1.3);
+    filter: drop-shadow(0 0 15px rgba(155, 89, 255, 0.8));
+}
+
+@keyframes bot-idle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.bot-army-empty {
+    color: var(--text-muted);
+    font-size: var(--font-size-xs);
+    text-align: center;
+    padding: var(--spacing-sm);
+    font-style: italic;
+}
+
+#bot-army-cps {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
+    border-top: 1px solid rgba(155, 89, 255, 0.2);
+}
+
+#bot-army-cps .cps-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+#bot-army-cps-value {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-md);
+    font-weight: 700;
+    color: var(--candy-green);
+    text-shadow: 0 0 8px rgba(0, 255, 135, 0.5);
+}
+
 /* Main Layout */
 #app {
     display: flex;
@@ -5,6 +304,8 @@
     height: 100vh;
     max-height: 100vh;
     overflow: hidden;
+    position: relative;
+    z-index: 1;
 }
 
 /* ==================== Header Stats Bar ==================== */
