@@ -5045,8 +5045,8 @@ body.frenzy-active::before {
 /* ==================== Critical Hit Effects ==================== */
 .char.crit-hit {
     animation: crit-pop 0.4s ease-out forwards;
-    color: var(--x-premium-gold) !important;
-    text-shadow: 0 0 10px var(--x-premium-gold), 0 0 20px var(--x-premium-gold);
+    color: var(--crit-cyan) !important;
+    text-shadow: 0 0 10px var(--crit-cyan), 0 0 20px var(--crit-cyan), 0 0 30px var(--crit-cyan-dark);
 }
 
 @keyframes crit-pop {
@@ -5055,7 +5055,7 @@ body.frenzy-active::before {
     }
     30% {
         transform: scale(1.8);
-        color: #ff6b6b;
+        color: var(--crit-cyan);
     }
     100% {
         transform: scale(1);
