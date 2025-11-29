@@ -140,6 +140,9 @@ const initialState = {
     lastTickTime: Date.now(),
     totalPlayTime: 0,
 
+    // Player identity
+    username: null,  // Set on first load via prompt
+
     // Settings
     soundEnabled: true,
     volume: 0.7

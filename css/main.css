@@ -2807,12 +2807,14 @@
 
 #event-text {
     display: inline-block;
+    transition: opacity 0.2s ease;
 }
 
 #event-text.highlight {
-    color: var(--highlight-yellow);
+    color: var(--candy-yellow);
     font-weight: 600;
     animation: pulse-micro 0.5s ease;
+    text-shadow: 0 0 10px var(--candy-yellow);
 }
 
 #achievement-tray {
@@ -3006,6 +3008,154 @@
 
 .btn-secondary:hover {
     background: var(--bg-hover);
+}
+
+/* ==================== Username Modal ==================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-overlay.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.username-modal-content {
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    max-width: 400px;
+    width: 90%;
+    border: 2px solid var(--candy-purple);
+    box-shadow:
+        0 0 40px rgba(155, 89, 255, 0.3),
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: modalBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalBounce {
+    0% { transform: scale(0.5) translateY(50px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.username-modal-header {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.username-modal-logo {
+    font-size: 64px;
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    animation: jelly-wobble 2s ease-in-out infinite;
+}
+
+.username-modal-header h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--candy-pink), var(--candy-purple), var(--candy-cyan));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+.username-modal-body {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.username-modal-body p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+}
+
+.username-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: var(--bg-primary);
+    border: 2px solid var(--candy-cyan);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-sm) var(--spacing-md);
+    transition: all 0.2s ease;
+}
+
+.username-input-wrapper:focus-within {
+    border-color: var(--candy-pink);
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.username-at {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--candy-cyan);
+    margin-right: var(--spacing-xs);
+}
+
+#username-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    outline: none;
+}
+
+#username-input::placeholder {
+    color: var(--text-muted);
+}
+
+.username-hint {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin-top: var(--spacing-sm);
+}
+
+.username-modal-footer {
+    text-align: center;
+}
+
+#username-submit {
+    padding: var(--spacing-md) var(--spacing-xl);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--candy-pink), var(--candy-purple));
+    border: none;
+    border-radius: var(--radius-full);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 15px rgba(255, 20, 147, 0.4);
+}
+
+#username-submit:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(255, 20, 147, 0.6);
+}
+
+#username-submit:active {
+    transform: scale(0.98);
 }
 
 /* Settings Modal */

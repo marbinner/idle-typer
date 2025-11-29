@@ -20,6 +20,7 @@ import { initStats } from './modules/stats.js';
 import { initBickering } from './modules/bickering.js';
 import { initGambling } from './modules/gambling.js';
 import { initMonsters, tick as monsterTick } from './modules/monsters.js';
+import { initNewsTicker, showUsernamePrompt } from './modules/newsTicker.js';
 
 // Game configuration
 const CONFIG = {
@@ -115,6 +116,10 @@ async function init() {
         initSave();
         console.log('Save system ready');
 
+        // Show username prompt if not set (before UI to avoid flicker)
+        await showUsernamePrompt();
+        console.log('Username set');
+
         // Initialize UI system
         initUI();
         console.log('UI system ready');
@@ -153,6 +158,10 @@ async function init() {
         // Initialize events system
         initEvents();
         console.log('Events system ready');
+
+        // Initialize news ticker (dynamic reactions about player)
+        initNewsTicker();
+        console.log('News ticker ready');
 
         // Initialize stats system
         initStats();
