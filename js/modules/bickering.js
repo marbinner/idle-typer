@@ -100,6 +100,11 @@ export function initBickering() {
         skipBtn.addEventListener('click', handleSkipChallenge);
     }
 
+    // Use event delegation for done buttons (victory/defeat screens)
+    // This prevents listener accumulation from dynamically created buttons
+    overlayEl.removeEventListener('click', handleDoneButtonClick);
+    overlayEl.addEventListener('click', handleDoneButtonClick);
+
     // Expose test function to window for debugging (doesn't affect cooldown)
     window.testBickering = (category) => {
         startChallenge(category || null, true);
@@ -930,11 +935,7 @@ function showVictoryUI(coins, followers, accuracy, time) {
     threadContainerEl.insertAdjacentHTML('beforeend', victoryHtml);
     threadContainerEl.scrollTop = threadContainerEl.scrollHeight;
 
-    // Add event listener to the done button (instead of inline onclick)
-    const doneBtn = threadContainerEl.querySelector('.bickering-done-btn');
-    if (doneBtn) {
-        doneBtn.addEventListener('click', endChallenge);
-    }
+    // Done button click handled via event delegation in initBickering()
 
     // Add keyboard listener to dismiss with Enter, Space, or Escape (if not already registered)
     if (!endScreenListenerRegistered) {
@@ -1019,11 +1020,7 @@ function showDefeatUI() {
     threadContainerEl.insertAdjacentHTML('beforeend', defeatHtml);
     threadContainerEl.scrollTop = threadContainerEl.scrollHeight;
 
-    // Add event listener to the done button
-    const doneBtn = threadContainerEl.querySelector('.defeat-btn');
-    if (doneBtn) {
-        doneBtn.addEventListener('click', endChallenge);
-    }
+    // Done button click handled via event delegation in initBickering()
 
     // Add keyboard listener to dismiss with Enter, Space, or Escape (if not already registered)
     if (!endScreenListenerRegistered) {
@@ -1042,6 +1039,16 @@ function handleEndScreenKeyDown(event) {
         event.preventDefault();
         document.removeEventListener('keydown', handleEndScreenKeyDown);
         endScreenListenerRegistered = false;
+        endChallenge();
+    }
+}
+
+/**
+ * Handle done button clicks via event delegation
+ */
+function handleDoneButtonClick(event) {
+    if (event.target.classList.contains('bickering-done-btn') ||
+        event.target.classList.contains('defeat-btn')) {
         endChallenge();
     }
 }

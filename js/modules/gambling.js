@@ -39,8 +39,9 @@ let isInitialized = false;
 // Spin wheel state
 let lastSpinTime = null;
 
-// Escape key handler (stored to prevent duplicates)
+// Escape key handler (stored reference for cleanup)
 let escapeHandlerRegistered = false;
+let escapeKeyHandler = null;
 
 /**
  * Initialize the gambling system
@@ -685,7 +686,8 @@ function setupEscapeHandler() {
     if (escapeHandlerRegistered) return;
     escapeHandlerRegistered = true;
 
-    document.addEventListener('keydown', (e) => {
+    // Store reference so we can remove it later if needed
+    escapeKeyHandler = (e) => {
         if (e.key !== 'Escape') return;
 
         // Check lootbox overlay
@@ -699,7 +701,20 @@ function setupEscapeHandler() {
             closeSpinOverlay();
             return;
         }
-    });
+    };
+
+    document.addEventListener('keydown', escapeKeyHandler);
+}
+
+/**
+ * Cleanup gambling system (call on game reset)
+ */
+export function cleanupGambling() {
+    if (escapeKeyHandler) {
+        document.removeEventListener('keydown', escapeKeyHandler);
+        escapeKeyHandler = null;
+        escapeHandlerRegistered = false;
+    }
 }
 
 /**

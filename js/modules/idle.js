@@ -19,6 +19,9 @@ let lastVisualFeedbackTime = 0;
 const VISUAL_FEEDBACK_INTERVAL = 500; // Show visual every 0.5 seconds
 const MIN_COINS_TO_SHOW = 1; // Show as long as we earned something
 
+// Cached DOM element for performance
+let cpsElement = null;
+
 /**
  * Reset accumulators (call on game reset)
  */
@@ -60,9 +63,12 @@ export function tick(deltaTime) {
     if (visualFeedbackAccumulator >= MIN_COINS_TO_SHOW &&
         now - lastVisualFeedbackTime >= VISUAL_FEEDBACK_INTERVAL) {
 
-        const cpsEl = document.getElementById('coin-per-sec');
-        if (cpsEl) {
-            const rect = cpsEl.getBoundingClientRect();
+        // Cache the element on first use
+        if (!cpsElement) {
+            cpsElement = document.getElementById('coin-per-sec');
+        }
+        if (cpsElement) {
+            const rect = cpsElement.getBoundingClientRect();
             const x = rect.right + 80; // Offset right to avoid overlapping bitcoin number
             const y = rect.top;
 

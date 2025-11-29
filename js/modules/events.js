@@ -583,6 +583,11 @@ function createBonusModeTimer() {
 
     document.body.appendChild(timer);
 
+    // Clear any existing timer before creating new one
+    if (bonusModeTimerInterval) {
+        clearInterval(bonusModeTimerInterval);
+    }
+
     // Update timer every second
     bonusModeTimerInterval = setInterval(updateBonusModeTimer, 1000);
     updateBonusModeTimer();

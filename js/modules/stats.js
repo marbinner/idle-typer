@@ -69,13 +69,14 @@ function takeSnapshot() {
     history.impressions.push(state.lifetimeImpressions);
     history.posts.push(state.lifetimePosts);
 
-    // Trim if too many points
+    // Trim if too many points - splice is more efficient than multiple shift() calls
     if (history.timestamps.length > MAX_HISTORY_POINTS) {
-        history.timestamps.shift();
-        history.coins.shift();
-        history.followers.shift();
-        history.impressions.shift();
-        history.posts.shift();
+        const excess = history.timestamps.length - MAX_HISTORY_POINTS;
+        history.timestamps.splice(0, excess);
+        history.coins.splice(0, excess);
+        history.followers.splice(0, excess);
+        history.impressions.splice(0, excess);
+        history.posts.splice(0, excess);
     }
 }
 
