@@ -12,9 +12,11 @@ import { spawnFloatingNumber, spawnParticles } from './particles.js';
 let coinAccumulator = 0;
 let impressionAccumulator = 0;
 
-// Visual feedback accumulator
+// Visual feedback - time-based to avoid spam
 let visualFeedbackAccumulator = 0;
-const VISUAL_FEEDBACK_THRESHOLD = 5; // Show visual every N coins earned
+let lastVisualFeedbackTime = 0;
+const VISUAL_FEEDBACK_INTERVAL = 3000; // Show visual every 3 seconds max
+const MIN_COINS_TO_SHOW = 10; // Don't show if less than 10 coins accumulated
 
 /**
  * Reset accumulators (call on game reset)
@@ -23,6 +25,7 @@ export function resetAccumulators() {
     coinAccumulator = 0;
     impressionAccumulator = 0;
     visualFeedbackAccumulator = 0;
+    lastVisualFeedbackTime = 0;
 }
 
 /**
@@ -48,26 +51,26 @@ export function tick(deltaTime) {
 
             // Accumulate for visual feedback
             visualFeedbackAccumulator += wholeCoins;
-
-            // Show occasional floating coin from the CPS display
-            if (visualFeedbackAccumulator >= VISUAL_FEEDBACK_THRESHOLD) {
-                const cpsEl = document.getElementById('coin-per-sec');
-                if (cpsEl) {
-                    const rect = cpsEl.getBoundingClientRect();
-                    const x = rect.left + rect.width / 2 + (Math.random() - 0.5) * 40;
-                    const y = rect.top + rect.height / 2;
-
-                    // Small floating +coins text
-                    spawnFloatingNumber(`+${Math.floor(visualFeedbackAccumulator)}`, x, y, 'idle');
-
-                    // Occasional tiny particle burst
-                    if (Math.random() < 0.3) {
-                        spawnParticles('keystroke', x, y, 3);
-                    }
-                }
-                visualFeedbackAccumulator = 0;
-            }
         }
+    }
+
+    // Time-based visual feedback to avoid spam
+    const now = Date.now();
+    if (visualFeedbackAccumulator >= MIN_COINS_TO_SHOW &&
+        now - lastVisualFeedbackTime >= VISUAL_FEEDBACK_INTERVAL) {
+
+        const cpsEl = document.getElementById('coin-per-sec');
+        if (cpsEl) {
+            const rect = cpsEl.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top;
+
+            // Show accumulated amount
+            spawnFloatingNumber(`+${Math.floor(visualFeedbackAccumulator)}`, x, y, 'idle');
+        }
+
+        visualFeedbackAccumulator = 0;
+        lastVisualFeedbackTime = now;
     }
 
     // Calculate impressions (followers generate impressions passively)
