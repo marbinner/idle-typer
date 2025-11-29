@@ -323,7 +323,9 @@ function openTrade(cost) {
     const tradeState = {
         totalTrades: state.lootBoxesOpened || 0,
         consecutiveLosses: state.consecutiveLosses || 0,
-        lossStreak: state.lossStreak || 0
+        consecutiveWins: state.consecutiveWins || 0,
+        lastMultiplier: state.lastTradeMultiplier ?? 1,
+        hotStreakBonus: state.hotStreakBonus || 0
     };
 
     // Roll the prize using engagement algorithm
@@ -537,9 +539,23 @@ function showPrizeResult(prize) {
     const state = State.getState();
     const wasLoss = isLoss(prize);       // multiplier < 1
     const wasRugPull = isRugPull(prize); // multiplier = 0
+    const wasWin = !wasLoss;             // multiplier >= 1
 
     if (prize.amount > 0) {
         State.addCoins(prize.amount, 'crypto-trade-win');
+    }
+
+    // Calculate hot streak bonus for next trade
+    // Builds on wins (after 2 consecutive), decays on losses
+    const currentHotStreak = state.hotStreakBonus || 0;
+    const currentConsecutiveWins = state.consecutiveWins || 0;
+    let newHotStreakBonus;
+    if (wasWin) {
+        // Win: if on hot streak (2+ wins), boost is 0.15
+        newHotStreakBonus = (currentConsecutiveWins + 1) >= 2 ? 0.15 : currentHotStreak;
+    } else {
+        // Loss: decay hot streak by 50%
+        newHotStreakBonus = currentHotStreak * 0.5;
     }
 
     // Update state with streak info and increment trade count
@@ -548,6 +564,9 @@ function showPrizeResult(prize) {
         gamblingProfit: (state.gamblingProfit || 0) + prize.amount,
         biggestWin: Math.max(state.biggestWin || 0, prize.amount),
         consecutiveLosses: wasLoss ? (state.consecutiveLosses || 0) + 1 : 0,
+        consecutiveWins: wasWin ? (state.consecutiveWins || 0) + 1 : 0,
+        lastTradeMultiplier: prize.multiplier,
+        hotStreakBonus: newHotStreakBonus,
         lossStreak: wasRugPull ? (state.lossStreak || 0) + 1 : 0
     });
 

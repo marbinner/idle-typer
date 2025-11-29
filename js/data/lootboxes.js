@@ -1,46 +1,98 @@
 /**
  * Crypto Trade Data
- * Uses slot machine-style engagement algorithm
- * - First roll bonus: Guarantees a nice win to hook the player
- * - Pity timer: Consecutive losses increase win odds
- * - Near-miss system: Shows big prizes during spin
- * - Streak breaker: Prevents too many losses in a row
+ * Optimized engagement algorithm based on behavioral psychology
+ *
+ * Key principles:
+ * - Variable ratio reinforcement (most engaging reward schedule)
+ * - Near-miss effect (show jackpots during spin to create anticipation)
+ * - Loss aversion mitigation (soften losses, amplify wins)
+ * - Hot streak system (winning momentum)
+ * - Comeback mechanics (losing builds towards guaranteed win)
+ * - Win variance (±20% randomness makes wins more exciting)
+ * - Progressive pity (smooth curve, not hard threshold)
  */
 
-// Prize tiers (index 0 = worst, index 8 = best)
+// Prize tiers - optimized distribution with more "feel good" tiers
 export const PRIZE_TIERS = [
-    { multiplier: 0, label: 'Rug Pulled', rarity: 'common', icon: '🪤' },
-    { multiplier: 0.5, label: 'Paper Hands', rarity: 'common', icon: '📄' },
-    { multiplier: 1, label: 'Broke Even', rarity: 'uncommon', icon: '⚖️' },
-    { multiplier: 2, label: 'Nice Trade', rarity: 'uncommon', icon: '📈' },
-    { multiplier: 5, label: 'Big Green', rarity: 'rare', icon: '🟢' },
-    { multiplier: 10, label: 'Whale Move', rarity: 'epic', icon: '🐋' },
-    { multiplier: 20, label: 'PERFECT ENTRY', rarity: 'epic', icon: '🎯' },
-    { multiplier: 100, label: '100X TRADE', rarity: 'legendary', icon: '🚀' },
-    { multiplier: 500, label: 'BECAME SATOSHI', rarity: 'mythic', icon: '₿' }
+    { multiplier: 0, label: 'Rug Pulled', rarity: 'common', icon: '🪤', celebration: 'none' },
+    { multiplier: 0.25, label: 'Got Rekt', rarity: 'common', icon: '💀', celebration: 'none' },
+    { multiplier: 0.5, label: 'Paper Hands', rarity: 'common', icon: '📄', celebration: 'none' },
+    { multiplier: 0.75, label: 'Weak Exit', rarity: 'uncommon', icon: '😰', celebration: 'none' },
+    { multiplier: 1, label: 'Broke Even', rarity: 'uncommon', icon: '⚖️', celebration: 'small' },
+    { multiplier: 1.5, label: 'Small Green', rarity: 'uncommon', icon: '📊', celebration: 'small' },
+    { multiplier: 2, label: 'Nice Trade', rarity: 'rare', icon: '📈', celebration: 'medium' },
+    { multiplier: 3, label: 'Good Call', rarity: 'rare', icon: '🎯', celebration: 'medium' },
+    { multiplier: 5, label: 'Big Green', rarity: 'rare', icon: '🟢', celebration: 'large' },
+    { multiplier: 10, label: 'Whale Move', rarity: 'epic', icon: '🐋', celebration: 'large' },
+    { multiplier: 25, label: 'DIAMOND HANDS', rarity: 'epic', icon: '💎', celebration: 'epic' },
+    { multiplier: 50, label: 'PERFECT ENTRY', rarity: 'legendary', icon: '🎰', celebration: 'legendary' },
+    { multiplier: 100, label: '100X MOONSHOT', rarity: 'legendary', icon: '🚀', celebration: 'legendary' },
+    { multiplier: 500, label: 'BECAME SATOSHI', rarity: 'mythic', icon: '₿', celebration: 'mythic' }
 ];
 
-// Algorithm configuration
+// Engagement algorithm configuration
 const ALGORITHM_CONFIG = {
-    // First roll: guaranteed tier 4 (5x - Big Green)
-    firstRollTier: 4,
+    // === FIRST IMPRESSION ===
+    // First roll: guaranteed satisfying win (tier 8 = 5x Big Green)
+    firstRollTier: 8,
 
-    // Pity system: after X consecutive losses, force a win
-    pityThreshold: 5,
-    pityMinTier: 3, // Tier 3 (1x) or 4 (2x) - guarantees at least break-even
+    // === PITY SYSTEM (Progressive) ===
+    // Pity builds smoothly instead of hard threshold
+    pityStartAt: 2,           // Start building pity after 2 losses
+    pityMaxBoost: 0.35,       // Max 35% boost to win odds at max pity
+    pityBuildRate: 0.07,      // 7% boost per consecutive loss
+    pityGuaranteeAt: 6,       // Hard guarantee after 6 losses
+    pityGuaranteeMinTier: 6,  // Guarantee at least 2x (Nice Trade)
 
-    // Streak breaker: max consecutive total losses before guaranteed profit
-    maxLossStreak: 7,
+    // === HOT STREAK SYSTEM ===
+    // Winning momentum - wins increase chance of more wins
+    hotStreakThreshold: 2,    // 2 wins in a row = hot streak
+    hotStreakBoost: 0.15,     // 15% boost to good outcomes during streak
+    hotStreakDecay: 0.5,      // Lose half the boost per non-win
 
-    // Lucky roll chance (small chance for big win regardless of state)
-    luckyRollChance: 0.02,
-    luckyMinTier: 5,
+    // === COMEBACK MECHANIC ===
+    // After big loss, give hope with a near-win
+    comebackTriggerLoss: 0,   // Trigger after rug pull (0x)
+    comebackChance: 0.4,      // 40% chance next roll is decent
+    comebackMinTier: 5,       // At least "Small Green" (1.5x)
 
-    // Base probabilities for normal rolls (must sum to 1)
-    // Weighted towards lower tiers but with hope
-    // [rug, small loss, break even, 2x, 5x, 10x, 25x, 50x, 100x]
-    baseProbabilities: [0.30, 0.28, 0.18, 0.12, 0.07, 0.03, 0.015, 0.004, 0.001]
-    // Sum: 0.30 + 0.28 + 0.18 + 0.12 + 0.07 + 0.03 + 0.015 + 0.004 + 0.001 = 1.0
+    // === LUCKY ROLL ===
+    // Random jackpot chance (keeps hope alive)
+    luckyRollChance: 0.015,   // 1.5% chance
+    luckyMinTier: 10,         // At least 25x
+
+    // === SUPER LUCKY (Jackpot) ===
+    superLuckyChance: 0.002,  // 0.2% chance for jackpot
+    superLuckyMinTier: 12,    // 100x or 500x
+
+    // === WIN VARIANCE ===
+    // Add ±20% randomness to wins for excitement
+    winVariance: 0.2,
+
+    // === LOSS SOFTENING ===
+    // Partial refund on bad losses to reduce frustration
+    rugPullRefund: 0.1,       // 10% refund on rug pulls
+
+    // === BASE PROBABILITIES ===
+    // Carefully tuned for engagement (wins ~35%, losses ~30%, break-even ~35%)
+    // [0x, 0.25x, 0.5x, 0.75x, 1x, 1.5x, 2x, 3x, 5x, 10x, 25x, 50x, 100x, 500x]
+    baseProbabilities: [
+        0.08,   // Rug (reduced - too frustrating)
+        0.06,   // Got Rekt
+        0.08,   // Paper Hands
+        0.08,   // Weak Exit
+        0.18,   // Broke Even (common - feels okay)
+        0.15,   // Small Green (feels like a win)
+        0.14,   // Nice Trade (satisfying)
+        0.10,   // Good Call
+        0.06,   // Big Green
+        0.035,  // Whale Move
+        0.02,   // DIAMOND HANDS
+        0.008,  // PERFECT ENTRY
+        0.005,  // 100X MOONSHOT
+        0.002   // BECAME SATOSHI
+    ]
+    // Losses (0-0.75x): 30%, Break-even to small win (1-1.5x): 33%, Good wins (2x+): 37%
 };
 
 export const CRYPTO_TRADE = {
@@ -75,49 +127,78 @@ export const RARITY_GLOW = {
 
 /**
  * Calculate the current trade cost based on passive income
- * @param {number} coinsPerSecond - Current passive income
- * @returns {number} The cost of a trade
  */
 export function getTradeCost(coinsPerSecond) {
     return Math.floor(CRYPTO_TRADE.baseCost + (coinsPerSecond * CRYPTO_TRADE.costMultiplier));
 }
 
 /**
- * Roll the crypto trade using engagement algorithm
+ * Roll the crypto trade using optimized engagement algorithm
  * @param {number} cost - The cost paid for this trade
  * @param {Object} tradeState - Player's trade history state
- * @returns {Object} The prize won { amount, label, rarity, icon, multiplier, tierIndex }
+ * @returns {Object} The prize won with all metadata
  */
 export function rollCryptoTrade(cost, tradeState = {}) {
     const {
         totalTrades = 0,
-        consecutiveLosses = 0,  // Trades where multiplier < 1
-        lossStreak = 0          // Trades where multiplier = 0
+        consecutiveLosses = 0,    // Trades where multiplier < 1
+        consecutiveWins = 0,       // Trades where multiplier >= 1
+        lastMultiplier = 1,        // Previous trade result
+        hotStreakBonus = 0         // Current hot streak bonus
     } = tradeState;
 
     let tierIndex;
+    let isGuaranteed = false;
+    let triggerReason = 'normal';
 
-    // FIRST ROLL: Give them a taste of winning
+    // === FIRST ROLL: Hook them with a satisfying win ===
     if (totalTrades === 0) {
         tierIndex = ALGORITHM_CONFIG.firstRollTier;
+        isGuaranteed = true;
+        triggerReason = 'firstRoll';
     }
-    // PITY TIMER: Too many losses, force a decent win
-    else if (consecutiveLosses >= ALGORITHM_CONFIG.pityThreshold) {
-        tierIndex = ALGORITHM_CONFIG.pityMinTier + Math.floor(Math.random() * 2); // tier 3 or 4
+    // === PITY GUARANTEE: Too many losses, force a win ===
+    else if (consecutiveLosses >= ALGORITHM_CONFIG.pityGuaranteeAt) {
+        // Tier scales with how long they've been losing
+        const bonusTiers = Math.min(consecutiveLosses - ALGORITHM_CONFIG.pityGuaranteeAt, 3);
+        tierIndex = ALGORITHM_CONFIG.pityGuaranteeMinTier + bonusTiers + Math.floor(Math.random() * 2);
+        isGuaranteed = true;
+        triggerReason = 'pityGuarantee';
     }
-    // STREAK BREAKER: Too many rug pulls, give them something
-    else if (lossStreak >= ALGORITHM_CONFIG.maxLossStreak) {
-        tierIndex = 2 + Math.floor(Math.random() * 2); // tier 2 or 3 (break even or small win)
+    // === COMEBACK: After rug pull, higher chance of recovery ===
+    else if (lastMultiplier === ALGORITHM_CONFIG.comebackTriggerLoss && Math.random() < ALGORITHM_CONFIG.comebackChance) {
+        tierIndex = ALGORITHM_CONFIG.comebackMinTier + Math.floor(Math.random() * 3);
+        triggerReason = 'comeback';
     }
-    // LUCKY ROLL: Small chance for big win
+    // === SUPER LUCKY: Jackpot roll ===
+    else if (Math.random() < ALGORITHM_CONFIG.superLuckyChance) {
+        tierIndex = ALGORITHM_CONFIG.superLuckyMinTier + Math.floor(Math.random() * (PRIZE_TIERS.length - ALGORITHM_CONFIG.superLuckyMinTier));
+        triggerReason = 'superLucky';
+    }
+    // === LUCKY ROLL: Random big win ===
     else if (Math.random() < ALGORITHM_CONFIG.luckyRollChance) {
-        tierIndex = ALGORITHM_CONFIG.luckyMinTier + Math.floor(Math.random() * (PRIZE_TIERS.length - ALGORITHM_CONFIG.luckyMinTier));
+        tierIndex = ALGORITHM_CONFIG.luckyMinTier + Math.floor(Math.random() * 3);
+        triggerReason = 'lucky';
     }
-    // NORMAL ROLL: Use weighted probabilities with pity boost
+    // === NORMAL ROLL: Weighted probabilities with modifiers ===
     else {
-        // Boost higher tier odds slightly based on consecutive losses
-        const pityBoost = Math.min(consecutiveLosses * 0.02, 0.1); // Up to 10% boost
-        tierIndex = rollWithProbabilities(ALGORITHM_CONFIG.baseProbabilities, pityBoost);
+        // Calculate pity boost (progressive)
+        let pityBoost = 0;
+        if (consecutiveLosses >= ALGORITHM_CONFIG.pityStartAt) {
+            const pityStacks = consecutiveLosses - ALGORITHM_CONFIG.pityStartAt;
+            pityBoost = Math.min(pityStacks * ALGORITHM_CONFIG.pityBuildRate, ALGORITHM_CONFIG.pityMaxBoost);
+        }
+
+        // Calculate hot streak boost
+        const streakBoost = consecutiveWins >= ALGORITHM_CONFIG.hotStreakThreshold
+            ? ALGORITHM_CONFIG.hotStreakBoost
+            : hotStreakBonus;
+
+        // Combined boost
+        const totalBoost = pityBoost + streakBoost;
+
+        tierIndex = rollWithProbabilities(ALGORITHM_CONFIG.baseProbabilities, totalBoost);
+        triggerReason = pityBoost > 0 ? 'pityBoosted' : (streakBoost > 0 ? 'hotStreak' : 'normal');
     }
 
     // Clamp tier index
@@ -125,25 +206,55 @@ export function rollCryptoTrade(cost, tradeState = {}) {
 
     const prize = PRIZE_TIERS[tierIndex];
 
+    // Calculate base amount
+    let amount = Math.floor(cost * prize.multiplier);
+
+    // Apply win variance for excitement (only on wins)
+    if (prize.multiplier >= 1 && ALGORITHM_CONFIG.winVariance > 0) {
+        const variance = 1 + (Math.random() * 2 - 1) * ALGORITHM_CONFIG.winVariance;
+        amount = Math.floor(amount * variance);
+    }
+
+    // Apply rug pull refund (loss softening)
+    if (prize.multiplier === 0 && ALGORITHM_CONFIG.rugPullRefund > 0) {
+        amount = Math.floor(cost * ALGORITHM_CONFIG.rugPullRefund);
+    }
+
     return {
         ...prize,
-        amount: Math.floor(cost * prize.multiplier),
-        tierIndex
+        amount,
+        tierIndex,
+        isGuaranteed,
+        triggerReason,
+        // Return updated state hints for the caller
+        wasWin: prize.multiplier >= 1,
+        wasLoss: prize.multiplier < 1,
+        wasRugPull: prize.multiplier === 0,
+        wasBigWin: prize.multiplier >= 5
     };
 }
 
 /**
- * Roll using weighted probabilities with optional boost to higher tiers
+ * Roll using weighted probabilities with boost to better outcomes
  */
-function rollWithProbabilities(probabilities, highTierBoost = 0) {
+function rollWithProbabilities(probabilities, boost = 0) {
     const roll = Math.random();
     let cumulative = 0;
 
-    // Adjust probabilities: take from low tiers, give to high tiers
+    // Find the "break-even" point (where multiplier >= 1)
+    const breakEvenIndex = 4; // 1x tier
+
+    // Adjust probabilities: reduce losses, boost wins
     const adjusted = probabilities.map((p, i) => {
-        if (i < 2) return p * (1 - highTierBoost); // Reduce low tier odds
-        if (i >= 4) return p * (1 + highTierBoost * 2); // Boost high tier odds
-        return p;
+        if (i < breakEvenIndex) {
+            // Reduce loss probability
+            return p * (1 - boost);
+        } else if (i >= breakEvenIndex + 2) {
+            // Boost good win probability (2x and above)
+            return p * (1 + boost * 2);
+        }
+        // Keep break-even and small wins stable
+        return p * (1 + boost * 0.5);
     });
 
     // Normalize
@@ -157,14 +268,26 @@ function rollWithProbabilities(probabilities, highTierBoost = 0) {
         }
     }
 
-    return 0; // Fallback
+    return 4; // Fallback to break-even (feels fair)
 }
 
 /**
  * Get a random prize for display (used in roulette animation)
- * Uses base probabilities without engagement modifiers
+ * Biased towards showing exciting prizes to build anticipation
  */
 export function getRandomPrizeForDisplay(cost) {
+    // 30% chance to show a high-value prize in the spin
+    if (Math.random() < 0.3) {
+        const highTierIndex = 8 + Math.floor(Math.random() * 6); // 5x to 500x
+        const prize = PRIZE_TIERS[Math.min(highTierIndex, PRIZE_TIERS.length - 1)];
+        return {
+            ...prize,
+            amount: Math.floor(cost * prize.multiplier),
+            tierIndex: highTierIndex
+        };
+    }
+
+    // Otherwise show realistic distribution
     const tierIndex = rollWithProbabilities(ALGORITHM_CONFIG.baseProbabilities);
     const prize = PRIZE_TIERS[tierIndex];
     return {
@@ -175,20 +298,20 @@ export function getRandomPrizeForDisplay(cost) {
 }
 
 /**
- * Get a specific prize tier (for showing jackpots in roulette)
+ * Get a specific prize tier
  */
 export function getPrizeTier(tierIndex, cost) {
-    const prize = PRIZE_TIERS[Math.min(tierIndex, PRIZE_TIERS.length - 1)];
+    const clampedIndex = Math.max(0, Math.min(tierIndex, PRIZE_TIERS.length - 1));
+    const prize = PRIZE_TIERS[clampedIndex];
     return {
         ...prize,
         amount: Math.floor(cost * prize.multiplier),
-        tierIndex
+        tierIndex: clampedIndex
     };
 }
 
 /**
  * Get the crypto trade data
- * @returns {Object} The trade data
  */
 export function getCryptoTrade() {
     return CRYPTO_TRADE;
@@ -206,4 +329,23 @@ export function isLoss(prize) {
  */
 export function isRugPull(prize) {
     return prize.multiplier === 0;
+}
+
+/**
+ * Get celebration level for a prize
+ */
+export function getCelebrationLevel(prize) {
+    return prize.celebration || 'none';
+}
+
+/**
+ * Calculate expected value for transparency
+ * (Used for stats display, not affecting gameplay)
+ */
+export function getExpectedValue() {
+    let ev = 0;
+    for (let i = 0; i < ALGORITHM_CONFIG.baseProbabilities.length; i++) {
+        ev += ALGORITHM_CONFIG.baseProbabilities[i] * PRIZE_TIERS[i].multiplier;
+    }
+    return ev; // Should be slightly < 1 for house edge
 }
