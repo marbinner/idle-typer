@@ -202,13 +202,13 @@ function hitMonster(monster) {
         }
     }
 
-    // Spawn hit particles - more dramatic!
+    // Spawn hit particles
     const rect = monster.element.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    // Slash effect particles
-    spawnParticles('keystroke', centerX, centerY, 8);
+    // Slash effect particles (reduced for performance)
+    spawnParticles('keystroke', centerX, centerY, 4);
 
     // Random offset for damage number
     const offsetX = (Math.random() - 0.5) * 60;
@@ -240,11 +240,11 @@ function killMonster(monster) {
     // Death animation
     monster.element.classList.add('monster-death');
 
-    // Spawn lots of particles - explosion!
-    spawnParticles('confetti', centerX, centerY, 50);
+    // Spawn particles - explosion (reduced for performance)
+    spawnParticles('confetti', centerX, centerY, 25);
 
-    // Spawn coin particles in a burst
-    for (let i = 0; i < 12; i++) {
+    // Spawn coin particles in a burst (reduced)
+    for (let i = 0; i < 6; i++) {
         setTimeout(() => {
             const angle = (Math.PI * 2 / 12) * i;
             const distance = 40 + Math.random() * 60;

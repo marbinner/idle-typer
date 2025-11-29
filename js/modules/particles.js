@@ -15,9 +15,9 @@ let floatingNumbers = [];
 
 // Particle pool for performance
 const particlePool = [];
-const MAX_POOL_SIZE = 500;
-const MAX_PARTICLES = 150; // Cap total particles for performance
-const MAX_FLOATING_NUMBERS = 30; // Cap floating DOM elements for performance
+const MAX_POOL_SIZE = 200;
+const MAX_PARTICLES = 80; // Reduced for better performance
+const MAX_FLOATING_NUMBERS = 20; // Reduced for better performance
 
 // Screen shake animation frame ID (to cancel overlapping shakes)
 let screenShakeRafId = null;

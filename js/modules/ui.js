@@ -132,10 +132,19 @@ function setupEventListeners() {
     window.addEventListener('followers-gained', followersGainedHandler);
 }
 
+// Throttle counter for UI updates
+let uiUpdateCounter = 0;
+const UI_UPDATE_INTERVAL = 3; // Only update every 3 frames (~20fps)
+
 /**
- * Update all UI elements
+ * Update all UI elements (throttled for performance)
  */
 export function updateUI() {
+    // Throttle UI updates - don't need 60fps for numbers
+    uiUpdateCounter++;
+    if (uiUpdateCounter < UI_UPDATE_INTERVAL) return;
+    uiUpdateCounter = 0;
+
     const state = State.getState();
 
     // Smooth number transitions

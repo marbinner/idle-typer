@@ -36,16 +36,16 @@ button,
     contain: layout style paint;
 }
 
-/* Floating candy orbs - GPU accelerated */
+/* Floating candy orbs - simplified for performance */
 .bg-orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(40px);
-    opacity: 0.3;
-    animation: orb-float 25s linear infinite;
-    will-change: transform;
+    opacity: 0.25;
+    /* No blur - use gradient transparency instead for performance */
+    animation: orb-float 30s linear infinite;
     transform: translateZ(0);
-    contain: layout style;
+    contain: strict;
+    pointer-events: none;
 }
 
 .orb-1 {
@@ -109,57 +109,42 @@ button,
 }
 
 @keyframes orb-float {
-    0%, 100% {
-        transform: translate(0, 0) scale(1);
-    }
-    25% {
-        transform: translate(30px, -40px) scale(1.1);
-    }
-    50% {
-        transform: translate(-20px, 20px) scale(0.95);
-    }
-    75% {
-        transform: translate(40px, 30px) scale(1.05);
-    }
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(20px, -15px, 0); }
 }
 
-/* Sparkle stars - GPU accelerated */
+/* Sparkle stars - simplified for performance */
 .sparkle-star {
     position: absolute;
     color: var(--candy-yellow);
-    font-size: 20px;
+    font-size: 18px;
     opacity: 0;
-    animation: star-twinkle 4s ease-in-out infinite;
-    text-shadow: 0 0 8px currentColor;
-    will-change: opacity, transform;
+    animation: star-twinkle 5s ease-in-out infinite;
     transform: translateZ(0);
+    contain: strict;
 }
 
 .star-1 { top: 15%; left: 10%; animation-delay: 0s; }
-.star-2 { top: 25%; right: 15%; animation-delay: 0.5s; color: var(--candy-cyan); text-shadow: 0 0 10px var(--candy-cyan); }
-.star-3 { top: 45%; left: 5%; animation-delay: 1s; }
-.star-4 { top: 70%; right: 8%; animation-delay: 1.5s; color: var(--candy-pink); text-shadow: 0 0 10px var(--candy-pink); }
-.star-5 { bottom: 25%; left: 15%; animation-delay: 2s; color: var(--candy-green); text-shadow: 0 0 10px var(--candy-green); }
-.star-6 { bottom: 15%; right: 20%; animation-delay: 2.5s; }
-.star-7 { top: 8%; left: 40%; animation-delay: 0.8s; color: var(--candy-purple); text-shadow: 0 0 10px var(--candy-purple); }
-.star-8 { bottom: 35%; right: 35%; animation-delay: 1.8s; color: var(--candy-orange); text-shadow: 0 0 10px var(--candy-orange); }
+.star-2 { top: 25%; right: 15%; animation-delay: 1s; color: var(--candy-cyan); }
+.star-3 { top: 45%; left: 5%; animation-delay: 2s; }
+.star-4 { top: 70%; right: 8%; animation-delay: 3s; color: var(--candy-pink); }
 
 @keyframes star-twinkle {
-    0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
-    50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.8; }
 }
 
-/* Aurora waves - GPU accelerated, reduced blur */
+/* Aurora waves - no blur for performance */
 .aurora {
     position: absolute;
     width: 200%;
     height: 300px;
-    opacity: 0.12;
-    filter: blur(50px);
-    animation: aurora-wave 20s linear infinite;
-    will-change: transform;
+    opacity: 0.08;
+    /* Removed blur - too expensive */
+    animation: aurora-wave 25s linear infinite;
     transform: translateZ(0);
-    contain: layout style;
+    contain: strict;
+    pointer-events: none;
 }
 
 .aurora-1 {
@@ -888,7 +873,7 @@ button,
     padding: var(--spacing-lg);
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible; /* Allow animations to overflow */
     max-width: 1800px;
     margin: 0 auto;
     width: 100%;
@@ -1622,9 +1607,10 @@ button,
     -webkit-backdrop-filter: blur(16px);
     border: 3px solid rgba(155, 89, 255, 0.4);
     border-radius: var(--radius-xl);
-    overflow: hidden;
+    overflow: visible; /* Allow animations to overflow */
     width: 100%;
     max-width: 700px;
+    margin: 20px; /* Add margin so animations don't get cut by parent */
     -webkit-user-select: none;
     -moz-user-select: none;
     user-select: none;
