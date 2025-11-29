@@ -110,7 +110,19 @@ export const COMBO_CONFIG = {
     rewardMultiplier: 0.02,
 
     // Minimum reward: combo * minimumPerLevel
-    minimumPerLevel: 2
+    minimumPerLevel: 2,
+
+    // Cascade system - hitting milestones quickly chains multipliers
+    cascade: {
+        // Time window to chain milestones (ms)
+        windowMs: 30000,  // 30 seconds
+
+        // Multiplier bonus per cascade level
+        cascadeMultipliers: [1, 1.5, 2, 3, 5],  // 1x, 1.5x, 2x, 3x, 5x
+
+        // Follower bonus per cascade level
+        followerBonus: [0, 1, 3, 5, 10]
+    }
 };
 
 // =============================================================================
@@ -331,6 +343,86 @@ export const SPIN_CONFIG = {
         { label: 'HUGE COINS', weight: 3, type: 'coins', cpsSeconds: 300, minCoins: 500, icon: '💵' },
         { label: 'MEGA JACKPOT', weight: 1, type: 'coins', cpsSeconds: 600, minCoins: 1000, icon: '🎰' }
     ]
+};
+
+// =============================================================================
+// DAILY STREAK SYSTEM
+// =============================================================================
+
+export const STREAK_CONFIG = {
+    // Multipliers at different streak milestones
+    // Day 1: 1x (no bonus), Day 3: 1.1x, Day 7: 1.5x, Day 14: 2x, Day 30: 3x
+    milestones: [
+        { days: 1, multiplier: 1, label: 'Starting Out', color: '#888888' },
+        { days: 3, multiplier: 1.1, label: 'Getting Warmed Up', color: '#4ade80' },
+        { days: 7, multiplier: 1.5, label: 'On a Roll!', color: '#22d3ee' },
+        { days: 14, multiplier: 2, label: 'Dedicated Poster', color: '#a855f7' },
+        { days: 30, multiplier: 3, label: 'LEGENDARY', color: '#ffd700' },
+        { days: 60, multiplier: 4, label: 'IMMORTAL', color: '#ff6b6b' },
+        { days: 100, multiplier: 5, label: 'GODLIKE', color: '#ffffff' }
+    ],
+
+    // Bonus coins awarded when reaching new milestone
+    milestoneBonus: {
+        cpsSeconds: 60,  // 60 seconds of CPS as bonus
+        minCoins: 100,   // Minimum bonus
+        followerPercent: 0.05  // 5% of current followers as bonus
+    },
+
+    // Grace period in hours (can miss a day and still keep streak)
+    gracePeriodHours: 0  // Set to 0 for strict daily requirement
+};
+
+// =============================================================================
+// QUEST/MISSION SYSTEM
+// =============================================================================
+
+export const QUEST_CONFIG = {
+    // How often quests rotate (in hours)
+    rotationHours: 4,
+
+    // Number of active quests at a time
+    activeQuestCount: 3,
+
+    // Quest difficulty scaling based on player progress
+    difficultyScale: {
+        posts: { base: 5, perLevel: 2 },      // Posts to type
+        wpm: { base: 40, perLevel: 5 },       // WPM requirement
+        accuracy: { base: 85, perLevel: 2 },  // Accuracy %
+        coins: { base: 100, perLevel: 50 },   // Coins to earn
+        combo: { base: 10, perLevel: 5 }      // Combo to reach
+    },
+
+    // Quest templates - dynamically filled with targets
+    templates: [
+        // Typing quests
+        { id: 'type_posts', type: 'posts', description: 'Complete {target} posts', icon: '&#x1F4DD;' },
+        { id: 'speed_demon', type: 'wpm', description: 'Type at {target}+ WPM', icon: '&#x26A1;' },
+        { id: 'perfectionist', type: 'accuracy', description: 'Complete a post with {target}%+ accuracy', icon: '&#x1F3AF;' },
+        { id: 'combo_master', type: 'combo', description: 'Reach a {target} combo', icon: '&#x1F525;' },
+        { id: 'perfect_posts', type: 'perfect', description: 'Complete {target} perfect posts', icon: '&#x2B50;' },
+
+        // Earning quests
+        { id: 'earn_coins', type: 'coins', description: 'Earn {target} coins', icon: '&#x1F4B0;' },
+        { id: 'gain_followers', type: 'followers', description: 'Gain {target} followers', icon: '&#x1F465;' },
+
+        // Special quests
+        { id: 'viral_post', type: 'viral', description: 'Get a viral post', icon: '&#x1F4E3;' },
+        { id: 'golden_chars', type: 'golden', description: 'Hit {target} golden characters', icon: '&#x2728;' },
+        { id: 'crit_hits', type: 'crits', description: 'Land {target} critical hits', icon: '&#x1F4A5;' }
+    ],
+
+    // Reward multipliers based on quest difficulty
+    rewards: {
+        easy: { coinMult: 0.5, followerMult: 0.3 },
+        medium: { coinMult: 1, followerMult: 0.5 },
+        hard: { coinMult: 2, followerMult: 1 }
+    },
+
+    // Base reward (seconds of CPS)
+    baseRewardCpsSeconds: 30,
+    minRewardCoins: 50,
+    baseRewardFollowers: 5
 };
 
 // =============================================================================

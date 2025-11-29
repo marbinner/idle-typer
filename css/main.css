@@ -6270,3 +6270,350 @@ body.frenzy-active::before {
     align-items: center;
     padding: var(--spacing-xl);
 }
+
+/* ==================== Daily Streak Popup ==================== */
+.streak-popup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-xl);
+    min-width: 320px;
+    max-width: 400px;
+}
+
+.streak-header {
+    text-align: center;
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 2px solid;
+    width: 100%;
+    margin-bottom: var(--spacing-lg);
+}
+
+.streak-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-sm);
+    text-shadow: 0 0 20px currentColor;
+}
+
+.streak-title {
+    font-size: var(--font-size-2xl);
+    font-weight: 900;
+    margin: 0;
+    text-shadow: 0 0 15px currentColor;
+}
+
+.streak-subtitle {
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+.streak-multiplier {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-lg);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-lg);
+    width: 100%;
+}
+
+.streak-mult-value {
+    font-size: 3rem;
+    font-weight: 900;
+    text-shadow: 0 0 20px currentColor;
+}
+
+.streak-mult-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.streak-progress {
+    width: 100%;
+    margin-bottom: var(--spacing-lg);
+}
+
+.streak-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.streak-progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.streak-progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+.streak-next-bonus {
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    margin-top: var(--spacing-sm);
+}
+
+.streak-max-tier {
+    text-align: center;
+    font-size: var(--font-size-md);
+    color: var(--x-premium-gold);
+    font-weight: 600;
+}
+
+.streak-bonus {
+    width: 100%;
+    text-align: center;
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.1));
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    margin-bottom: var(--spacing-lg);
+}
+
+.streak-bonus-title {
+    font-size: var(--font-size-sm);
+    color: var(--x-premium-gold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.streak-bonus-rewards {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+}
+
+.streak-reward {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.streak-reward-icon {
+    font-size: var(--font-size-lg);
+    color: var(--x-premium-gold);
+}
+
+.streak-reward-value {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--success-green);
+}
+
+.streak-claim-btn {
+    padding: var(--spacing-md) var(--spacing-2xl);
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--x-black);
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.streak-claim-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px currentColor;
+}
+
+.streak-broken .streak-broken-message {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-md);
+}
+
+/* ==================== Quest Panel ==================== */
+.quest-panel {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    width: 300px;
+    max-height: 400px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    overflow: hidden;
+    transition: all var(--transition-medium);
+}
+
+.quest-panel.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+}
+
+.quest-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.quest-panel-header h3 {
+    margin: 0;
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+}
+
+.quest-timer {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+}
+
+.quest-list {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: var(--spacing-sm);
+}
+
+.quest-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-xs);
+    border-left: 3px solid transparent;
+    transition: all var(--transition-fast);
+}
+
+.quest-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.quest-easy {
+    border-left-color: #4ade80;
+}
+
+.quest-medium {
+    border-left-color: #fbbf24;
+}
+
+.quest-hard {
+    border-left-color: #f87171;
+}
+
+.quest-complete {
+    background: rgba(74, 222, 128, 0.1);
+}
+
+.quest-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.quest-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.quest-description {
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quest-progress-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    margin: var(--spacing-xs) 0;
+    overflow: hidden;
+}
+
+.quest-progress-fill {
+    height: 100%;
+    background: var(--x-blue);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-fast);
+}
+
+.quest-complete .quest-progress-fill {
+    background: var(--success-green);
+}
+
+.quest-progress-text {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+}
+
+.quest-reward {
+    flex-shrink: 0;
+    text-align: right;
+}
+
+.quest-reward-preview {
+    display: flex;
+    flex-direction: column;
+    font-size: var(--font-size-xs);
+    color: var(--x-premium-gold);
+}
+
+.quest-claim-btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--success-green);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--x-black);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    cursor: pointer;
+    animation: pulse 1s ease infinite;
+}
+
+.quest-claim-btn:hover {
+    transform: scale(1.05);
+}
+
+.quest-claimed {
+    font-size: var(--font-size-xs);
+    color: var(--success-green);
+    font-weight: 600;
+}
+
+.quest-empty {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-tertiary);
+}
+
+#quest-btn {
+    position: relative;
+}
+
+#quest-btn.quest-ready::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    background: var(--success-green);
+    border-radius: 50%;
+    animation: pulse 1s ease infinite;
+}

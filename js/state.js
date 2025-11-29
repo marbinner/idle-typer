@@ -145,7 +145,19 @@ const initialState = {
 
     // Settings
     soundEnabled: true,
-    volume: 0.7
+    volume: 0.7,
+
+    // Daily Streak System
+    lastLoginDate: null,      // ISO date string (YYYY-MM-DD)
+    loginStreak: 0,           // Consecutive days logged in
+    streakMultiplier: 1,      // Current streak multiplier
+    streakClaimedToday: false, // Whether today's bonus was claimed
+
+    // Quest System
+    activeQuests: [],         // Current active quests
+    questsCompleted: 0,       // Total quests completed (lifetime)
+    lastQuestRotation: null,  // Timestamp of last quest rotation
+    questProgress: {}         // Progress tracking for active quests
 };
 
 // Current state
@@ -257,6 +269,9 @@ function notifySubscribers(oldState, newState) {
 // CPS milestones for celebration
 const CPS_MILESTONES = [1, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000];
 
+// Post milestones for celebration
+const POST_MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
+
 export function recalculateDerived() {
     const oldCPS = state.coinsPerSecond || 0;
     const { bots, upgrades, followers, verificationTier, prestigeCount, permanentBonuses, tierUpgrades } = state;
@@ -364,12 +379,14 @@ export function recalculateDerived() {
 
     // Apply bonus mode multiplier (5x from floating bonus)
     const bonusMult = state.bonusModeMultiplier || 1;
+    // Apply daily streak multiplier
+    const streakMult = state.streakMultiplier || 1;
     // Include Typing Mastery upgrade (+5% per level) and Tier 2 bonus
-    const typingMultiplier = totalMultiplier * bonusMult * typingBonus * typingMasteryMult;
+    const typingMultiplier = totalMultiplier * bonusMult * typingBonus * typingMasteryMult * streakMult;
 
     // Calculate final CPS (include event multiplier so events affect passive income)
     const eventMult = state.eventCoinMultiplier || 1;
-    const finalCPS = baseCPS * totalMultiplier * eventMult;
+    const finalCPS = baseCPS * totalMultiplier * eventMult * streakMult;
 
     // Scale coinsPerPost with CPS to keep typing relevant throughout progression
     // This ensures combo bonuses, golden chars, and viral posts all scale properly
@@ -510,6 +527,7 @@ export function resetCombo() {
  * Complete a post
  */
 export function completePost(isPerfect = false, viralType = null) {
+    const oldPosts = state.lifetimePosts;
     const updates = {
         lifetimePosts: state.lifetimePosts + 1,
         totalPosts: state.totalPosts + 1,
@@ -530,6 +548,17 @@ export function completePost(isPerfect = false, viralType = null) {
     }
 
     updateState(updates);
+
+    // Check for post milestone crossings
+    const newPosts = state.lifetimePosts;
+    for (const milestone of POST_MILESTONES) {
+        if (oldPosts < milestone && newPosts >= milestone) {
+            window.dispatchEvent(new CustomEvent('post-milestone', {
+                detail: { milestone, total: newPosts }
+            }));
+            break; // Only one milestone at a time
+        }
+    }
 }
 
 /**

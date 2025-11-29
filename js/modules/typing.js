@@ -67,6 +67,10 @@ let keystrokesSinceCrit = 0;
 let critStreak = 0;
 let hasGottenFirstCrit = false;
 
+// Combo cascade state
+let lastMilestoneTime = 0;
+let cascadeLevel = 0;
+
 // Rank tracking for rank-up celebration
 let previousRankIndex = -1;
 
@@ -321,6 +325,10 @@ export function initTyping() {
     window.removeEventListener('cps-milestone', handleCPSMilestone);
     window.addEventListener('cps-milestone', handleCPSMilestone);
 
+    // Listen for post milestones
+    window.removeEventListener('post-milestone', handlePostMilestone);
+    window.addEventListener('post-milestone', handlePostMilestone);
+
     // Note: loadNewPost() is called by app.js after checking for saved typing state
 }
 
@@ -406,6 +414,84 @@ function handleCPSMilestone(event) {
 
     // Notification
     showNotification(`💰 ${milestoneText} Coins/Second! Your bots are working!`, 'perfect');
+}
+
+/**
+ * Handle post milestone celebrations
+ */
+function handlePostMilestone(event) {
+    const { milestone, total } = event.detail;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    // Format milestone for display
+    const milestoneText = milestone >= 1000 ? `${milestone / 1000}K` : milestone.toString();
+
+    // Scale celebration based on milestone size
+    const isBig = milestone >= 500;
+    const isMassive = milestone >= 1000;
+
+    // Coin bonus based on milestone
+    const state = State.getState();
+    const bonusCoins = Math.floor(Math.max(
+        milestone * 10,
+        state.coinsPerSecond * milestone * 0.5
+    ));
+    State.addCoins(bonusCoins, 'milestone');
+
+    // Follower bonus for bigger milestones
+    const bonusFollowers = isMassive ? Math.floor(milestone / 10) : isBig ? Math.floor(milestone / 20) : 0;
+    if (bonusFollowers > 0) {
+        State.addFollowers(bonusFollowers, 'milestone');
+    }
+
+    // Particles - firework burst from multiple directions
+    const particleCount = isMassive ? 120 : isBig ? 80 : 50;
+    spawnParticles('confetti', centerX, centerY, particleCount);
+    setTimeout(() => spawnParticles('confetti', centerX - 150, centerY - 50, 30), 100);
+    setTimeout(() => spawnParticles('confetti', centerX + 150, centerY - 50, 30), 150);
+
+    if (isBig) {
+        setTimeout(() => spawnParticles('fireburst', centerX, centerY, 40), 200);
+        setTimeout(() => spawnParticles('confetti', centerX, centerY + 100, 40), 300);
+    }
+
+    if (isMassive) {
+        // Extra celebration for 1000+ posts
+        setTimeout(() => {
+            spawnParticles('confetti', centerX - 200, centerY, 30);
+            spawnParticles('confetti', centerX + 200, centerY, 30);
+        }, 400);
+        setTimeout(() => screenFlash('coral'), 300);
+    }
+
+    // Screen effects
+    screenShake(isMassive ? 15 : isBig ? 10 : 6, 600);
+    screenFlash('gold');
+
+    // Floating text celebration
+    const textType = isMassive ? 'rainbow' : 'viral';
+    spawnFloatingNumber(`${milestoneText} POSTS!`, centerX, centerY - 60, textType);
+    spawnFloatingNumber('MILESTONE!', centerX, centerY - 20, 'viral');
+    spawnFloatingNumber(`+${formatCoins(bonusCoins).full}`, centerX, centerY + 30, 'xcoins');
+
+    if (bonusFollowers > 0) {
+        spawnFloatingNumber(`+${bonusFollowers} Followers`, centerX, centerY + 70, 'followers');
+    }
+
+    // Sound cascade
+    playSound('achievement');
+    setTimeout(() => playSound('premium'), 150);
+    if (isBig) {
+        setTimeout(() => playSound('viral'), 300);
+    }
+
+    // Notification
+    let notifText = `${milestoneText} Posts! +${formatCoins(bonusCoins).full}`;
+    if (bonusFollowers > 0) {
+        notifText += ` +${bonusFollowers} followers`;
+    }
+    showNotification(notifText, isMassive ? 'main-character' : 'perfect');
 }
 
 /**
@@ -682,6 +768,9 @@ function handleCorrectChar() {
         // Track golden chars hit for achievements
         State.updateState({ goldenCharsHit: (state.goldenCharsHit || 0) + 1 });
 
+        // Emit event for quest tracking
+        window.dispatchEvent(new CustomEvent('golden-char-hit'));
+
         if (isAllGolden) {
             // Quieter effect for all-golden mode
             playSound('keystroke', { pitch: 1.3, pitchVariation: 0.1 });
@@ -778,6 +867,9 @@ function handleCorrectChar() {
             State.addCoins(critReward, 'crit');
             State.updateState({ criticalHits: (state.criticalHits || 0) + 1 });
 
+            // Emit event for quest tracking
+            window.dispatchEvent(new CustomEvent('crit-hit'));
+
             // Update crit tracking
             critStreak++;
             keystrokesSinceCrit = 0;
@@ -871,39 +963,94 @@ function handleCorrectChar() {
  * Celebrate reaching a combo milestone
  * Scales with coinsPerPost to stay relevant throughout progression
  * Has minimum floor to ensure early game combos feel rewarding
+ * Includes cascade system for chaining milestones
  */
 function celebrateComboMilestone(combo) {
     const state = State.getState();
+    const now = Date.now();
+    const cascade = COMBO_CONFIG.cascade;
+
+    // Check cascade - did we hit this milestone within the time window?
+    if (lastMilestoneTime > 0 && (now - lastMilestoneTime) < cascade.windowMs) {
+        cascadeLevel = Math.min(cascadeLevel + 1, cascade.cascadeMultipliers.length - 1);
+    } else {
+        cascadeLevel = 0;
+    }
+    lastMilestoneTime = now;
+
+    // Get cascade multiplier
+    const cascadeMultiplier = cascade.cascadeMultipliers[cascadeLevel] || 1;
+    const cascadeFollowers = cascade.followerBonus[cascadeLevel] || 0;
+
     // Nice bonus but not a primary income source
     const scaledBonus = combo * state.coinsPerPost * COMBO_CONFIG.rewardMultiplier;
     const minimumBonus = combo * COMBO_CONFIG.minimumPerLevel;
     // Apply Tier 5 combo bonus (2x if owned)
     const tierComboBonus = state.comboBonus || 1;
-    const bonusCoins = Math.floor(Math.max(scaledBonus, minimumBonus) * tierComboBonus);
+    const baseBonusCoins = Math.floor(Math.max(scaledBonus, minimumBonus) * tierComboBonus);
+
+    // Apply cascade multiplier
+    const bonusCoins = Math.floor(baseBonusCoins * cascadeMultiplier);
     State.addCoins(bonusCoins, 'combo');
+
+    // Award cascade followers
+    if (cascadeFollowers > 0) {
+        State.addFollowers(cascadeFollowers, 'combo');
+    }
 
     playSound('achievement');
 
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
 
-    // Scale effects with combo level
-    const particleCount = combo >= 500 ? 80 : combo >= 200 ? 60 : combo >= 100 ? 40 : 20;
-    const shakeIntensity = combo >= 500 ? 12 : combo >= 200 ? 8 : combo >= 100 ? 6 : 4;
+    // Scale effects with combo level and cascade
+    const baseParticles = combo >= 500 ? 80 : combo >= 200 ? 60 : combo >= 100 ? 40 : 20;
+    const particleCount = baseParticles + (cascadeLevel * 15);
+    const baseShake = combo >= 500 ? 12 : combo >= 200 ? 8 : combo >= 100 ? 6 : 4;
+    const shakeIntensity = baseShake + (cascadeLevel * 2);
 
     spawnParticles('confetti', centerX, centerY, particleCount);
-    screenShake(shakeIntensity, 400);
-    screenFlash(combo >= 200 ? 'gold' : 'blue');
+    screenShake(shakeIntensity, 400 + (cascadeLevel * 100));
 
-    // Multi-burst for big milestones
-    if (combo >= 100) {
-        setTimeout(() => spawnParticles('confetti', centerX - 100, centerY, 20), 100);
-        setTimeout(() => spawnParticles('confetti', centerX + 100, centerY, 20), 200);
+    // Enhanced flash for cascades
+    if (cascadeLevel >= 3) {
+        screenFlash('gold');
+        setTimeout(() => screenFlash('coral'), 100);
+    } else if (cascadeLevel >= 1 || combo >= 200) {
+        screenFlash('gold');
+    } else {
+        screenFlash('blue');
     }
 
-    spawnFloatingNumber(combo + ' COMBO!', centerX, centerY + 100, combo >= 200 ? 'rainbow' : 'viral');
+    // Multi-burst for big milestones or cascades
+    if (combo >= 100 || cascadeLevel >= 2) {
+        setTimeout(() => spawnParticles('confetti', centerX - 100, centerY, 20 + cascadeLevel * 10), 100);
+        setTimeout(() => spawnParticles('confetti', centerX + 100, centerY, 20 + cascadeLevel * 10), 200);
+    }
 
-    showNotification(combo + ' Combo! +' + formatCoins(bonusCoins).full, 'perfect');
+    // Extra cascading effects for high cascade levels
+    if (cascadeLevel >= 3) {
+        setTimeout(() => spawnParticles('confetti', centerX, centerY - 80, 30), 150);
+        setTimeout(() => spawnParticles('confetti', centerX, centerY + 80, 30), 250);
+    }
+
+    // Build notification message
+    let comboText = combo + ' COMBO!';
+    let notificationText = combo + ' Combo! +' + formatCoins(bonusCoins).full;
+
+    if (cascadeLevel > 0) {
+        comboText = `${cascadeMultiplier}x CASCADE! ${combo} COMBO!`;
+        notificationText = `${cascadeMultiplier}x CASCADE! ${combo} Combo! +${formatCoins(bonusCoins).full}`;
+        if (cascadeFollowers > 0) {
+            notificationText += ` +${cascadeFollowers} followers`;
+        }
+    }
+
+    // Color based on cascade level
+    const textColor = cascadeLevel >= 3 ? 'rainbow' : cascadeLevel >= 1 ? 'viral' : (combo >= 200 ? 'rainbow' : 'viral');
+    spawnFloatingNumber(comboText, centerX, centerY + 100, textColor);
+
+    showNotification(notificationText, cascadeLevel >= 2 ? 'main-character' : 'perfect');
 }
 
 /**
@@ -913,6 +1060,10 @@ function handleIncorrectChar() {
     const charEl = charElementCache.get(typedIndex);
     const state = State.getState();
     const brokenCombo = state.combo;
+
+    // Reset combo cascade on error
+    cascadeLevel = 0;
+    lastMilestoneTime = 0;
 
     // Show error state
     if (charEl) {
@@ -1207,6 +1358,18 @@ function completePost() {
 
     // Add to history
     addToHistory(currentPost.text, finalWPM, accuracy, coinReward, isPerfect, isViralPost);
+
+    // Emit post-completed event for quest tracking
+    window.dispatchEvent(new CustomEvent('post-completed', {
+        detail: {
+            wpm: finalWPM,
+            accuracy,
+            isPerfect,
+            isViral: isViralPost,
+            coins: coinReward,
+            followers: followerReward
+        }
+    }));
 
     // Update post progress and rank display
     updatePostProgress();

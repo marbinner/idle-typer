@@ -21,6 +21,8 @@ import { initBickering } from './modules/bickering.js';
 import { initGambling } from './modules/gambling.js';
 import { initMonsters, tick as monsterTick } from './modules/monsters.js';
 import { initNewsTicker, showUsernamePrompt } from './modules/newsTicker.js';
+import { initDailyStreak } from './modules/dailyStreak.js';
+import { initQuests } from './modules/quests.js';
 
 // Game configuration
 const CONFIG = {
@@ -178,6 +180,14 @@ async function init() {
         // Initialize monster mini-game
         initMonsters();
         console.log('Monster system ready');
+
+        // Initialize daily streak system (shows popup on login)
+        initDailyStreak();
+        console.log('Daily streak system ready');
+
+        // Initialize quest system
+        initQuests();
+        console.log('Quest system ready');
 
         // Set up auto-save interval (clear any existing interval first)
         if (autoSaveIntervalId) {
