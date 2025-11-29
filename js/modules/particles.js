@@ -19,6 +19,9 @@ const MAX_POOL_SIZE = 500;
 const MAX_PARTICLES = 150; // Cap total particles for performance
 const MAX_FLOATING_NUMBERS = 30; // Cap floating DOM elements for performance
 
+// Screen shake animation frame ID (to cancel overlapping shakes)
+let screenShakeRafId = null;
+
 // Colors for particles
 const COLORS = {
     blue: '#1D9BF0',
@@ -485,12 +488,19 @@ export function screenShake(intensity = 5, duration = 300) {
     const app = document.getElementById('app');
     if (!app) return;
 
+    // Cancel any existing screen shake
+    if (screenShakeRafId) {
+        cancelAnimationFrame(screenShakeRafId);
+        app.style.transform = '';
+    }
+
     const startTime = Date.now();
 
     function shake() {
         const elapsed = Date.now() - startTime;
         if (elapsed >= duration) {
             app.style.transform = '';
+            screenShakeRafId = null;
             return;
         }
 
@@ -499,7 +509,7 @@ export function screenShake(intensity = 5, duration = 300) {
         const y = (Math.random() - 0.5) * intensity * decay;
         app.style.transform = `translate(${x}px, ${y}px)`;
 
-        requestAnimationFrame(shake);
+        screenShakeRafId = requestAnimationFrame(shake);
     }
 
     shake();
