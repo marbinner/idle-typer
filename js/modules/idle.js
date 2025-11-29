@@ -15,7 +15,7 @@ let impressionAccumulator = 0;
 // Visual feedback - time-based to sync with coin bumps
 let visualFeedbackAccumulator = 0;
 let lastVisualFeedbackTime = 0;
-const VISUAL_FEEDBACK_INTERVAL = 1500; // Show visual every 1.5 seconds
+const VISUAL_FEEDBACK_INTERVAL = 500; // Show visual every 0.5 seconds
 const MIN_COINS_TO_SHOW = 1; // Show as long as we earned something
 
 /**
