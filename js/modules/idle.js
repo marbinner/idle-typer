@@ -5,6 +5,7 @@
 
 import * as State from '../state.js';
 import { BOTS } from '../data/upgrades.js';
+import { MISC_CONFIG } from '../config.js';
 
 // Accumulator for fractional values
 let coinAccumulator = 0;
@@ -42,7 +43,7 @@ export function tick(deltaTime) {
     }
 
     // Calculate impressions (followers generate impressions passively)
-    const impressionsGained = state.followers * 0.001 * deltaTime; // 0.1% of followers per second
+    const impressionsGained = state.followers * MISC_CONFIG.idleImpressionRate * deltaTime;
     impressionAccumulator += impressionsGained;
 
     if (impressionAccumulator >= 1) {

@@ -322,5 +322,8 @@ export const MISC_CONFIG = {
     xpPerPost: 10,
 
     // Auto-save interval (milliseconds)
-    autoSaveInterval: 30000
+    autoSaveInterval: 30000,
+
+    // Idle impression rate (% of followers that generate impressions per second)
+    idleImpressionRate: 0.001  // 0.1% of followers per second
 };
