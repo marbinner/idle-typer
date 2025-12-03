@@ -19,6 +19,7 @@ import {
 } from '../config.js';
 import { checkBickeringTrigger, isBickeringActive } from './bickering.js';
 import { isGamblingActive } from './gambling.js';
+import { isFeatureUnlocked } from './unlocks.js';
 
 // DOM Elements
 let postTextEl;
@@ -519,7 +520,7 @@ export function loadNewPost() {
     const initState = State.getState();
     goldenCharIndex = -1;
 
-    if (initState.totalPosts >= GOLDEN_CONFIG.unlockAtPosts) {
+    if (isFeatureUnlocked('goldenChars')) {
         if (initState.eventAllGolden) {
             // All characters are golden during Golden Hour!
             goldenCharIndex = -2; // Special value meaning "all golden"
@@ -752,8 +753,10 @@ function handleCorrectChar() {
         }
     }
 
-    // Increment combo
-    State.incrementCombo();
+    // Increment combo (only if feature unlocked)
+    if (isFeatureUnlocked('combo')) {
+        State.incrementCombo();
+    }
     hasError = false;
 
     // Golden character bonus!
@@ -796,7 +799,7 @@ function handleCorrectChar() {
 
     // ===== CRITICAL HIT SYSTEM =====
     // Engagement-optimized crit system with tiers, streaks, and pity
-    if (state.totalPosts >= CRIT_CONFIG.unlockAtPosts) {
+    if (isFeatureUnlocked('criticalHits')) {
         keystrokesSinceCrit++;
 
         // Calculate crit chance with all modifiers
@@ -911,7 +914,7 @@ function handleCorrectChar() {
 
     // ===== FRENZY METER SYSTEM =====
     // Build frenzy meter while typing
-    if (state.totalPosts >= FRENZY_CONFIG.unlockAtPosts && !frenzyActive && Date.now() > frenzyCooldownEnd) {
+    if (isFeatureUnlocked('frenzyMode') && !frenzyActive && Date.now() > frenzyCooldownEnd) {
         frenzyMeter = Math.min(FRENZY_CONFIG.maxMeter, frenzyMeter + FRENZY_CONFIG.meterGainPerChar);
         updateFrenzyMeter();
 
@@ -1503,8 +1506,8 @@ function calculateCurrentAccuracy() {
 function checkViral() {
     const state = State.getState();
 
-    // Viral posts unlock at configured post count
-    if (state.totalPosts < VIRAL_CONFIG.unlockAtPosts) {
+    // Viral posts unlock via feature system
+    if (!isFeatureUnlocked('viralPosts')) {
         return null;
     }
 
@@ -1968,12 +1971,9 @@ function updatePostProgress() {
 
     if (!balloonContainer || !balloonVisual) return;
 
-    // Balloon unlocks after configured posts
-    if (state.totalPosts < BALLOON_CONFIG.unlockAtPosts) {
-        balloonContainer.style.display = 'none';
+    // Balloon unlocks via feature system
+    if (!isFeatureUnlocked('balloonPop')) {
         return;
-    } else {
-        balloonContainer.style.display = '';
     }
 
     // Safety check: reset balloon cycle if it's invalid (negative posts)

@@ -33,8 +33,8 @@ export const PRIZE_TIERS = [
 // Engagement algorithm configuration
 const ALGORITHM_CONFIG = {
     // === FIRST IMPRESSION ===
-    // First roll: guaranteed satisfying win (tier 8 = 5x Big Green)
-    firstRollTier: 8,
+    // First roll: guaranteed small win to teach the mechanic (tier 6 = 2x Nice Trade)
+    firstRollTier: 6,
 
     // === PITY SYSTEM (Progressive) ===
     // Pity builds smoothly instead of hard threshold
@@ -58,12 +58,12 @@ const ALGORITHM_CONFIG = {
 
     // === LUCKY ROLL ===
     // Random jackpot chance (keeps hope alive)
-    luckyRollChance: 0.015,   // 1.5% chance
-    luckyMinTier: 10,         // At least 25x
+    luckyRollChance: 0.005,   // 0.5% chance
+    luckyMinTier: 8,          // At least 5x
 
     // === SUPER LUCKY (Jackpot) ===
-    superLuckyChance: 0.002,  // 0.2% chance for jackpot
-    superLuckyMinTier: 12,    // 100x or 500x
+    superLuckyChance: 0.0005, // 0.05% chance for jackpot (1 in 2000)
+    superLuckyMinTier: 11,    // 50x or higher
 
     // === WIN VARIANCE ===
     // Add ±20% randomness to wins for excitement
@@ -74,25 +74,26 @@ const ALGORITHM_CONFIG = {
     rugPullRefund: 0.1,       // 10% refund on rug pulls
 
     // === BASE PROBABILITIES ===
-    // Carefully tuned for engagement (wins ~35%, losses ~30%, break-even ~35%)
+    // Rebalanced for tiny positive EV (~1.02x) - feels fair but not exploitable
     // [0x, 0.25x, 0.5x, 0.75x, 1x, 1.5x, 2x, 3x, 5x, 10x, 25x, 50x, 100x, 500x]
     baseProbabilities: [
-        0.08,   // Rug (reduced - too frustrating)
-        0.06,   // Got Rekt
-        0.08,   // Paper Hands
-        0.08,   // Weak Exit
+        0.20,   // Rug - painful but creates drama
+        0.14,   // Got Rekt
+        0.14,   // Paper Hands
+        0.10,   // Weak Exit
         0.18,   // Broke Even (common - feels okay)
-        0.15,   // Small Green (feels like a win)
-        0.14,   // Nice Trade (satisfying)
-        0.10,   // Good Call
-        0.06,   // Big Green
-        0.035,  // Whale Move
-        0.02,   // DIAMOND HANDS
-        0.008,  // PERFECT ENTRY
-        0.005,  // 100X MOONSHOT
-        0.002   // BECAME SATOSHI
+        0.10,   // Small Green (feels like a win)
+        0.06,   // Nice Trade
+        0.035,  // Good Call
+        0.020,  // Big Green
+        0.008,  // Whale Move
+        0.003,  // DIAMOND HANDS
+        0.0015, // PERFECT ENTRY
+        0.0004, // 100X MOONSHOT
+        0.0001  // BECAME SATOSHI (1 in 10,000)
     ]
-    // Losses (0-0.75x): 30%, Break-even to small win (1-1.5x): 33%, Good wins (2x+): 37%
+    // Losses (0-0.75x): 58%, Break-even to small win (1-1.5x): 28%, Good wins (2x+): 14%
+    // Expected value: ~1.02x (tiny profit on average, but high variance)
 };
 
 export const CRYPTO_TRADE = {

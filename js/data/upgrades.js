@@ -5,6 +5,80 @@
 
 import { BOT_CONFIG } from '../config.js';
 
+// Tier definitions - names, icons, themes for each progression level
+export const TIER_INFO = {
+    1: {
+        name: 'Social Media Beginners',
+        icon: '📱',
+        subtitle: 'Everyone starts somewhere...',
+        color: '#808080',
+        unlockMessage: 'Welcome to the timeline!'
+    },
+    2: {
+        name: 'Content Creators',
+        icon: '🎬',
+        subtitle: 'Time to make some content',
+        color: '#3b82f6',
+        unlockMessage: 'You\'re building an audience!'
+    },
+    3: {
+        name: 'Platform Specialists',
+        icon: '🌐',
+        subtitle: 'Masters of their domain',
+        color: '#00c853',
+        unlockMessage: 'Cross-platform domination begins!'
+    },
+    4: {
+        name: 'Influencers & Celebrities',
+        icon: '⭐',
+        subtitle: 'Fame and followers await',
+        color: '#ffa500',
+        unlockMessage: 'The spotlight is on you!'
+    },
+    5: {
+        name: 'Tech & Crypto',
+        icon: '₿',
+        subtitle: 'To the moon!',
+        color: '#ff4500',
+        unlockMessage: 'WAGMI! Tech bro energy unlocked!'
+    },
+    6: {
+        name: 'Media & Entertainment',
+        icon: '🎭',
+        subtitle: 'Lights, camera, engagement!',
+        color: '#ff69b4',
+        unlockMessage: 'You\'re now in showbiz!'
+    },
+    7: {
+        name: 'Corporate & Business',
+        icon: '💼',
+        subtitle: 'Synergy and shareholder value',
+        color: '#00c8c8',
+        unlockMessage: 'Let\'s circle back on that!'
+    },
+    8: {
+        name: 'Mythical & Legendary',
+        icon: '🐉',
+        subtitle: 'Beyond mortal comprehension',
+        color: '#8a2be2',
+        unlockMessage: 'You\'ve entered the realm of legends!'
+    },
+    9: {
+        name: 'Cosmic & Divine',
+        icon: '🌌',
+        subtitle: 'Transcending reality itself',
+        color: '#daa520',
+        unlockMessage: 'The cosmos bows before you!'
+    },
+    10: {
+        name: 'Reality-Breaking',
+        icon: '♾️',
+        subtitle: 'You ARE the algorithm',
+        color: '#ff00ff',
+        unlockMessage: 'MAXIMUM ASCENSION ACHIEVED!'
+    }
+};
+
 // Bot flavor data (names, icons, descriptions) - 150 bots across 10 tiers!
 const BOT_FLAVOR = [
     // ==========================================================================

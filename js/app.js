@@ -23,6 +23,7 @@ import { initMonsters, tick as monsterTick } from './modules/monsters.js';
 import { initNewsTicker, showUsernamePrompt } from './modules/newsTicker.js';
 import { initDailyStreak } from './modules/dailyStreak.js';
 import { initQuests } from './modules/quests.js';
+import { initUnlocks } from './modules/unlocks.js';
 
 // Game configuration
 const CONFIG = {
@@ -117,6 +118,10 @@ async function init() {
         // Initialize UI system
         initUI();
         console.log('UI system ready');
+
+        // Initialize unlock system (controls progressive feature introduction)
+        initUnlocks();
+        console.log('Unlock system ready');
 
         // Initialize typing mechanic
         initTyping();

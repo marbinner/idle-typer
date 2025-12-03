@@ -101,7 +101,7 @@
             <!-- Left Panel: History -->
             <aside id="history-panel">
                 <!-- Bot Army Display -->
-                <div id="bot-army-display">
+                <div id="bot-army-display" class="feature-locked">
                     <div class="bot-army-header">
                         <span class="bot-army-title">🤖 Bot Army</span>
                         <span id="total-bots-count">0</span>
@@ -192,13 +192,13 @@
                 </div>
 
                 <!-- Inflating Balloon (10 posts = pop bonus) -->
-                <div id="balloon-container" data-tooltip="Post more tweets to inflate the balloon!">
+                <div id="balloon-container" class="feature-locked" data-tooltip="Post more tweets to inflate the balloon!">
                     <div id="balloon-visual">🎈</div>
                     <div id="balloon-count"><span id="post-progress-count">0</span>/10</div>
                 </div>
 
                 <!-- Frenzy Meter (unlocks at 40 posts) -->
-                <div id="frenzy-container" style="display: none;">
+                <div id="frenzy-container" class="feature-locked">
                     <div id="frenzy-bar">
                         <div id="frenzy-fill"></div>
                     </div>
@@ -233,12 +233,12 @@
                             <span id="wpm-best" class="stat-number">0</span>
                             <span class="stat-name">Best</span>
                         </div>
-                        <div class="typing-stat" id="combo-display">
+                        <div class="typing-stat feature-locked" id="combo-display">
                             <span class="stat-icon"></span>
                             <span id="combo-count" class="stat-number">0</span>
                             <span class="stat-name">Combo</span>
                         </div>
-                        <div class="typing-stat" id="streak-display">
+                        <div class="typing-stat feature-locked" id="streak-display">
                             <span class="stat-icon"></span>
                             <span id="streak-count" class="stat-number">0</span>
                             <span class="stat-name">Streak</span>
@@ -260,17 +260,17 @@
                         <span class="tab-label">Bots</span>
                         <span class="tab-indicator" id="bots-indicator"></span>
                     </button>
-                    <button class="tab" data-tab="upgrades" role="tab" aria-selected="false" aria-controls="upgrades-tab">
+                    <button class="tab tab-locked" data-tab="upgrades" role="tab" aria-selected="false" aria-controls="upgrades-tab" disabled>
                         <span class="tab-icon" aria-hidden="true">⚡</span>
                         <span class="tab-label">Upgrades</span>
                         <span class="tab-indicator" id="upgrades-indicator"></span>
                     </button>
-                    <button class="tab" data-tab="premium" role="tab" aria-selected="false" aria-controls="premium-tab">
+                    <button class="tab tab-locked" data-tab="premium" role="tab" aria-selected="false" aria-controls="premium-tab" disabled>
                         <span class="tab-icon" aria-hidden="true">✓</span>
                         <span class="tab-label">Premium</span>
                         <span class="tab-indicator" id="premium-indicator"></span>
                     </button>
-                    <button class="tab" data-tab="market" role="tab" aria-selected="false" aria-controls="market-tab">
+                    <button class="tab tab-locked" data-tab="market" role="tab" aria-selected="false" aria-controls="market-tab" disabled>
                         <span class="tab-icon" aria-hidden="true">📈</span>
                         <span class="tab-label">Market</span>
                         <span class="tab-indicator" id="market-indicator"></span>
@@ -339,7 +339,7 @@
         <div id="floating-numbers"></div>
 
         <!-- Monster spawn container -->
-        <div id="monster-container"></div>
+        <div id="monster-container" class="feature-locked"></div>
 
         <!-- Modals -->
         <div id="modal-overlay" class="hidden">

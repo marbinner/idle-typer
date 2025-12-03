@@ -7,6 +7,7 @@ import * as State from '../state.js';
 import { QUEST_CONFIG } from '../config.js';
 import { formatCoins } from '../utils.js';
 import { spawnParticles, spawnFloatingNumber } from './particles.js';
+import { isFeatureUnlocked } from './unlocks.js';
 
 // Quest panel element reference
 let questPanelEl = null;
@@ -211,6 +212,17 @@ export function initQuests() {
  * Create the quest panel UI
  */
 function createQuestPanel() {
+    // Don't create until quests feature is unlocked
+    if (!isFeatureUnlocked('quests')) {
+        // Listen for unlock event
+        window.addEventListener('feature-unlocked', (e) => {
+            if (e.detail.featureId === 'quests') {
+                createQuestPanel();
+            }
+        }, { once: true });
+        return;
+    }
+
     // Find or create quest panel
     questPanelEl = document.getElementById('quest-panel');
 

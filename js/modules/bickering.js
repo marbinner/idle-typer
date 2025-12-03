@@ -8,6 +8,7 @@ import { BICKERING_CONVERSATIONS, getRandomConversation } from '../data/bickerin
 import { playSound } from './sound.js';
 import { spawnParticles, spawnFloatingNumber } from './particles.js';
 import { formatCoins, escapeHtml } from '../utils.js';
+import { isFeatureUnlocked } from './unlocks.js';
 
 // Challenge state
 let isActive = false;
@@ -123,8 +124,8 @@ export function checkBickeringTrigger() {
     // Don't trigger if already in a challenge
     if (isActive) return false;
 
-    // Don't trigger too early in the game
-    if (state.lifetimePosts < MIN_POSTS_FOR_TRIGGER) return false;
+    // Don't trigger until bickering feature is unlocked
+    if (!isFeatureUnlocked('bickering')) return false;
 
     // Check cooldown
     const now = Date.now();

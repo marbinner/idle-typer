@@ -8,6 +8,7 @@ import * as State from '../state.js';
 import { spawnParticles, spawnFloatingNumber, screenShake } from './particles.js';
 import { playSound, playMonsterHitSound, playMonsterDeathSound } from './sound.js';
 import { formatCoins } from '../utils.js';
+import { isFeatureUnlocked } from './unlocks.js';
 
 // Monster types with their properties
 const MONSTER_TYPES = [
@@ -57,8 +58,8 @@ export function tick(deltaTime) {
 
     const state = State.getState();
 
-    // Don't spawn until player has made some progress
-    if (state.lifetimePosts < MIN_LIFETIME_POSTS) return;
+    // Don't spawn until monsters feature is unlocked
+    if (!isFeatureUnlocked('monsters')) return;
 
     const now = Date.now();
 

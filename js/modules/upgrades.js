@@ -4,7 +4,7 @@
  */
 
 import * as State from '../state.js';
-import { BOTS, UPGRADES } from '../data/upgrades.js';
+import { BOTS, UPGRADES, TIER_INFO } from '../data/upgrades.js';
 import { playSound } from './sound.js';
 import { spawnParticles } from './particles.js';
 import { formatNumber, formatCoins } from '../utils.js';
@@ -117,7 +117,7 @@ export function renderUpgrades() {
 }
 
 /**
- * Render bots list
+ * Render bots list with tier separators
  */
 function renderBots() {
     const listEl = document.getElementById('bots-list');
@@ -126,13 +126,13 @@ function renderBots() {
     const state = State.getState();
 
     // Get all bots as array with unlock info (based on lifetime coins earned)
-    const botIds = Object.keys(BOTS);
     const botsArray = Object.entries(BOTS).map(([id, bot], index) => ({
         id,
         bot,
         isUnlocked: state.lifetimeCoins >= (bot.unlockAt || 0),
         unlockAt: bot.unlockAt || 0,
-        botTier: Math.floor(index / 15) + 1  // 15 bots per tier, tiers 1-10
+        botTier: Math.floor(index / 15) + 1,  // 15 bots per tier, tiers 1-10
+        indexInTier: index % 15
     }));
 
     // Find first locked bot index
@@ -145,83 +145,130 @@ function renderBots() {
         return i <= firstLockedIndex + 1; // Show next 2 locked
     });
 
-    const botsHtml = visibleBots.map(({ id, bot, isUnlocked, botTier }) => {
-        const owned = state.bots[id] || 0;
-        const cost = calculateBotCost(id, owned);
-        const canAfford = state.coins >= cost;
+    // Group bots by tier
+    const botsByTier = {};
+    visibleBots.forEach(botData => {
+        if (!botsByTier[botData.botTier]) {
+            botsByTier[botData.botTier] = [];
+        }
+        botsByTier[botData.botTier].push(botData);
+    });
 
-        if (!isUnlocked) {
-            // Calculate fade level based on how far away it is (0 = first locked, 1 = second locked, etc.)
-            const lockedIndex = botsArray.filter(b => !b.isUnlocked).findIndex(b => b.id === id);
-            const fadeLevel = Math.min(lockedIndex, 2); // Max 3 levels of fade
+    // Determine which tiers are fully unlocked, partially unlocked, or locked
+    const tierStatus = {};
+    for (let tier = 1; tier <= 10; tier++) {
+        const tierBots = botsArray.filter(b => b.botTier === tier);
+        const unlockedInTier = tierBots.filter(b => b.isUnlocked).length;
+        if (unlockedInTier === 0) {
+            tierStatus[tier] = 'locked';
+        } else if (unlockedInTier === 15) {
+            tierStatus[tier] = 'complete';
+        } else {
+            tierStatus[tier] = 'partial';
+        }
+    }
 
-            const unlockFormatted = formatCoins(bot.unlockAt);
-            const costFormatted = formatCoins(cost);
-            return `
-                <div class="upgrade-item locked fade-${fadeLevel} bot-tier-${botTier}" data-type="bot" data-id="${id}">
-                    <div class="upgrade-icon locked-icon">🔒</div>
-                    <div class="upgrade-info">
-                        <div class="upgrade-name">???</div>
-                        <div class="upgrade-desc">Unlock at ${unlockFormatted.full} lifetime</div>
+    // Build HTML with tier separators
+    let html = '';
+    const visibleTiers = Object.keys(botsByTier).map(Number).sort((a, b) => a - b);
+
+    visibleTiers.forEach(tier => {
+        const tierInfo = TIER_INFO[tier];
+        const status = tierStatus[tier];
+        const botsInTier = botsByTier[tier];
+        const unlockedCount = botsInTier.filter(b => b.isUnlocked).length;
+
+        // Tier header
+        html += `
+            <div class="tier-separator tier-${tier} tier-status-${status}" style="--tier-color: ${tierInfo.color}">
+                <div class="tier-header">
+                    <span class="tier-icon">${tierInfo.icon}</span>
+                    <div class="tier-title">
+                        <span class="tier-label">TIER ${tier}</span>
+                        <span class="tier-name">${tierInfo.name}</span>
                     </div>
-                    <div class="upgrade-cost">
-                        <span class="cost-icon">${costFormatted.unit}</span>
-                        <span class="cost-value locked-cost">${costFormatted.value}</span>
+                    <span class="tier-progress">${unlockedCount}/15</span>
+                </div>
+                <div class="tier-subtitle">${tierInfo.subtitle}</div>
+                <div class="tier-divider"></div>
+            </div>
+        `;
+
+        // Render bots in this tier
+        botsInTier.forEach(({ id, bot, isUnlocked, botTier }) => {
+            const owned = state.bots[id] || 0;
+            const cost = calculateBotCost(id, owned);
+            const canAfford = state.coins >= cost;
+
+            if (!isUnlocked) {
+                const lockedIndex = botsArray.filter(b => !b.isUnlocked).findIndex(b => b.id === id);
+                const fadeLevel = Math.min(lockedIndex, 2);
+                const unlockFormatted = formatCoins(bot.unlockAt);
+                const costFormatted = formatCoins(cost);
+                html += `
+                    <div class="upgrade-item locked fade-${fadeLevel} bot-tier-${botTier}" data-type="bot" data-id="${id}">
+                        <div class="upgrade-icon locked-icon">🔒</div>
+                        <div class="upgrade-info">
+                            <div class="upgrade-name">???</div>
+                            <div class="upgrade-desc">Unlock at ${unlockFormatted.full} lifetime</div>
+                        </div>
+                        <div class="upgrade-cost">
+                            <span class="cost-icon">${costFormatted.unit}</span>
+                            <span class="cost-value locked-cost">${costFormatted.value}</span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Triangular growth: total CPS = baseCPS * n*(n+1)/2
+            const totalCPS = owned > 0 ? bot.cps * owned * (owned + 1) / 2 : 0;
+            const nextBotCPS = bot.cps * (owned + 1);
+            const cpsFormatted = formatCoins(nextBotCPS);
+            const totalCPSFormatted = formatCoins(totalCPS);
+
+            // Calculate quantity tier for visual effects
+            let quantityTier = 0;
+            if (owned >= 100) quantityTier = 6;
+            else if (owned >= 50) quantityTier = 5;
+            else if (owned >= 25) quantityTier = 4;
+            else if (owned >= 10) quantityTier = 3;
+            else if (owned >= 5) quantityTier = 2;
+            else if (owned >= 1) quantityTier = 1;
+
+            const tierThresholds = [1, 5, 10, 25, 50, 100];
+            const currentThreshold = quantityTier > 0 ? tierThresholds[quantityTier - 1] : 0;
+            const nextThreshold = tierThresholds[quantityTier] || 100;
+            const tierDiff = nextThreshold - currentThreshold;
+            const tierProgress = quantityTier >= 6 ? 100 : (tierDiff > 0 ? ((owned - currentThreshold) / tierDiff) * 100 : 0);
+
+            const costFormatted = formatCoins(cost);
+            html += `
+                <div class="upgrade-item ${canAfford ? 'affordable' : ''} quantity-tier-${quantityTier} bot-tier-${botTier}"
+                     data-type="bot" data-id="${id}" data-owned="${owned}">
+                    <div class="upgrade-icon">${bot.icon}${owned > 0 ? `<span class="icon-quantity">${owned}</span>` : ''}</div>
+                    <div class="upgrade-info">
+                        <div class="upgrade-name">${bot.name} ${owned > 0 ? `<span class="owned-badge tier-${quantityTier}">×${owned}</span>` : ''}</div>
+                        <div class="upgrade-desc">${bot.description}</div>
+                        ${owned > 0 ? `<div class="current-gen">Generating: <span class="gen-value">+${totalCPSFormatted.full}/s</span></div>` : ''}
+                        ${owned > 0 ? `<div class="quantity-bar"><div class="quantity-fill" style="width: ${tierProgress}%"></div></div>` : ''}
+                    </div>
+                    <div class="upgrade-right">
+                        <div class="buy-gain">
+                            <span class="gain-label">BUY FOR</span>
+                            <span class="gain-value">+${cpsFormatted.full}/s</span>
+                        </div>
+                        <div class="upgrade-cost ${canAfford ? 'can-afford' : 'cant-afford'}">
+                            <span class="cost-icon">${costFormatted.unit}</span>
+                            <span class="cost-value">${costFormatted.value}</span>
+                        </div>
                     </div>
                 </div>
             `;
-        }
+        });
+    });
 
-        // Triangular growth: total CPS = baseCPS * n*(n+1)/2
-        const totalCPS = owned > 0 ? bot.cps * owned * (owned + 1) / 2 : 0;
-        // Next bot gives: baseCPS * (owned + 1)
-        const nextBotCPS = bot.cps * (owned + 1);
-        const cpsFormatted = formatCoins(nextBotCPS);
-        const totalCPSFormatted = formatCoins(totalCPS);
-
-        // Calculate quantity tier for visual effects
-        let quantityTier = 0;
-        if (owned >= 100) quantityTier = 6;
-        else if (owned >= 50) quantityTier = 5;
-        else if (owned >= 25) quantityTier = 4;
-        else if (owned >= 10) quantityTier = 3;
-        else if (owned >= 5) quantityTier = 2;
-        else if (owned >= 1) quantityTier = 1;
-
-        // Progress to next tier (for the quantity bar)
-        const tierThresholds = [1, 5, 10, 25, 50, 100];
-        const currentThreshold = quantityTier > 0 ? tierThresholds[quantityTier - 1] : 0;
-        const nextThreshold = tierThresholds[quantityTier] || 100;
-        // Guard against division by zero (defensive programming)
-        const tierDiff = nextThreshold - currentThreshold;
-        const tierProgress = quantityTier >= 6 ? 100 : (tierDiff > 0 ? ((owned - currentThreshold) / tierDiff) * 100 : 0);
-
-        const costFormatted = formatCoins(cost);
-        return `
-            <div class="upgrade-item ${canAfford ? 'affordable' : ''} quantity-tier-${quantityTier} bot-tier-${botTier}"
-                 data-type="bot" data-id="${id}" data-owned="${owned}">
-                <div class="upgrade-icon">${bot.icon}${owned > 0 ? `<span class="icon-quantity">${owned}</span>` : ''}</div>
-                <div class="upgrade-info">
-                    <div class="upgrade-name">${bot.name} ${owned > 0 ? `<span class="owned-badge tier-${quantityTier}">×${owned}</span>` : ''}</div>
-                    <div class="upgrade-desc">${bot.description}</div>
-                    ${owned > 0 ? `<div class="current-gen">Generating: <span class="gen-value">+${totalCPSFormatted.full}/s</span></div>` : ''}
-                    ${owned > 0 ? `<div class="quantity-bar"><div class="quantity-fill" style="width: ${tierProgress}%"></div></div>` : ''}
-                </div>
-                <div class="upgrade-right">
-                    <div class="buy-gain">
-                        <span class="gain-label">BUY FOR</span>
-                        <span class="gain-value">+${cpsFormatted.full}/s</span>
-                    </div>
-                    <div class="upgrade-cost ${canAfford ? 'can-afford' : 'cant-afford'}">
-                        <span class="cost-icon">${costFormatted.unit}</span>
-                        <span class="cost-value">${costFormatted.value}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    listEl.innerHTML = botsHtml;
+    listEl.innerHTML = html;
     // Click handlers use event delegation from initUpgrades()
 }
 

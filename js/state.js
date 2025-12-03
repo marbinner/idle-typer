@@ -77,6 +77,9 @@ const initialState = {
     achievements: [],
     unlockedAchievements: [],
 
+    // Feature unlocks (progressive introduction of features)
+    unlockedFeatures: {},
+
     // Achievement tracking stats
     totalPosts: 0,
     viralPosts: 0,
@@ -163,6 +166,9 @@ const initialState = {
 // Current state
 let state = { ...initialState };
 
+// Track if state has been loaded from save (for debugging)
+let stateLoadedFromSave = false;
+
 // Subscribers for state changes
 const subscribers = new Set();
 
@@ -190,6 +196,7 @@ export function getValue(key) {
  */
 export function updateState(updates, silent = false) {
     const oldState = { ...state };
+
     state = { ...state, ...updates };
 
     // Update lifetime stats if currencies increased
@@ -575,6 +582,12 @@ export function purchaseBot(botId, cost) {
  * Reset state for new game or prestige
  */
 export function resetState(keepPermanent = false) {
+    console.warn('=== RESET STATE CALLED ===', {
+        keepPermanent,
+        currentCoins: state.coins,
+        stack: new Error().stack
+    });
+
     const permanentData = keepPermanent ? {
         prestigeCount: state.prestigeCount,
         permanentBonuses: state.permanentBonuses,
@@ -589,6 +602,7 @@ export function resetState(keepPermanent = false) {
     } : {};
 
     state = { ...initialState, ...permanentData };
+    stateLoadedFromSave = false;
     recalculateDerived();
     // Pass empty object as oldState so key-specific subscribers are triggered
     notifySubscribers({}, state);
@@ -598,21 +612,45 @@ export function resetState(keepPermanent = false) {
  * Load state from saved data
  */
 export function loadState(savedState) {
+    if (!savedState || typeof savedState !== 'object') {
+        console.error('loadState: Invalid savedState', savedState);
+        return;
+    }
+
     // Deep merge bots to ensure new bots are initialized
     const mergedBots = { ...initialState.bots, ...(savedState.bots || {}) };
 
     // Deep merge upgrades to ensure new upgrades don't break
     const mergedUpgrades = { ...(savedState.upgrades || {}) };
 
+    // Deep merge tierUpgrades
+    const mergedTierUpgrades = { ...(savedState.tierUpgrades || {}) };
+
+    // Deep merge unlockedFeatures
+    const mergedUnlockedFeatures = { ...(savedState.unlockedFeatures || {}) };
+
     state = {
         ...initialState,
         ...savedState,
         bots: mergedBots,
-        upgrades: mergedUpgrades
+        upgrades: mergedUpgrades,
+        tierUpgrades: mergedTierUpgrades,
+        unlockedFeatures: mergedUnlockedFeatures
     };
+
+    stateLoadedFromSave = true;
+
     recalculateDerived();
+
     // Pass empty object as oldState so key-specific subscribers are triggered
     notifySubscribers({}, state);
+}
+
+/**
+ * Check if state was loaded from save (for debugging)
+ */
+export function wasStateLoaded() {
+    return stateLoadedFromSave;
 }
 
 /**

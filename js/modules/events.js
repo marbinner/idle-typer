@@ -7,6 +7,7 @@ import * as State from '../state.js';
 import { playSound } from './sound.js';
 import { spawnParticles, screenFlash } from './particles.js';
 import { escapeHtml } from '../utils.js';
+import { isFeatureUnlocked } from './unlocks.js';
 
 // Event definitions
 const EVENTS = {
@@ -157,8 +158,8 @@ function checkForRandomEvent() {
     // Don't trigger events too frequently
     if (now - lastEventTime < MIN_EVENT_INTERVAL) return;
 
-    // Events unlock at 75 posts
-    if (state.totalPosts < 75) return;
+    // Events unlock via feature system
+    if (!isFeatureUnlocked('randomEvents')) return;
 
     // Base 5% chance per check, increases with activity
     const baseChance = 0.05;
@@ -352,8 +353,8 @@ function checkForFloatingBonus() {
 
     const state = State.getState();
 
-    // Floating bonus unlocks at 100 posts
-    if (state.totalPosts < 100) return;
+    // Floating bonus unlocks via feature system
+    if (!isFeatureUnlocked('floatingBonus')) return;
 
     // 30% chance to spawn when checked
     if (Math.random() < 0.30) {

@@ -23,30 +23,36 @@ let pendingStatsHistory = null;
  * Initialize save system and load existing save
  */
 export function initSave() {
+    console.log('Initializing save system...');
+
+    // Check if localStorage is available
+    try {
+        const testKey = '__test__';
+        localStorage.setItem(testKey, testKey);
+        localStorage.removeItem(testKey);
+    } catch (e) {
+        console.error('localStorage not available:', e);
+        showSaveNotification('Warning: Saving disabled (storage not available)');
+        return;
+    }
+
     const saveData = loadFromStorage();
 
     if (saveData) {
-        console.log('Loading save data:', {
-            version: saveData.version,
-            coins: saveData.state?.coins,
-            postHistoryLength: saveData.postHistory?.length || 0,
-            hasBalloonState: !!saveData.balloonState,
-            hasTypingState: !!saveData.typingState
-        });
-        State.loadState(saveData.state);
+        // Load state
+        try {
+            State.loadState(saveData.state);
+        } catch (stateError) {
+            console.error('Failed to load state:', stateError);
+            showSaveNotification('Warning: Failed to load some game data');
+        }
+
         // Store post history and balloon state to load after typing is initialized
-        if (saveData.postHistory) {
-            pendingPostHistory = saveData.postHistory;
-        }
-        if (saveData.balloonState) {
-            pendingBalloonState = saveData.balloonState;
-        }
-        if (saveData.typingState) {
-            pendingTypingState = saveData.typingState;
-        }
-        if (saveData.statsHistory) {
-            pendingStatsHistory = saveData.statsHistory;
-        }
+        pendingPostHistory = saveData.postHistory || null;
+        pendingBalloonState = saveData.balloonState || null;
+        pendingTypingState = saveData.typingState || null;
+        pendingStatsHistory = saveData.statsHistory || null;
+
         console.log('Game loaded from save');
     } else {
         console.log('No save found, starting fresh');
@@ -63,24 +69,41 @@ export function initSave() {
  * Returns true if there was a saved typing state to restore
  */
 export function loadSavedPostHistory() {
-    // Always call loadPostHistory to ensure the panel is rendered (even if empty)
-    console.log('loadSavedPostHistory called, pendingPostHistory:', pendingPostHistory?.length || 'null');
-    loadPostHistory(pendingPostHistory || []);
+    // Load post history (always call to ensure panel is rendered)
+    try {
+        loadPostHistory(pendingPostHistory || []);
+    } catch (e) {
+        console.error('Failed to load post history:', e);
+    }
     pendingPostHistory = null;
-    // Always call loadBalloonState - it handles null/missing state
-    loadBalloonState(pendingBalloonState);
+
+    // Load balloon state (handles null/missing state internally)
+    try {
+        loadBalloonState(pendingBalloonState);
+    } catch (e) {
+        console.error('Failed to load balloon state:', e);
+    }
     pendingBalloonState = null;
 
     // Load typing state if available (restored post)
-    const hadTypingState = pendingTypingState !== null;
-    if (hadTypingState) {
-        loadTypingState(pendingTypingState);
+    let hadTypingState = false;
+    if (pendingTypingState) {
+        try {
+            loadTypingState(pendingTypingState);
+            hadTypingState = true;
+        } catch (e) {
+            console.error('Failed to load typing state:', e);
+        }
     }
     pendingTypingState = null;
 
     // Load stats history
     if (pendingStatsHistory) {
-        loadStatsHistory(pendingStatsHistory);
+        try {
+            loadStatsHistory(pendingStatsHistory);
+        } catch (e) {
+            console.error('Failed to load stats history:', e);
+        }
     }
     pendingStatsHistory = null;
 
@@ -98,10 +121,16 @@ export function save() {
     }
     try {
         const state = State.getStateForSave();
-        const postHistory = getPostHistory();
+        if (!state) {
+            console.error('Save failed: getStateForSave returned null/undefined');
+            return false;
+        }
+
+        const postHistory = (getPostHistory() || []).slice(-MAX_HISTORY_POSTS);
         const balloonState = getBalloonState();
         const typingState = getTypingState();
         const statsHistory = getStatsHistory();
+
         const saveData = {
             version: SAVE_VERSION,
             timestamp: Date.now(),
@@ -112,8 +141,32 @@ export function save() {
             statsHistory
         };
 
+        // Validate save data can be serialized
+        let jsonString;
         try {
-            localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+            jsonString = JSON.stringify(saveData);
+        } catch (serializeError) {
+            console.error('Save failed: Could not serialize data', serializeError);
+            return false;
+        }
+
+        try {
+            localStorage.setItem(SAVE_KEY, jsonString);
+
+            // Verify the save was written correctly
+            const verification = localStorage.getItem(SAVE_KEY);
+            if (!verification) {
+                console.error('Save verification failed: Data not found after write');
+                return false;
+            }
+            const verifyData = JSON.parse(verification);
+            if (verifyData.state.coins !== state.coins) {
+                console.warn('Save verification: coins mismatch', {
+                    saved: verifyData.state.coins,
+                    current: state.coins
+                });
+            }
+
         } catch (storageError) {
             // Handle storage quota exceeded or other storage errors
             if (storageError.name === 'QuotaExceededError' ||
@@ -138,9 +191,7 @@ export function save() {
  * Auto-save (called periodically)
  */
 export function autoSave() {
-    if (save()) {
-        console.log('Auto-saved');
-    }
+    save();
 }
 
 /**
@@ -160,16 +211,43 @@ export function manualSave() {
 function loadFromStorage() {
     try {
         const savedString = localStorage.getItem(SAVE_KEY);
-        if (!savedString) return null;
+        if (!savedString) {
+            return null;
+        }
 
-        const saveData = JSON.parse(savedString);
+        let saveData;
+        try {
+            saveData = JSON.parse(savedString);
+        } catch (parseError) {
+            console.error('Failed to parse save data:', parseError);
+            // Corrupted save - back it up and return null
+            try {
+                localStorage.setItem(SAVE_KEY + '_backup_corrupted', savedString);
+                localStorage.removeItem(SAVE_KEY);
+            } catch (e) {
+                // Ignore backup errors
+            }
+            return null;
+        }
+
+        // Validate save data structure
+        if (!saveData || typeof saveData !== 'object') {
+            console.error('Invalid save data structure');
+            return null;
+        }
+
+        if (!saveData.state || typeof saveData.state !== 'object') {
+            console.error('Save data missing state object');
+            return null;
+        }
 
         // Version migration if needed
         if (saveData.version !== SAVE_VERSION) {
+            console.log('Migrating save from version', saveData.version, 'to', SAVE_VERSION);
             return migrateData(saveData);
         }
 
-        return saveData; // Return full save data object
+        return saveData;
     } catch (error) {
         console.error('Failed to load save:', error);
         return null;
@@ -180,9 +258,6 @@ function loadFromStorage() {
  * Migrate old save data to current version
  */
 function migrateData(saveData) {
-    // Handle version migrations here
-    console.log(`Migrating save from v${saveData.version} to v${SAVE_VERSION}`);
-
     let state = saveData.state || {};
     let result = { ...saveData };
 
@@ -215,7 +290,6 @@ function migrateData(saveData) {
         });
         state.bots = newBots;
         result.state = state;
-        console.log('Migrated bots to v4:', Object.keys(newBots).length, 'bots');
     }
 
     result.version = SAVE_VERSION;
@@ -226,18 +300,13 @@ function migrateData(saveData) {
  * Get save data as JSON object
  */
 function getSaveData() {
-    console.log('Getting save data...');
     const state = State.getStateForSave();
-    console.log('State for save:', state ? 'OK' : 'NULL', 'coins:', state?.coins);
-
     const postHistory = getPostHistory();
-    console.log('Post history:', postHistory?.length || 0, 'posts');
-
     const balloonState = getBalloonState();
     const typingState = getTypingState();
     const statsHistory = getStatsHistory();
 
-    const saveData = {
+    return {
         version: SAVE_VERSION,
         timestamp: Date.now(),
         state,
@@ -246,9 +315,6 @@ function getSaveData() {
         typingState,
         statsHistory
     };
-
-    console.log('Save data assembled, version:', SAVE_VERSION);
-    return saveData;
 }
 
 /**
@@ -325,15 +391,11 @@ export function exportToFile() {
  */
 export function importSave(jsonString) {
     try {
-        console.log('Importing save, string length:', jsonString?.length);
-
         // Try to parse as JSON directly
         let saveData;
         try {
             saveData = JSON.parse(jsonString);
-            console.log('Parsed JSON successfully, version:', saveData.version);
         } catch (parseError) {
-            console.log('JSON parse failed, trying Base64...', parseError.message);
             // Maybe it's the old Base64 format - try to decode
             try {
                 // Decode Base64 to UTF-8 without deprecated escape() function
@@ -351,16 +413,12 @@ export function importSave(jsonString) {
 
         // Validate save data
         if (!saveData.state || typeof saveData.state !== 'object') {
-            console.error('Save data structure:', Object.keys(saveData));
             throw new Error('Invalid save data - missing state object');
         }
-
-        console.log('Save data valid, state keys:', Object.keys(saveData.state));
 
         // Version migration if needed
         let migratedData = saveData;
         if (saveData.version !== SAVE_VERSION) {
-            console.log('Migrating from version', saveData.version, 'to', SAVE_VERSION);
             migratedData = migrateData(saveData);
         }
 
@@ -377,7 +435,6 @@ export function importSave(jsonString) {
 
         try {
             localStorage.setItem(SAVE_KEY, JSON.stringify(dataToSave));
-            console.log('Saved to localStorage successfully');
         } catch (storageError) {
             if (storageError.name === 'QuotaExceededError') {
                 showSaveNotification('Import failed: Storage full!');
@@ -391,7 +448,6 @@ export function importSave(jsonString) {
 
         // Auto-refresh to apply the save
         setTimeout(() => {
-            console.log('Reloading page...');
             window.location.reload();
         }, 1000);
 

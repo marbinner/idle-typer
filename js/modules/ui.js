@@ -135,21 +135,32 @@ function setupEventListeners() {
 // Throttle counter for UI updates
 let uiUpdateCounter = 0;
 const UI_UPDATE_INTERVAL = 3; // Only update every 3 frames (~20fps)
+let firstUIUpdate = true; // Ensure first update always runs
 
 /**
  * Update all UI elements (throttled for performance)
  */
 export function updateUI() {
     // Throttle UI updates - don't need 60fps for numbers
-    uiUpdateCounter++;
-    if (uiUpdateCounter < UI_UPDATE_INTERVAL) return;
-    uiUpdateCounter = 0;
+    // But always run the first update to ensure initial state is displayed
+    if (!firstUIUpdate) {
+        uiUpdateCounter++;
+        if (uiUpdateCounter < UI_UPDATE_INTERVAL) return;
+        uiUpdateCounter = 0;
+    }
 
     const state = State.getState();
 
-    // Smooth number transitions
-    displayedCoins = lerp(displayedCoins, state.coins, 0.15);
-    displayedFollowers = lerp(displayedFollowers, state.followers, 0.1);
+    // On first update, skip lerp and show actual values immediately
+    if (firstUIUpdate) {
+        displayedCoins = state.coins;
+        displayedFollowers = state.followers;
+        firstUIUpdate = false;
+    } else {
+        // Smooth number transitions for subsequent updates
+        displayedCoins = lerp(displayedCoins, state.coins, 0.15);
+        displayedFollowers = lerp(displayedFollowers, state.followers, 0.1);
+    }
 
     const currentCoins = Math.floor(displayedCoins);
 
@@ -324,15 +335,6 @@ function showSettingsModal() {
                 <label>Skip Current Text</label>
                 <button id="skip-post-btn" class="btn btn-secondary">⏭️ Skip Post</button>
             </div>
-            <div class="setting-item">
-                <label>Export Save</label>
-                <button id="export-btn" class="btn btn-secondary">💾 Download Save File</button>
-            </div>
-            <div class="setting-item">
-                <label>Import Save</label>
-                <input type="file" id="import-file" accept=".json" style="display: none">
-                <button id="import-btn" class="btn btn-secondary">📂 Load Save File</button>
-            </div>
             <div class="setting-item danger">
                 <label>Reset Game</label>
                 <button id="reset-btn" class="btn btn-secondary" style="background: var(--error-red)">Reset All Progress</button>
@@ -387,77 +389,6 @@ function showSettingsModal() {
         loadNewPost();
         closeModal();
     });
-
-    // Export - download JSON file
-    document.getElementById('export-btn')?.addEventListener('click', async () => {
-        try {
-            console.log('Export button clicked');
-            const saveModule = await import('./save.js');
-            console.log('Save module loaded');
-            const result = saveModule.exportToFile();
-            console.log('Export result:', result);
-            if (!result) {
-                showToast('Export failed!');
-            }
-        } catch (err) {
-            console.error('Export error:', err);
-            showToast('Export failed: ' + err.message);
-        }
-    });
-
-    // Import - file picker
-    const importFileInput = document.getElementById('import-file');
-    const importBtn = document.getElementById('import-btn');
-
-    if (importBtn && importFileInput) {
-        importBtn.addEventListener('click', () => {
-            console.log('Import button clicked, triggering file picker');
-            importFileInput.click();
-        });
-
-        importFileInput.addEventListener('change', async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) {
-                console.log('No file selected');
-                return;
-            }
-
-            console.log('Loading save file:', file.name, 'size:', file.size);
-            try {
-                // Use file.text() if available, otherwise fall back to FileReader for older browsers
-                const text = await (file.text ? file.text() : new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = () => reject(reader.error);
-                    reader.readAsText(file);
-                }));
-                console.log('File content read, length:', text.length);
-                console.log('First 100 chars:', text.substring(0, 100));
-
-                const saveModule = await import('./save.js');
-                console.log('Save module loaded for import');
-
-                const result = saveModule.importSave(text);
-                console.log('Import result:', result);
-
-                if (result) {
-                    showToast('Save imported! Reloading...');
-                    overlay.classList.add('hidden');
-                    // importSave already triggers reload
-                } else {
-                    showToast('Invalid save file!');
-                }
-            } catch (err) {
-                console.error('File read/import error:', err);
-                showToast('Failed to import: ' + err.message);
-            }
-
-            // Reset the input so the same file can be selected again
-            e.target.value = '';
-        });
-    } else {
-        console.error('Import elements not found:', { importBtn, importFileInput });
-    }
 
     document.getElementById('reset-btn')?.addEventListener('click', () => {
         if (confirm('Are you sure? This will delete ALL progress!')) {
