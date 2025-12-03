@@ -12,6 +12,13 @@ import { spawnParticles, spawnFloatingNumber } from './particles.js';
 let questPanelEl = null;
 let questListEl = null;
 
+// Interval IDs for cleanup
+let questRotationInterval = null;
+let questTimerInterval = null;
+
+// Event listener references for cleanup
+let eventListenersRegistered = false;
+
 // Seeded random for consistent quest generation
 function seededRandom(seed) {
     const x = Math.sin(seed) * 10000;
@@ -155,9 +162,27 @@ function formatTimeRemaining(ms) {
 }
 
 /**
+ * Cleanup quest system (clear intervals and listeners)
+ */
+export function cleanupQuests() {
+    if (questRotationInterval) {
+        clearInterval(questRotationInterval);
+        questRotationInterval = null;
+    }
+    if (questTimerInterval) {
+        clearInterval(questTimerInterval);
+        questTimerInterval = null;
+    }
+    eventListenersRegistered = false;
+}
+
+/**
  * Initialize quest system
  */
 export function initQuests() {
+    // Clean up any existing intervals to prevent duplicates on re-init
+    cleanupQuests();
+
     const state = State.getState();
 
     // Check if quests need rotation
@@ -176,8 +201,8 @@ export function initQuests() {
     // Subscribe to game events for quest progress
     subscribeToEvents();
 
-    // Start rotation timer
-    setInterval(checkQuestRotation, 60000); // Check every minute
+    // Start rotation timer (store interval ID for cleanup)
+    questRotationInterval = setInterval(checkQuestRotation, 60000); // Check every minute
 
     console.log('Quest system ready');
 }
@@ -223,9 +248,12 @@ function createQuestPanel() {
     questListEl = document.getElementById('quest-list');
     updateQuestUI();
 
-    // Update timer
+    // Update timer (store interval ID for cleanup)
     updateQuestTimer();
-    setInterval(updateQuestTimer, 60000);
+    if (questTimerInterval) {
+        clearInterval(questTimerInterval);
+    }
+    questTimerInterval = setInterval(updateQuestTimer, 60000);
 }
 
 /**
@@ -305,44 +333,62 @@ function updateQuestUI() {
     });
 }
 
+// Named event handlers for proper cleanup
+function handlePostCompleted(e) {
+    const detail = e.detail || {};
+    updateQuestProgress('posts', 1);
+
+    if (detail.isPerfect) {
+        updateQuestProgress('perfect', 1);
+    }
+
+    if (detail.wpm) {
+        checkWpmQuest(detail.wpm);
+    }
+
+    if (detail.accuracy) {
+        checkAccuracyQuest(detail.accuracy);
+    }
+
+    if (detail.isViral) {
+        updateQuestProgress('viral', 1);
+    }
+}
+
+function handleCoinsGained(e) {
+    const amount = e.detail?.amount || 0;
+    updateQuestProgress('coins', amount);
+}
+
+function handleFollowersGained(e) {
+    const amount = e.detail?.amount || 0;
+    updateQuestProgress('followers', amount);
+}
+
+function handleGoldenCharHit() {
+    updateQuestProgress('golden', 1);
+}
+
+function handleCritHit() {
+    updateQuestProgress('crits', 1);
+}
+
 /**
  * Subscribe to game events for quest progress tracking
  */
 function subscribeToEvents() {
+    // Prevent duplicate event listeners on re-init
+    if (eventListenersRegistered) return;
+    eventListenersRegistered = true;
+
     // Listen for post completion
-    window.addEventListener('post-completed', (e) => {
-        const detail = e.detail || {};
-        updateQuestProgress('posts', 1);
-
-        if (detail.isPerfect) {
-            updateQuestProgress('perfect', 1);
-        }
-
-        if (detail.wpm) {
-            // Check if WPM quest is satisfied
-            checkWpmQuest(detail.wpm);
-        }
-
-        if (detail.accuracy) {
-            checkAccuracyQuest(detail.accuracy);
-        }
-
-        if (detail.isViral) {
-            updateQuestProgress('viral', 1);
-        }
-    });
+    window.addEventListener('post-completed', handlePostCompleted);
 
     // Listen for coins gained
-    window.addEventListener('coins-gained', (e) => {
-        const amount = e.detail?.amount || 0;
-        updateQuestProgress('coins', amount);
-    });
+    window.addEventListener('coins-gained', handleCoinsGained);
 
     // Listen for followers gained
-    window.addEventListener('followers-gained', (e) => {
-        const amount = e.detail?.amount || 0;
-        updateQuestProgress('followers', amount);
-    });
+    window.addEventListener('followers-gained', handleFollowersGained);
 
     // Listen for combo changes
     State.subscribeToKey('combo', (newCombo) => {
@@ -350,14 +396,10 @@ function subscribeToEvents() {
     });
 
     // Listen for golden char hits
-    window.addEventListener('golden-char-hit', () => {
-        updateQuestProgress('golden', 1);
-    });
+    window.addEventListener('golden-char-hit', handleGoldenCharHit);
 
     // Listen for critical hits
-    window.addEventListener('crit-hit', () => {
-        updateQuestProgress('crits', 1);
-    });
+    window.addEventListener('crit-hit', handleCritHit);
 }
 
 /**

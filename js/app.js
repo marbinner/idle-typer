@@ -90,14 +90,6 @@ function startGameLoop() {
 }
 
 /**
- * Stop the game loop
- */
-function stopGameLoop() {
-    isRunning = false;
-    console.log('Game loop stopped');
-}
-
-/**
  * Initialize all game systems
  */
 async function init() {

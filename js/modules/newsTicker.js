@@ -152,8 +152,8 @@ function handleStateChange() {
         lastCombo = state.combo;
     }
 
-    // Check for bot purchases
-    const totalBots = Object.values(state.bots || {}).reduce((a, b) => a + b, 0);
+    // Check for bot purchases (guard against null/undefined values)
+    const totalBots = Object.values(state.bots || {}).reduce((a, b) => a + (b || 0), 0);
     if (totalBots > lastBots) {
         queueNews('bots');
         lastBots = totalBots;

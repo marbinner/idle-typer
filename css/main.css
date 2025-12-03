@@ -78,36 +78,6 @@ button,
     animation-duration: 28s;
 }
 
-.orb-4 {
-    width: 180px;
-    height: 180px;
-    background: radial-gradient(circle, var(--candy-green), transparent 70%);
-    top: 30%;
-    right: 25%;
-    animation-delay: -15s;
-    animation-duration: 24s;
-}
-
-.orb-5 {
-    width: 220px;
-    height: 220px;
-    background: radial-gradient(circle, var(--candy-yellow), transparent 70%);
-    bottom: 10%;
-    right: 5%;
-    animation-delay: -8s;
-    animation-duration: 26s;
-}
-
-.orb-6 {
-    width: 160px;
-    height: 160px;
-    background: radial-gradient(circle, var(--candy-orange), transparent 70%);
-    top: 5%;
-    right: 40%;
-    animation-delay: -12s;
-    animation-duration: 30s;
-}
-
 @keyframes orb-float {
     0%, 100% { transform: translate3d(0, 0, 0); }
     50% { transform: translate3d(20px, -15px, 0); }
@@ -162,66 +132,9 @@ button,
     animation-duration: 25s;
 }
 
-.aurora-3 {
-    top: 40%;
-    left: -50%;
-    background: linear-gradient(90deg, var(--candy-blue), var(--candy-purple), var(--candy-magenta));
-    animation-delay: -12s;
-    animation-duration: 22s;
-    height: 200px;
-    opacity: 0.1;
-}
-
 @keyframes aurora-wave {
     0%, 100% { transform: translateX(0) skewY(-2deg); }
     50% { transform: translateX(25%) skewY(2deg); }
-}
-
-/* Corner decorations */
-.corner-decor {
-    position: fixed;
-    width: 80px;
-    height: 80px;
-    z-index: 1;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.corner-tl { top: 60px; left: 10px; }
-.corner-tr { top: 60px; right: 10px; }
-.corner-bl { bottom: 50px; left: 10px; }
-.corner-br { bottom: 50px; right: 10px; }
-
-.corner-candy {
-    font-size: 32px;
-    animation: corner-bounce 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
-}
-
-.corner-tl .corner-candy { animation-delay: 0s; }
-.corner-tr .corner-candy { animation-delay: 0.5s; }
-.corner-bl .corner-candy { animation-delay: 1s; }
-.corner-br .corner-candy { animation-delay: 1.5s; }
-
-@keyframes corner-bounce {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    25% { transform: translateY(-8px) rotate(-10deg); }
-    50% { transform: translateY(0) rotate(0deg); }
-    75% { transform: translateY(-5px) rotate(10deg); }
-}
-
-.corner-sparkle {
-    position: absolute;
-    font-size: 16px;
-    animation: sparkle-orbit 4s linear infinite;
-}
-
-@keyframes sparkle-orbit {
-    0% { transform: rotate(0deg) translateX(25px) rotate(0deg); opacity: 1; }
-    50% { opacity: 0.3; }
-    100% { transform: rotate(360deg) translateX(25px) rotate(-360deg); opacity: 1; }
 }
 
 /* ==================== Bot Army Display ==================== */
@@ -1635,10 +1548,6 @@ button,
     caret-color: transparent;
 }
 
-#post-text {
-    cursor: default;
-}
-
 #compose-header {
     display: flex;
     justify-content: space-between;
@@ -1749,6 +1658,7 @@ button,
     overflow-wrap: break-word;
     word-break: normal;
     hyphens: none;
+    cursor: default;
 }
 
 #post-text .word {

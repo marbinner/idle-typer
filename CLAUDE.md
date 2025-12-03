@@ -44,6 +44,11 @@ No build step required - this is a vanilla JavaScript project using ES6 modules.
 | `sound.js` | Audio feedback for typing and rewards |
 | `stats.js` | Statistics panel data |
 | `bickering.js` | Twitter argument mini-game challenge system |
+| `gambling.js` | Crypto trading/gambling mini-game with spin wheel |
+| `monsters.js` | Monster spawning mini-game (type to defeat) |
+| `newsTicker.js` | Dynamic news feed reactions about player, username prompt |
+| `dailyStreak.js` | Daily login streak system with multiplier bonuses |
+| `quests.js` | Rotating quest/mission system with rewards |
 
 ### Data (in `js/data/`)
 
@@ -83,9 +88,15 @@ The game dispatches these custom events on `window`:
 - `coins-gained` - `{ amount, source, total }`
 - `followers-gained` - `{ amount, source, total }`
 - `bickering-ended` - When a bickering challenge completes
+- `cps-milestone` - `{ milestone, cps }` - When CPS crosses a threshold
+- `follower-milestone` - `{ milestone, total }` - When followers cross a threshold
+- `post-milestone` - `{ milestone, total }` - When lifetime posts cross a threshold
 
 ### Debug/Testing Utilities
 Available in browser console:
+- `window.cheat.coins(amount)` - Add coins (default 100000)
+- `window.cheat.followers(amount)` - Add followers (default 1000)
+- `window.cheat.reset()` - Reset game and reload
 - `window.testBickering(category?)` - Trigger bickering challenge (optionally by category)
 - `window.IdleTyperEvents.triggerEvent(eventName)` - Manually trigger game events
 - `window.IdleTyperEvents.getActiveEvents()` - List active events

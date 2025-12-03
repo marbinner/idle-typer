@@ -321,17 +321,16 @@ export function recalculateDerived() {
     // Each bot gives linearly more CPS: 1st=1x, 2nd=2x, 3rd=3x, etc.
     // Total CPS = baseCPS * (1+2+3+...+n) = baseCPS * n*(n+1)/2 (triangular growth)
     // Cost grows exponentially, CPS grows quadratically = satisfying progression
-    const botData = getBotData();
-    const botIds = Object.keys(botData);
     Object.entries(bots).forEach(([botId, count]) => {
-        if (count > 0 && botData[botId]) {
+        if (count > 0 && BOTS[botId]) {
             // Triangular number formula: n * (n + 1) / 2
             const triangularBonus = count * (count + 1) / 2;
-            let botCPS = botData[botId].cps * triangularBonus;
+            let botCPS = BOTS[botId].cps * triangularBonus;
 
             // Apply tier-specific CPS bonus (+50% for tiers 1,3,5,7,9 if upgrade owned)
-            const botIndex = botIds.indexOf(botId);
-            const botTier = Math.floor(botIndex / 15) + 1;
+            // Use pre-computed index map for O(1) lookup instead of indexOf
+            const botIndex = BOT_INDEX_MAP.get(botId) ?? -1;
+            const botTier = botIndex >= 0 ? Math.floor(botIndex / 15) + 1 : 0;
             if (tierUpgrades && tierUpgrades[botTier] && [1, 3, 5, 7, 9].includes(botTier)) {
                 botCPS *= 1.5;
             }
@@ -422,17 +421,14 @@ export function recalculateDerived() {
 }
 
 /**
- * Get bot CPS data from the centralized BOTS definition
- * No longer hardcoded - uses the formula-generated values from upgrades.js
+ * Pre-computed bot index lookup for O(1) tier calculation
+ * Maps bot ID -> index in BOTS (used to determine tier: Math.floor(index / 15) + 1)
  */
-function getBotData() {
-    // Transform BOTS into the format expected by recalculateDerived
-    const botData = {};
-    Object.entries(BOTS).forEach(([id, bot]) => {
-        botData[id] = { cps: bot.cps };
-    });
-    return botData;
-}
+const BOT_INDEX_MAP = new Map();
+const BOT_IDS = Object.keys(BOTS);
+BOT_IDS.forEach((id, index) => {
+    BOT_INDEX_MAP.set(id, index);
+});
 
 /**
  * Add coins (main currency)

@@ -4,7 +4,7 @@
  */
 
 import * as State from '../state.js';
-import { formatNumber, formatFull, formatCoins as formatCoinsUtil, escapeHtml } from '../utils.js';
+import { formatNumber, formatCoins as formatCoinsUtil, escapeHtml } from '../utils.js';
 import { setResetting } from '../state.js';
 import { getPostHistory, loadNewPost } from './typing.js';
 import { BOTS } from '../data/upgrades.js';

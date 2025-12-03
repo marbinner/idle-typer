@@ -108,7 +108,7 @@ export function calculateCPS() {
  */
 export function getTotalBots() {
     const state = State.getState();
-    return Object.values(state.bots).reduce((sum, count) => sum + count, 0);
+    return Object.values(state.bots || {}).reduce((sum, count) => sum + (count || 0), 0);
 }
 
 /**
